@@ -1,0 +1,17 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap.workspace = true
+anyhow.workspace = true
+api = { path = "../api" }
+
+[build-dependencies]
+git2.workspace = true
+time = { features = [
+    "local-offset",
+    "formatting",
+    "parsing",
+], workspace = true }
