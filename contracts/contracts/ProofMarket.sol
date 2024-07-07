@@ -8,7 +8,7 @@ import "./Stake.sol";
 import "./Controller.sol";
 import "./Reward.sol";
 
-contract Task is Ownable {
+contract ProofMarket is Ownable {
     enum TaskStatus {
         Waiting,
         Proving
@@ -43,6 +43,8 @@ contract Task is Ownable {
         if (fee > 0) {
             //
         }
+
+        // TODO check game is valid
 
         Task storage task = tasks[nextId];
         task.game = game;

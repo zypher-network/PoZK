@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Epoch.sol";
 import "./Stake.sol";
-import "./Game.sol";
+import "./GameMarket.sol";
 import "./Vesting.sol";
 import "./utils/FixedMath.sol";
 
@@ -60,8 +60,9 @@ contract Reward {
     // TODO
     address reward;
     address epoch;
-    address gameContract;
     address vesting;
+    address gameMarket;
+    address proofMarket;
 
     mapping(uint256 => EpochPool) private pools;
 
@@ -145,7 +146,7 @@ contract Reward {
     }
 
     function work(address game, address player, address miner) external {
-        require(msg.sender == task, "R01"); // only task contract
+        require(msg.sender == proofMarket, "R01"); // only task contract
 
         Reward rw = Reward(reward);
 
@@ -346,13 +347,13 @@ contract Reward {
         // check or collect game total reward,
         // and release epoch token to reward
         if (gp.totalMinerReward == 0 && gp.totalPlayerReward == 0) {
-            Game g = Game(gameContract);
+            GameMarket gm = GameMarket(gameMarket);
             Vesting vesting = Vesting(vesting);
 
             uint256 amount = _cobbDouglas(
                 vesting.mine(epoch),
-                game.work(game),
-                game.totalWork(),
+                gm.work(game),
+                gm.totalWork(),
                 eg.totalStaking,
                 ep.totalGameStaking,
                 alphaNumerator,
