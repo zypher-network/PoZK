@@ -62,7 +62,7 @@ contract Reward {
     address epoch;
     address vesting;
     address gameMarket;
-    address proofMarket;
+    address taskMarket;
 
     mapping(uint256 => EpochPool) private pools;
 
@@ -146,7 +146,7 @@ contract Reward {
     }
 
     function work(address game, address player, address miner) external {
-        require(msg.sender == proofMarket, "R01"); // only task contract
+        require(msg.sender == taskMarket, "R01"); // only task contract
 
         Reward rw = Reward(reward);
 

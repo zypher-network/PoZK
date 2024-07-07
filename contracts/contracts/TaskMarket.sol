@@ -8,7 +8,7 @@ import "./Stake.sol";
 import "./Controller.sol";
 import "./Reward.sol";
 
-contract ProofMarket is Ownable {
+contract TaskMarket is Ownable {
     enum TaskStatus {
         Waiting,
         Proving
