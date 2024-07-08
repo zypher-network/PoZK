@@ -19,3 +19,6 @@ hmac.workspace = true
 sha2.workspace = true
 jwt.workspace = true
 env_logger.workspace = true
+siwe = {workspace = true, features = ["serde"]}
+iri-string.workspace = true
+time.workspace = true

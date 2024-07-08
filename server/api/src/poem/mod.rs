@@ -1,15 +1,11 @@
 mod resp;
 pub use resp::{Resp, RespData};
 
-mod service;
 mod req;
-pub use req::{
-    LoginReqParam, LoginReq
-};
-mod utils;
+mod service;
+pub use req::{LoginReq, LoginReqParam};
 mod auth;
-pub use auth::{
-    User, SERVER_KEY, ApiAuth
-};
+mod utils;
+pub use auth::{ApiAuth, User, SERVER_KEY};
 
 pub use service::ApiService;

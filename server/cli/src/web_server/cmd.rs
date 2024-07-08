@@ -1,6 +1,6 @@
-use clap::Args;
-use api::Config;
 use anyhow::Result;
+use api::Config;
+use clap::Args;
 
 #[derive(Args)]
 pub struct Cmd {
@@ -10,7 +10,6 @@ pub struct Cmd {
 
 impl Cmd {
     pub async fn exec(&self) -> Result<()> {
-
         Ok(())
     }
 }

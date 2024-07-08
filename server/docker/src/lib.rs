@@ -1,13 +1,15 @@
-
 #[cfg(test)]
 mod tests {
-    use shiplift::{ContainerOptions, Docker, PullOptions};
     use futures_util::StreamExt;
+    use shiplift::{ContainerOptions, Docker, PullOptions};
 
     #[test]
     fn test_local_start_postgres() {
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-        rt.block_on(async{
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
             let docker = Docker::new();
 
             let pull_options = PullOptions::builder().image("postgres:latest").build();
@@ -28,8 +30,17 @@ mod tests {
                 .name("minner-postgres")
                 .build();
 
-            let container = docker.containers().create(&container_options).await.unwrap();
-            docker.containers().get(&container.id).start().await.unwrap();
+            let container = docker
+                .containers()
+                .create(&container_options)
+                .await
+                .unwrap();
+            docker
+                .containers()
+                .get(&container.id)
+                .start()
+                .await
+                .unwrap();
 
             println!("Container started with ID: {}", container.id);
         });

@@ -1,4 +1,2 @@
 mod login;
-pub use login::{
-    LoginReq, LoginReqParam
-};
+pub use login::{LoginReq, LoginReqParam};

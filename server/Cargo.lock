@@ -153,6 +153,7 @@ dependencies = [
  "env_logger",
  "ethers",
  "hmac 0.11.0",
+ "iri-string",
  "jwt",
  "log",
  "once_cell",
@@ -161,6 +162,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.9.9",
+ "siwe",
+ "time",
  "tokio",
  "uuid 1.9.1",
 ]
@@ -2078,6 +2081,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
 
 [[package]]
+name = "iri-string"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f5f6c2df22c009ac44f6f1499308e7a3ac7ba42cd2378475cc691510e1eef1b"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3601,6 +3614,23 @@ name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38b58827f4464d87d377d175e90bf58eb00fd8716ff0a62f80356b5e61555d0d"
+
+[[package]]
+name = "siwe"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95bdefc0eedf06440b27092fbfe33f2cb493ad6a3423aa12cfe7f2aac44bd618"
+dependencies = [
+ "hex",
+ "http 1.1.0",
+ "iri-string",
+ "k256",
+ "rand",
+ "serde",
+ "sha3",
+ "thiserror",
+ "time",
+]
 
 [[package]]
 name = "slab"

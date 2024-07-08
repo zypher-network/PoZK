@@ -13,4 +13,5 @@ pub struct Config {
 
     pub endpoint: String,
 
+    pub domain: String,
 }

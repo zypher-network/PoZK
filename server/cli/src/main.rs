@@ -1,8 +1,8 @@
 mod web_server;
 
-use std::path::PathBuf;
-use clap::{Parser, Subcommand};
 use anyhow::Result;
+use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(version, about, long_about, long_version = env!("BUILD_INFO_VERSION_LONG"))]
@@ -16,7 +16,7 @@ pub enum Cmds {
     WebServer,
 }
 
-fn main() -> Result<()>{
+fn main() -> Result<()> {
     let _args = Args::parse();
 
     Ok(())
