@@ -1,0 +1,10 @@
+[package]
+name = "docker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+shiplift.workspace = true
+anyhow.workspace = true
+tokio.workspace = true
+futures-util = "0.3.30"
