@@ -9,6 +9,8 @@ contract Controller is Ownable {
 
     event ChangeController(address account, address controller, bool isAdd);
 
+    constructor() Ownable(msg.sender) {}
+
     function check(address account, address controller) external view returns(bool) {
         require(account == controller || controllers[account][controller], "C01");
     }

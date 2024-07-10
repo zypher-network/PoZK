@@ -23,7 +23,7 @@ contract GameMarket is Ownable {
     struct GameVerifier {
         address value;
         address newValue;
-        address newEpoch;
+        uint256 newEpoch;
     }
 
     struct Game {
@@ -37,7 +37,7 @@ contract GameMarket is Ownable {
     }
 
     /// total game work
-    GameWork private totalWork;
+    GameWork private gamesTotalWork;
 
     /// game list
     mapping(address => Game) private games;
@@ -51,15 +51,17 @@ contract GameMarket is Ownable {
     event ApproveGame(address game, uint256 work, uint256 version, address verifier, string name, bool minable, bool approved);
     event StopGame(address game);
 
-    function register(address game, uint256 work, uint256 version, address verifier, string name) external {
-        require(games[game].version == 0 && version > 0, "G01");
+    constructor() Ownable(msg.sender) {}
+
+    function register(address game, uint256 work, uint256 version, address verifier, string calldata name) external {
+        require(games[game].version.value == 0 && version > 0, "G01");
 
         Game storage g = games[game];
         g.status = GameStatus.Reviewing;
         g.owner = msg.sender;
         g.work = GameWork(work, work, 0);
-        g.version = version;
-        g.verifier = verifier;
+        g.version = GameWork(version, version, 0);
+        g.verifier = GameVerifier(verifier, verifier, 0);
         g.minable = false;
         g.name = name;
 
@@ -74,7 +76,7 @@ contract GameMarket is Ownable {
         emit StopGame(game);
     }
 
-    function upgrade(address game, uint256 work, uint256 version, address verifier, string name) external {
+    function upgrade(address game, uint256 work, uint256 version, address verifier, string calldata name) external {
         require(games[game].owner == msg.sender, "G02");
         uint256 currentEpoch = Epoch(epoch).getAndUpdate();
 
@@ -117,13 +119,13 @@ contract GameMarket is Ownable {
         emit TransferGame(game, owner);
     }
 
-    function approve(address game, uint256 minable, bool approved) external onlyOwner {
+    function approve(address game, bool minable, bool approved) external onlyOwner {
         Game storage g = games[game];
         require(g.status == GameStatus.Reviewing || g.status == GameStatus.Upgrading, "G03");
 
         uint256 currentEpoch = Epoch(epoch).getAndUpdate();
 
-        g.minable = minable;
+        g.minable  = minable;
 
         // update work & version
         g.version.newEpoch = currentEpoch;  // version update immediately
@@ -134,17 +136,17 @@ contract GameMarket is Ownable {
             g.version.value = g.version.newValue;
             g.verifier.value = g.verifier.newValue;
 
-            // update totalWork
-            if (currentEpoch >= totalWork.newEpoch) {
-                totalWork.value = totalWork.newValue;
+            // update gamesTotalWork
+            if (currentEpoch >= gamesTotalWork.newEpoch) {
+                gamesTotalWork.value = gamesTotalWork.newValue;
             }
             bool isAdd = g.work.newValue > g.work.value;
             if (isAdd) {
-                totalWork.newValue += g.work.newValue - g.work.value;
+                gamesTotalWork.newValue += g.work.newValue - g.work.value;
             } else {
-                totalWork.newValue -= g.work.value - g.work.newValue;
+                gamesTotalWork.newValue -= g.work.value - g.work.newValue;
             }
-            totalWork.newEpoch = currentEppoch + 1;
+            gamesTotalWork.newEpoch = currentEpoch + 1;
         } else {
             // revoke
             g.work.newEpoch = currentEpoch;
@@ -166,10 +168,10 @@ contract GameMarket is Ownable {
     function totalWork() external view returns(uint256) {
         uint256 currentEpoch = Epoch(epoch).get();
 
-        if (currentEpoch >= totalWork.newEpoch) {
-            return totalWork.newValue;
+        if (currentEpoch >= gamesTotalWork.newEpoch) {
+            return gamesTotalWork.newValue;
         } else {
-            return totalWork.value;
+            return gamesTotalWork.value;
         }
     }
 

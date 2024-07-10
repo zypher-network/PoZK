@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./Epoch.sol";
+import "./Vesting.sol";
 
 /**
  * @title Stake Contract
@@ -54,6 +55,8 @@ contract Stake is Ownable {
     event GameStakeChange(uint256 epoch, address game, address account, int256 changed, uint256 total);
     event MinerStakeChange(uint256 epoch, address game, address account, int256 changed, uint256 total);
     event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 total);
+
+    constructor() Ownable(msg.sender) {}
 
     /// set minimum stake amount
     function setMinStakeAmount(uint256 _minStakeAmount) external onlyOwner {
@@ -186,7 +189,7 @@ contract Stake is Ownable {
         }
         st.newValue += amount;
 
-        emit MinerStakeChange(st.newEpoch, game, msg.sender, amount, st.newValue);
+        emit MinerStakeChange(st.newEpoch, game, msg.sender, int256(amount), st.newValue);
     }
 
     // unstake by miner
@@ -276,7 +279,7 @@ contract Stake is Ownable {
         }
         st.newValue += amount;
 
-        emit PlayerStakeChange(st.newEpoch, game, msg.sender, amount, st.newValue);
+        emit PlayerStakeChange(st.newEpoch, msg.sender, int256(amount), st.newValue);
     }
 
     /// unstake by player
@@ -312,7 +315,7 @@ contract Stake is Ownable {
         }
         st.newValue -= amount;
 
-        emit PlayerStakeChange(st.newEpoch, game, msg.sender, -int256(amount), st.newValue);
+        emit PlayerStakeChange(st.newEpoch, msg.sender, -int256(amount), st.newValue);
     }
 
     /// --------------- Unstaking --------------- ///

@@ -14,6 +14,8 @@ contract Epoch is Ownable {
     /// enter/esc maintenance mode
     bool public maintenance;
 
+    constructor() Ownable(msg.sender) {}
+
     function setMaintenance(bool open) external onlyOwner {
         maintenance = open;
     }

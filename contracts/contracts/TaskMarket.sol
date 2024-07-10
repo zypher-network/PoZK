@@ -38,7 +38,10 @@ contract TaskMarket is Ownable {
     event AcceptTask(uint256 id, address miner, uint256 overTime);
     event SubmitTask(uint256 id, uint256 fee);
 
-    function create(address game, address player, uint256 fee, bytes data) external returns(uint256) {
+    constructor() Ownable(msg.sender) {}
+
+
+    function create(address game, address player, uint256 fee, bytes calldata data) external returns(uint256) {
         // TODO transfer fee from msg.sender
         if (fee > 0) {
             //
@@ -60,9 +63,9 @@ contract TaskMarket is Ownable {
 
     function accept(uint256 tid, address miner) external {
         Controller(controller).check(miner, msg.sender);
-        require(Stake(stake).isMiner(miner), "T01");
 
         Task storage task = tasks[tid];
+        require(Stake(stake).isMiner(task.game, miner), "T01");
 
         bool acceptable = task.status == TaskStatus.Waiting || task.overTime < block.timestamp;
         require(acceptable, "T02");
@@ -74,7 +77,7 @@ contract TaskMarket is Ownable {
         emit AcceptTask(tid, miner, task.overTime);
     }
 
-    function submit(uint256 tid, bytes proof) external {
+    function submit(uint256 tid, bytes calldata proof) external {
         Task storage task = tasks[tid];
 
         require(task.status == TaskStatus.Proving, "T03");

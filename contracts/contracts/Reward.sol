@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./Epoch.sol";
 import "./Stake.sol";
@@ -13,7 +14,7 @@ import "./utils/FixedMath.sol";
 /**
  * @title Reward Contract
  */
-contract Reward {
+contract Reward is Ownable {
     using SafeERC20 for IERC20;
 
     struct StakerLabor {
@@ -38,8 +39,8 @@ contract Reward {
         uint256 unclaimReward;
         uint256 unclaimLabor;
 
-        mapping(address => StakerLaber) minerLabor;
-        mapping(address => StakerLaber) playerLabor;
+        mapping(address => StakerLabor) minerLabor;
+        mapping(address => StakerLabor) playerLabor;
     }
 
     struct RunningGame {
@@ -58,8 +59,8 @@ contract Reward {
     }
 
     // TODO
-    address reward;
-    address epoch;
+    address stake;
+    address _epoch;
     address vesting;
     address gameMarket;
     address taskMarket;
@@ -106,6 +107,8 @@ contract Reward {
     /// @notice Emitted when collect reward (stake) from pool
     event PlayerCollect(uint256 epoch, address game, address player, uint256 amount);
 
+    constructor() Ownable(msg.sender) {}
+
     /**
      * @notice Update the alpha for cobb-douglas function
      * @param _alphaNumerator the numerator of the alpha
@@ -148,9 +151,9 @@ contract Reward {
     function work(address game, address player, address miner) external {
         require(msg.sender == taskMarket, "R01"); // only task contract
 
-        Reward rw = Reward(reward);
+        Stake s = Stake(stake);
 
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
         EpochPool storage ep = pools[currentEpoch];
 
         GamePool storage gp = ep.gamePools[game];
@@ -159,54 +162,54 @@ contract Reward {
 
         // game first has reward in this epoch
         if (gp.totalWorking == 0) {
-            uint256 gameStaking = rw.gameTotalStaking(game);
+            uint256 gameStaking = s.gameTotalStaking(game);
             ep.unclaim += 1;
             ep.totalGameStaking += gameStaking;
             gp.totalStaking = gameStaking;
         }
 
         gp.totalWorking += 2;
-        gp.unclaimLaber += 2;
+        gp.unclaimLabor += 2;
 
-        if (gp.minerLaber[miner].working == 0) {
-            uint256 minerStaking = rw.minerStaking(game, miner);
-            gp.minerLaber[miner].staking = minerStaking;
+        if (gp.minerLabor[miner].working == 0) {
+            uint256 minerStaking = s.minerStaking(game, miner);
+            gp.minerLabor[miner].staking = minerStaking;
             gp.totalMinerStaking += minerStaking;
         }
-        gp.minerLaber[miner].working += 1;
+        gp.minerLabor[miner].working += 1;
 
-        if (gp.playerLaber[player].working == 0) {
-            uint256 playerStaking = rw.playerStaking(player);
-            gp.playerLaber[player].staking = playerStaking;
+        if (gp.playerLabor[player].working == 0) {
+            uint256 playerStaking = s.playerStaking(player);
+            gp.playerLabor[player].staking = playerStaking;
             gp.totalPlayerStaking += playerStaking;
         }
         gp.playerLabor[player].working += 1;
 
-        if (rgm[game] == 0) {
-            if (rgm.uncliam == 0) {
+        if (rgm.index[game] == 0) {
+            if (rgm.unclaim == 0) {
                 rgm.games.push(address(0));
             }
             rgm.games.push(game);
-            rgm.uncliam += 1;
-            rgm.index[game] = rgm.uncliam;
+            rgm.unclaim += 1;
+            rgm.index[game] = rgm.unclaim;
         }
 
-        if (rgp[game] == 0) {
-            if (rgp.uncliam == 0) {
+        if (rgp.index[game] == 0) {
+            if (rgp.unclaim == 0) {
                 rgp.games.push(address(0));
             }
             rgp.games.push(game);
-            rgp.uncliam += 1;
-            rgp.index[game] = rgp.uncliam;
+            rgp.unclaim += 1;
+            rgp.index[game] = rgp.unclaim;
         }
 
-        emit MinerLabor(currentEpoch, game, miner, gp.minerLaber[miner].working);
+        emit MinerLabor(currentEpoch, game, miner, gp.minerLabor[miner].working);
         emit PlayerLabor(currentEpoch, game, player, gp.playerLabor[player].working);
     }
 
     /// miner collect reward in epoch and game
-    function minerCollect(uint256 epoch, address game, address miner) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+    function minerCollect(uint256 epoch, address game, address miner) public {
+        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         // prevent duplicated collect
@@ -216,14 +219,14 @@ contract Reward {
 
         EpochPool storage ep = pools[epoch];
         GamePool storage gp = ep.gamePools[game];
-        RunningGame storage rgp = ep.playerUnclaimedGames[player];
+        RunningGame storage rgm = ep.minerUnclaimedGames[miner];
 
-        uint256 labor = gp.minerLaber[miner].working;
+        uint256 labor = gp.minerLabor[miner].working;
         uint256 amount = _cobbDouglas(
             gp.totalMinerReward,
             labor,
             gp.totalWorking / 2,
-            gp.minerLaber[miner].staking,
+            gp.minerLabor[miner].staking,
             gp.totalMinerStaking,
             betaNumerator,
             betaDenominator
@@ -236,7 +239,7 @@ contract Reward {
 
         // clear unclaim game
         uint index = rgm.index[game];
-        bytes32 lastGame = rgm.games[rgm.unclaim];
+        address lastGame = rgm.games[rgm.unclaim];
         rgm.games[index] = lastGame;
         rgm.games.pop();
         rgm.index[lastGame] = index;
@@ -258,8 +261,8 @@ contract Reward {
     }
 
     /// player collect reward in epoch and game
-    function playerCollect(uint256 epoch, address game, address player) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+    function playerCollect(uint256 epoch, address game, address player) public {
+        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         // prevent duplicated collect
@@ -271,12 +274,12 @@ contract Reward {
         GamePool storage gp = ep.gamePools[game];
         RunningGame storage rgp = ep.playerUnclaimedGames[player];
 
-        uint256 labor = gp.playerLaber[player].working;
+        uint256 labor = gp.playerLabor[player].working;
         uint256 amount = _cobbDouglas(
             gp.totalPlayerReward,
             labor,
             gp.totalWorking / 2,
-            gp.playerLaber[player].staking,
+            gp.playerLabor[player].staking,
             gp.totalPlayerStaking,
             gammaNumerator,
             gammaDenominator
@@ -289,7 +292,7 @@ contract Reward {
 
         // clear unclaim game
         uint index = rgp.index[game];
-        bytes32 lastGame = rgp.games[rgp.unclaim];
+        address lastGame = rgp.games[rgp.unclaim];
         rgp.games[index] = lastGame;
         rgp.games.pop();
         rgp.index[lastGame] = index;
@@ -312,13 +315,13 @@ contract Reward {
 
     /// miner batch collect all games in a epoch
     function minerBatchCollect(uint256 epoch, address miner) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         EpochPool storage ep = pools[epoch];
         RunningGame storage rgm = ep.minerUnclaimedGames[miner];
 
-        uint lastIndex = rgm.unclaimGames;
+        uint lastIndex = rgm.unclaim;
         for (uint i = lastIndex; i > 0; i--) {
             address game = rgm.games[i];
             minerCollect(epoch, game, miner);
@@ -327,13 +330,13 @@ contract Reward {
 
     /// player batch collect all games in a epoch
     function playerBatchCollect(uint256 epoch, address player) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         EpochPool storage ep = pools[epoch];
         RunningGame storage rgm = ep.playerUnclaimedGames[player];
 
-        uint lastIndex = rgm.unclaimGames;
+        uint lastIndex = rgm.unclaim;
         for (uint i = lastIndex; i > 0; i--) {
             address game = rgm.games[i];
             playerCollect(epoch, game, player);
@@ -354,7 +357,7 @@ contract Reward {
                 vesting.mine(epoch),
                 gm.work(game),
                 gm.totalWork(),
-                eg.totalStaking,
+                gp.totalStaking,
                 ep.totalGameStaking,
                 alphaNumerator,
                 alphaDenominator
