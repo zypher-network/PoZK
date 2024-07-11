@@ -3,18 +3,21 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./Epoch.sol";
-import "./Stake.sol";
-import "./GameMarket.sol";
-import "./Vesting.sol";
+import "./interface/IAddresses.sol";
+import "./interface/IEpoch.sol";
+import "./interface/IStake.sol";
+import "./interface/IReward.sol";
+import "./interface/IGameMarket.sol";
+import "./interface/IVesting.sol";
 import "./utils/FixedMath.sol";
 
 /**
  * @title Reward Contract
  */
-contract Reward is Ownable {
+contract Reward is Initializable, OwnableUpgradeable, IReward {
     using SafeERC20 for IERC20;
 
     struct StakerLabor {
@@ -58,12 +61,7 @@ contract Reward is Ownable {
         mapping(address => RunningGame) playerUnclaimedGames;
     }
 
-    // TODO
-    address stake;
-    address _epoch;
-    address vesting;
-    address gameMarket;
-    address taskMarket;
+    address addresses;
 
     mapping(uint256 => EpochPool) private pools;
 
@@ -107,7 +105,14 @@ contract Reward is Ownable {
     /// @notice Emitted when collect reward (stake) from pool
     event PlayerCollect(uint256 epoch, address game, address player, uint256 amount);
 
-    constructor() Ownable(msg.sender) {}
+    function initialize(address _addresses) public initializer {
+        __Ownable_init(msg.sender);
+        addresses = _addresses;
+    }
+
+    function setAddresses(address _addresses) external onlyOwner {
+        addresses = _addresses;
+    }
 
     /**
      * @notice Update the alpha for cobb-douglas function
@@ -149,11 +154,11 @@ contract Reward is Ownable {
     }
 
     function work(address game, address player, address miner) external {
-        require(msg.sender == taskMarket, "R01"); // only task contract
+        require(msg.sender == IAddresses(addresses).get(Contracts.TaskMarket), "R01"); // only task contract
 
-        Stake s = Stake(stake);
+        IStake s = IStake(IAddresses(addresses).get(Contracts.Stake));
 
-        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         EpochPool storage ep = pools[currentEpoch];
 
         GamePool storage gp = ep.gamePools[game];
@@ -209,7 +214,7 @@ contract Reward is Ownable {
 
     /// miner collect reward in epoch and game
     function minerCollect(uint256 epoch, address game, address miner) public {
-        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         // prevent duplicated collect
@@ -262,7 +267,7 @@ contract Reward is Ownable {
 
     /// player collect reward in epoch and game
     function playerCollect(uint256 epoch, address game, address player) public {
-        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         // prevent duplicated collect
@@ -315,7 +320,7 @@ contract Reward is Ownable {
 
     /// miner batch collect all games in a epoch
     function minerBatchCollect(uint256 epoch, address miner) external {
-        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         EpochPool storage ep = pools[epoch];
@@ -330,7 +335,7 @@ contract Reward is Ownable {
 
     /// player batch collect all games in a epoch
     function playerBatchCollect(uint256 epoch, address player) external {
-        uint256 currentEpoch = Epoch(_epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         EpochPool storage ep = pools[epoch];
@@ -350,8 +355,8 @@ contract Reward is Ownable {
         // check or collect game total reward,
         // and release epoch token to reward
         if (gp.totalMinerReward == 0 && gp.totalPlayerReward == 0) {
-            GameMarket gm = GameMarket(gameMarket);
-            Vesting vesting = Vesting(vesting);
+            IGameMarket gm = IGameMarket(IAddresses(addresses).get(Contracts.GameMarket));
+            IVesting vesting = IVesting(IAddresses(addresses).get(Contracts.Vesting));
 
             uint256 amount = _cobbDouglas(
                 vesting.mine(epoch),

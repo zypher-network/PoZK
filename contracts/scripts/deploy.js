@@ -8,14 +8,22 @@ const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
 const { writeFile } = require('fs');
 
+async function main() {
+  const Box = await ethers.getContractFactory("Box");
+  const box = await upgrades.deployProxy(Box, [42]);
+  await box.waitForDeployment();
+  console.log("Box deployed to:", await box.getAddress());
+}
+
 async function deployContractWithProxy(name, params=[]) {
   const Factory = await ethers.getContractFactory(name);
   //  use upgradeable deploy, then contracts can be upgraded success, otherwise will get error about ERC 1967 proxy
   const contract = await upgrades.deployProxy(Factory, params);
-  await contract.deployed();
-  console.log(`${name} address: ${contract.address}`);
+  await contract.waitForDeployment();
+  const address = await contract.getAddress();
+  console.log(`${name} address: ${address}`);
 
-  return contract;
+  return address;
 }
 
 async function deployContract(name, params=[]) {
@@ -30,30 +38,64 @@ async function deployContract(name, params=[]) {
 const ONE_TOKEN = 10000000000000000000n;
 
 async function deploy() {
-  // Zypher Game Coin & SimpleGame
   const token = await deployContract("Token", [1000000000n * ONE_TOKEN]); // 1,000,000,000 TOEKN
 
-  // min staking: 100 TOKEN
-  // player room lock: 100 TOKEN
-  // player limit: 4
-  // start room id: 10000
-  const game = await deployContract("SimpleGame", [token, 100n * ONE_TOKEN, 100n * ONE_TOKEN, 4, 10000]);
+  const addresses = await deployContractWithProxy("Addresses", []);
+  const vesting = await deployContractWithProxy("Vesting", [addresses, 1000n * ONE_TOKEN]);
+  const epoch = await deployContractWithProxy("Epoch", [addresses, 100]);
+  const stake = await deployContractWithProxy("Stake", [addresses]);
+  const reward = await deployContractWithProxy("Reward", [addresses]);
+  const gameMarket = await deployContractWithProxy("GameMarket", [addresses]);
+  const taskMarket = await deployContractWithProxy("TaskMarket", [addresses]);
+  const controller = await deployContractWithProxy("Controller", [addresses]);
 
-  const addresses = {
+  const addressesContract = await ethers.getContractFactory("Addresses");
+  const C = await addressesContract.attach(addresses);
+  await C.batchSet(
+    [
+      0, // Contracts.Token,
+      1, // Contracts.Vesting,
+      2, // Contracts.Epoch,
+      3, // Contracts.Stake,
+      4, // Contracts.Reward,
+      5, // Contracts.GameMarket,
+      6, // Contracts.TaskMarket,
+      7, // Contracts.Controller
+    ],
+    [
+      token,
+      vesting,
+      epoch,
+      stake,
+      reward,
+      gameMarket,
+      taskMarket,
+      controller
+    ]
+  );
+
+  const contracts = {
+    Addresses: addresses,
     Token: token,
-    RoomMarket: game,
-    SimpleGame: game,
+    Vesting: vesting,
+    Epoch: epoch,
+    Stake: stake,
+    Reward: reward,
+    GameMarket: gameMarket,
+    TaskMarket: taskMarket,
+    Controller: controller,
   };
-  // const filename = `../../public/${network.name}.json`;
-  // writeFile(
-  //   filename,
-  //   JSON.stringify(addresses, null, 2),
-  //   function(err) {
-  //     if (err) {
-  //       console.log(err);
-  //     }
-  //   });
-  // console.log(`Save to ${filename}`);
+
+  const filename = `../public/${network.name}.json`;
+  writeFile(
+    filename,
+    JSON.stringify(contracts, null, 2),
+    function(err) {
+      if (err) {
+        console.log(err);
+      }
+    });
+  console.log(`Save to ${filename}`);
 }
 
 async function main() {

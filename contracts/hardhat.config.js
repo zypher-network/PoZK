@@ -1,3 +1,4 @@
+require('@openzeppelin/hardhat-upgrades');
 require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-contract-sizer");
 require("hardhat-gas-reporter");

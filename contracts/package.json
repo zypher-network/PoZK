@@ -15,8 +15,11 @@
     "@openzeppelin/contracts-upgradeable": "^5.0.1"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.6",
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/hardhat-upgrades": "^3.2.0",
     "dotenv": "^16.3.1",
+    "ethers": "^6.13.1",
     "hardhat": "^2.19.4",
     "hardhat-contract-sizer": "^2.10.0",
     "hardhat-gas-reporter": "^1.0.9",

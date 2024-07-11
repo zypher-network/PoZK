@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract Epoch is Ownable {
+import "./interface/IEpoch.sol";
+
+contract Epoch is Initializable, OwnableUpgradeable, IEpoch {
+    address addresses;
+
     /// period time in seconds
     uint256 public period;
 
@@ -14,7 +19,15 @@ contract Epoch is Ownable {
     /// enter/esc maintenance mode
     bool public maintenance;
 
-    constructor() Ownable(msg.sender) {}
+    function initialize(address _addresses, uint256 _period) public initializer {
+        __Ownable_init(msg.sender);
+        addresses = _addresses;
+        period = _period;
+    }
+
+    function setAddresses(address _addresses) external onlyOwner {
+        addresses = _addresses;
+    }
 
     function setMaintenance(bool open) external onlyOwner {
         maintenance = open;

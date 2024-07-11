@@ -2,7 +2,7 @@ const { ethers, network } = require("hardhat");
 const { readFileSync } = require('fs');
 
 async function attachContract(name) {
-  const filename = `../../public/${network.name}.json`;
+  const filename = `../public/${network.name}.json`;
   const obj = JSON.parse(readFileSync(filename, 'utf8'));
   const address = obj[name];
 

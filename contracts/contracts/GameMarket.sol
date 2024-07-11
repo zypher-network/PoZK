@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./Epoch.sol";
+import "./interface/IAddresses.sol";
+import "./interface/IEpoch.sol";
+import "./interface/IGameMarket.sol";
 
-contract GameMarket is Ownable {
-    enum GameStatus {
-        Reviewing,
-        Working,
-        Upgrading,
-        Stopped
-    }
-
+contract GameMarket is Initializable, OwnableUpgradeable, IGameMarket {
     /// uint for staking/unstaking
     struct GameWork {
         uint256 value;
@@ -36,14 +32,13 @@ contract GameMarket is Ownable {
         string name;
     }
 
+    address addresses;
+
     /// total game work
     GameWork private gamesTotalWork;
 
     /// game list
     mapping(address => Game) private games;
-
-    // TODO
-    address epoch;
 
     event RegisterGame(address game, uint256 work, uint256 version, address verifier, string name);
     event TransferGame(address game, address owner);
@@ -51,7 +46,14 @@ contract GameMarket is Ownable {
     event ApproveGame(address game, uint256 work, uint256 version, address verifier, string name, bool minable, bool approved);
     event StopGame(address game);
 
-    constructor() Ownable(msg.sender) {}
+    function initialize(address _addresses) public initializer {
+        __Ownable_init(msg.sender);
+        addresses = _addresses;
+    }
+
+    function setAddresses(address _addresses) external onlyOwner {
+        addresses = _addresses;
+    }
 
     function register(address game, uint256 work, uint256 version, address verifier, string calldata name) external {
         require(games[game].version.value == 0 && version > 0, "G01");
@@ -78,7 +80,7 @@ contract GameMarket is Ownable {
 
     function upgrade(address game, uint256 work, uint256 version, address verifier, string calldata name) external {
         require(games[game].owner == msg.sender, "G02");
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         Game storage g = games[game];
         if (g.status == GameStatus.Working || g.status == GameStatus.Upgrading) {
@@ -123,7 +125,7 @@ contract GameMarket is Ownable {
         Game storage g = games[game];
         require(g.status == GameStatus.Reviewing || g.status == GameStatus.Upgrading, "G03");
 
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         g.minable  = minable;
 
@@ -165,8 +167,8 @@ contract GameMarket is Ownable {
         emit StopGame(game);
     }
 
-    function totalWork() external view returns(uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+    function totalWork() external view returns (uint256) {
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
 
         if (currentEpoch >= gamesTotalWork.newEpoch) {
             return gamesTotalWork.newValue;
@@ -175,8 +177,8 @@ contract GameMarket is Ownable {
         }
     }
 
-    function work(address game) external view returns(uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+    function work(address game) external view returns (uint256) {
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         GameWork storage w = games[game].work;
 
         if (currentEpoch >= w.newEpoch) {
@@ -186,8 +188,8 @@ contract GameMarket is Ownable {
         }
     }
 
-    function version(address game) external view returns(uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+    function version(address game) external view returns (uint256) {
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         GameWork storage v = games[game].version;
 
         if (currentEpoch >= v.newEpoch) {
@@ -197,8 +199,8 @@ contract GameMarket is Ownable {
         }
     }
 
-    function verifier(address game) external view returns(address) {
-        uint256 currentEpoch = Epoch(epoch).get();
+    function verifier(address game) external view returns (address) {
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         GameVerifier storage v = games[game].verifier;
 
         if (currentEpoch >= v.newEpoch) {

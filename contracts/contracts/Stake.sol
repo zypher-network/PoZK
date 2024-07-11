@@ -3,15 +3,18 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./Epoch.sol";
-import "./Vesting.sol";
+import "./interface/IAddresses.sol";
+import "./interface/IEpoch.sol";
+import "./interface/IVesting.sol";
+import "./interface/IStake.sol";
 
 /**
  * @title Stake Contract
  */
-contract Stake is Ownable {
+contract Stake is Initializable, OwnableUpgradeable, IStake {
     using SafeERC20 for IERC20;
 
     /// uint for staking/unstaking
@@ -33,6 +36,8 @@ contract Stake is Ownable {
         mapping(address => Staking) miners;
     }
 
+    address addresses;
+
     /// miner minStakeAmount
     uint256 public minStakeAmount;
 
@@ -47,16 +52,18 @@ contract Stake is Ownable {
     /// miners/players unstaking list
     mapping(address => Staking) private unstakings;
 
-    // TODO
-    address epoch;
-    address token;
-    address vesting;
-
     event GameStakeChange(uint256 epoch, address game, address account, int256 changed, uint256 total);
     event MinerStakeChange(uint256 epoch, address game, address account, int256 changed, uint256 total);
     event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 total);
 
-    constructor() Ownable(msg.sender) {}
+    function initialize(address _addresses) public initializer {
+        __Ownable_init(msg.sender);
+        addresses = _addresses;
+    }
+
+    function setAddresses(address _addresses) external onlyOwner {
+        addresses = _addresses;
+    }
 
     /// set minimum stake amount
     function setMinStakeAmount(uint256 _minStakeAmount) external onlyOwner {
@@ -67,7 +74,7 @@ contract Stake is Ownable {
 
     /// get total game staking
     function gameTotalStaking(address game) external view returns (uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
 
         Staking storage st = gamesStaking[game].gamerTotal;
 
@@ -85,10 +92,10 @@ contract Stake is Ownable {
 
     // stake by game self
     function gameStake(address game, uint256 amount) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), amount);
 
         // add to game stakers
         GameStaking storage gs = gamesStaking[game];
@@ -110,11 +117,11 @@ contract Stake is Ownable {
         GameStaking storage gs = gamesStaking[game];
         require(gs.gamers[msg.sender] >= amount, "S01");
 
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         gs.gamers[msg.sender] -= amount;
 
         // transfer to account
-        IERC20(token).transfer(msg.sender, amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(msg.sender, amount);
 
         // remove from total staking
         Staking storage st = gs.gamerTotal;
@@ -131,10 +138,10 @@ contract Stake is Ownable {
 
     /// get total miner staking
     function minerTotalStaking(address game) external view returns (uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = gamesStaking[game].minerTotal;
 
-        uint256 minersVesting = Vesting(vesting).minersTotal();
+        uint256 minersVesting = IVesting(IAddresses(addresses).get(Contracts.Vesting)).minersTotal();
 
         if (currentEpoch >= st.newEpoch) {
             return st.newValue + minersVesting;
@@ -145,10 +152,10 @@ contract Stake is Ownable {
 
     /// get miner staking
     function minerStaking(address game, address account) public view returns (uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = gamesStaking[game].miners[account];
 
-        uint256 minerVesting = Vesting(vesting).miner(account);
+        uint256 minerVesting = IVesting(IAddresses(addresses).get(Contracts.Vesting)).miner(account);
 
         if (currentEpoch >= st.newEpoch) {
             return st.newValue + minerVesting;
@@ -165,10 +172,10 @@ contract Stake is Ownable {
 
     // stake by miner
     function minerStake(address game, uint256 amount) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), amount);
 
         GameStaking storage gs = gamesStaking[game];
 
@@ -194,7 +201,7 @@ contract Stake is Ownable {
 
     // unstake by miner
     function minerUnStake(address game, uint256 amount) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         GameStaking storage gs = gamesStaking[game];
         Staking storage sm = gs.miners[msg.sender];
@@ -234,7 +241,7 @@ contract Stake is Ownable {
 
     /// get total player staking
     function playerTotalStaking() external view returns (uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = playerTotal;
 
         if (currentEpoch >= st.newEpoch) {
@@ -246,7 +253,7 @@ contract Stake is Ownable {
 
     /// get player staking
     function playerStaking(address account) external view returns (uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = playersStaking[account];
 
         if (currentEpoch >= st.newEpoch) {
@@ -258,10 +265,10 @@ contract Stake is Ownable {
 
     /// stake by player
     function playerStake(uint256 amount) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), amount);
 
         // add to staking
         Staking storage sp = playersStaking[msg.sender];
@@ -284,7 +291,7 @@ contract Stake is Ownable {
 
     /// unstake by player
     function playerUnStake(uint256 amount) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         Staking storage sp = playersStaking[msg.sender];
 
@@ -322,7 +329,7 @@ contract Stake is Ownable {
 
     /// get claimable unstaking amount
     function claimable(address account) external view returns (uint256) {
-        uint256 currentEpoch = Epoch(epoch).get();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage su = unstakings[account];
 
         if (currentEpoch >= su.newEpoch) {
@@ -334,7 +341,7 @@ contract Stake is Ownable {
 
     /// claim unstaking to account
     function claim(address account) external {
-        uint256 currentEpoch = Epoch(epoch).getAndUpdate();
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         Staking storage su = unstakings[account];
 
         uint256 amount = su.value;
@@ -347,6 +354,6 @@ contract Stake is Ownable {
         require(amount > 0, "S02");
 
         // transfer amount to account
-        IERC20(token).transfer(account, amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(account, amount);
     }
 }
