@@ -22,3 +22,8 @@ env_logger.workspace = true
 siwe = {workspace = true, features = ["serde"]}
 iri-string.workspace = true
 time.workspace = true
+db = { path = "../db" }
+
+
+[dev-dependencies]
+reqwest = { version = "0.12.5", features = ["json"] }
