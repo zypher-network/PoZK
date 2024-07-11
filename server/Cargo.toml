@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "api", "cli","docker", "monitor"]
+members = [ "api", "cli", "db", "docker", "monitor"]
 
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -26,3 +26,6 @@ sha2 = "0.9"
 jwt = "0.15.0"
 siwe = "0.6.1"
 iri-string = "0.7.2"
+redb = "2.1.1"
+async-trait = "0.1.72"
+bincode = "1.3.3"
