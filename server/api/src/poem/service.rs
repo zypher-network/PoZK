@@ -273,6 +273,33 @@ pub mod test {
     use std::time::Duration;
 
     #[test]
+    fn test_run() {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            let eth_cli = Provider::connect("http://127.0.0.1:8545").await;
+            let domain = Authority::from_str("0.0.0.0:8090").unwrap();
+            let db = {
+                let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
+                Arc::new(db)
+            };
+
+            let api = ApiService {
+                host: "0.0.0.0:8090".to_string(),
+                chain_id: 31337,
+                eth_cli,
+                domain,
+                db,
+            };
+            api.run().await.unwrap();
+
+            tokio::time::sleep(Duration::from_hours(1)).await;
+        })
+    }
+
+    #[test]
     fn test_login() {
         env_logger::init();
 
