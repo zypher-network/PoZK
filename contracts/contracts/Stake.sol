@@ -95,6 +95,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
+
         IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), amount);
 
         // add to game stakers

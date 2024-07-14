@@ -9,11 +9,15 @@ enum GameStatus {
 }
 
 interface IGameMarket {
+    function isGame(address game) external view returns (bool);
+
     function totalWork() external view returns (uint256);
 
     function work(address game) external view returns (uint256);
 
     function version(address game) external view returns (uint256);
+
+    function overtime(address game) external view returns (uint256);
 
     function verifier(address game) external view returns (address);
 }
