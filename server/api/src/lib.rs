@@ -1,4 +1,4 @@
-#![feature(duration_constructors)]
+
 extern crate core;
 
 mod config;

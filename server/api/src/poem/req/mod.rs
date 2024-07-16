@@ -1,6 +1,11 @@
 mod controller;
 mod login;
-pub use controller::{ControllerAddParam, ControllerAddReq, ControllerSetParam, ControllerSetReq};
+mod prover;
+pub use prover::{
+    ImagesUpdateReq, ContainerNewReq
+};
+
+pub use controller::{ControllerAddParam, ControllerAddReq, ControllerSetReq};
 
 pub use login::{LoginReq, LoginReqParam};
 use serde::Deserialize;

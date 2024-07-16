@@ -32,13 +32,13 @@ pub struct ControllerSetReq {
     pub address: String,
 }
 
-pub struct ControllerSetParam {
-    pub address: Address,
-}
-
-impl ControllerSetReq {
-    pub fn to_param(&self) -> Result<ControllerSetParam> {
-        let address = Address::from_str(&self.address)?;
-        Ok(ControllerSetParam { address })
-    }
-}
+// pub struct ControllerSetParam {
+//     pub address: Address,
+// }
+//
+// impl ControllerSetReq {
+//     pub fn to_param(&self) -> Result<ControllerSetParam> {
+//         let address = Address::from_str(&self.address)?;
+//         Ok(ControllerSetParam { address })
+//     }
+// }

@@ -18,12 +18,14 @@ once_cell.workspace = true
 hmac.workspace = true
 sha2.workspace = true
 jwt.workspace = true
-env_logger.workspace = true
+
 siwe = {workspace = true, features = ["serde"]}
 iri-string.workspace = true
 time.workspace = true
 db = { path = "../db" }
+docker = { path = "../docker" }
 
 
 [dev-dependencies]
-reqwest = { version = "0.12.5", features = ["json"] }
+reqwest.workspace = true
+env_logger.workspace = true
