@@ -1,7 +1,5 @@
 mod service;
-pub use service::{
-    DockerManager, ContainerNewOption, Expose, ImageInfo, ContainerInfo
-};
+pub use service::{ContainerInfo, ContainerNewOption, DockerManager, Expose, ImageInfo};
 
 #[cfg(test)]
 mod tests {
@@ -17,7 +15,9 @@ mod tests {
         rt.block_on(async {
             let docker = Docker::new();
 
-            let pull_options = PullOptions::builder().image("ghcr.io/rollkit/celestia-da:v0.12.10").build();
+            let pull_options = PullOptions::builder()
+                .image("ghcr.io/rollkit/celestia-da:v0.12.10")
+                .build();
             let mut pull_stream = docker.images().pull(&pull_options);
             while let Some(pull_result) = pull_stream.next().await {
                 match pull_result {
@@ -26,15 +26,16 @@ mod tests {
                 }
             }
 
-            let container_options = ContainerOptions::builder("ghcr.io/rollkit/celestia-da:v0.12.10")
-                // .memory(512 * 1024 * 1024)
-                // .cpu_shares(100_000)
-                // .cpus(1.0)
-                .expose(26650, "tcp", 26650)
-                .expose(26659, "tcp", 26659)
-                .expose(26658, "tcp", 26658)
-                .name("minner-celestia-latest")
-                .build();
+            let container_options =
+                ContainerOptions::builder("ghcr.io/rollkit/celestia-da:v0.12.10")
+                    // .memory(512 * 1024 * 1024)
+                    // .cpu_shares(100_000)
+                    // .cpus(1.0)
+                    .expose(26650, "tcp", 26650)
+                    .expose(26659, "tcp", 26659)
+                    .expose(26658, "tcp", 26658)
+                    .name("minner-celestia-latest")
+                    .build();
 
             println!("container_options: {container_options:?}");
 

@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-use shiplift::{ContainerOptions, Docker, Error, ImageListOptions, PullOptions, RmContainerOptions};
 use anyhow::{anyhow, Result};
 use futures_util::StreamExt;
 use poem_openapi::Object;
@@ -7,6 +5,10 @@ use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use shiplift::rep::{Container, ContainerCreateInfo, ContainerDetails, Image, ImageDetails};
+use shiplift::{
+    ContainerOptions, Docker, Error, ImageListOptions, PullOptions, RmContainerOptions,
+};
+use std::collections::BTreeMap;
 
 #[derive(Clone)]
 pub struct DockerManager {
@@ -63,15 +65,19 @@ impl DockerManager {
         let docker = Docker::new();
         let client = Client::new();
         let map = BTreeMap::new();
-        Ok(Self{ docker, docker_images: map, update_url: update_url.to_string(), req_client: client})
+        Ok(Self {
+            docker,
+            docker_images: map,
+            update_url: update_url.to_string(),
+            req_client: client,
+        })
     }
 
     pub async fn update_images(&self, url: Option<String>) -> Result<BTreeMap<String, String>> {
-
         let url = if let Some(url) = url {
             url
         } else {
-          self.update_url.clone()
+            self.update_url.clone()
         };
 
         let req = self.req_client.get(&url).build()?;
@@ -86,7 +92,6 @@ impl DockerManager {
             let msg = String::from_utf8(body.to_vec())?;
             Err(anyhow!("update images fail: {msg}, url: {url}"))
         }
-
     }
 
     pub async fn pull_images(&self, image: &str, tag: &str) -> Result<()> {
@@ -97,26 +102,31 @@ impl DockerManager {
             match pull_result {
                 Ok(v) => {
                     log::info!("pull image: {v:?}");
-                },
+                }
                 Err(e) => {
                     log::error!("pull image: {e:?}");
                     return Err(anyhow!("pull image repo_tag:{repo_tag}, err: {e:?}"));
-                },
+                }
             }
         }
 
         Ok(())
     }
 
-    pub async fn new_container(&self, image: &str, tag: &str, option: &ContainerNewOption) -> Result<ContainerCreateInfo> {
+    pub async fn new_container(
+        &self,
+        image: &str,
+        tag: &str,
+        option: &ContainerNewOption,
+    ) -> Result<ContainerCreateInfo> {
         if !self.image_exist(image, tag).await? {
             self.pull_images(image, tag).await?;
         }
 
         let repo_tag = format!("{image}:{tag}");
-        let name = format!("minner-{}-{tag}", image.replace("/","-"));
+        let name = format!("minner-{}-{tag}", image.replace("/", "-"));
 
-        let mut container_options_builder =  ContainerOptions::builder(&repo_tag);
+        let mut container_options_builder = ContainerOptions::builder(&repo_tag);
         let mut container_options_builder_mut = container_options_builder.name(&name);
 
         if let Some(memory) = option.memory {
@@ -129,7 +139,8 @@ impl DockerManager {
 
         if let Some(list) = &option.expose {
             for e in list {
-                container_options_builder_mut = container_options_builder_mut.expose(e.src_port, &e.protocol, e.host_port);
+                container_options_builder_mut =
+                    container_options_builder_mut.expose(e.src_port, &e.protocol, e.host_port);
             }
         }
 
@@ -146,7 +157,7 @@ impl DockerManager {
 
             let volumes = volumes
                 .into_iter()
-                .map(|v|format!("{}:{}", v.host_volumes, v.src_volumes))
+                .map(|v| format!("{}:{}", v.host_volumes, v.src_volumes))
                 .collect::<Vec<_>>();
             let volumes = convert_to_vec_of_strs(&volumes);
             container_options_builder_mut = container_options_builder_mut.volumes(volumes);
@@ -161,11 +172,12 @@ impl DockerManager {
 
         log::debug!("container_options: {container_options:?}");
 
-        let container = self.docker
+        let container = self
+            .docker
             .containers()
             .create(&container_options)
             .await
-            .map_err(|e|{
+            .map_err(|e| {
                 match &e {
                     Error::Fault { code, message } => {
                         log::error!("create container: {code}, {message}");
@@ -178,20 +190,28 @@ impl DockerManager {
         Ok(container)
     }
 
-
     pub async fn remove_container(&self, id: &str) -> Result<()> {
         let container = self.docker.containers().get(id);
-        container.remove(RmContainerOptions::default()).await.map_err(|e|anyhow!("remove container : {e:?}"))
+        container
+            .remove(RmContainerOptions::default())
+            .await
+            .map_err(|e| anyhow!("remove container : {e:?}"))
     }
 
     pub async fn start_container(&self, id: &str) -> Result<()> {
         let container = self.docker.containers().get(id);
-        container.start().await.map_err(|e|anyhow!("start container : {e:?}"))
+        container
+            .start()
+            .await
+            .map_err(|e| anyhow!("start container : {e:?}"))
     }
 
     pub async fn stop_container(&self, id: &str) -> Result<()> {
         let container = self.docker.containers().get(id);
-        container.stop(None).await.map_err(|e|anyhow!("stop container : {e:?}"))
+        container
+            .stop(None)
+            .await
+            .map_err(|e| anyhow!("stop container : {e:?}"))
     }
 
     pub async fn image_list(&self, from: usize, size: usize) -> Result<Vec<ImageInfo>> {
@@ -209,7 +229,10 @@ impl DockerManager {
             let image = images.get(&i.id);
             let details = image.inspect().await?;
 
-            list.push(ImageInfo{ image: Some(i), details })
+            list.push(ImageInfo {
+                image: Some(i),
+                details,
+            })
         }
 
         Ok(list)
@@ -231,9 +254,11 @@ impl DockerManager {
 
             let details = container.inspect().await?;
 
-            list.push(ContainerInfo{ container: Some(c), details })
+            list.push(ContainerInfo {
+                container: Some(c),
+                details,
+            })
         }
-
 
         Ok(list)
     }
@@ -242,37 +267,40 @@ impl DockerManager {
         let containers = self.docker.containers();
         let container = containers.get(id);
         let details = container.inspect().await?;
-        let c = containers.list(&Default::default()).await?.iter().find_map(|c|{
-            if c.id == id {
-                Some(c.clone())
-            } else {
-                None
-            }
-        });
+        let c = containers
+            .list(&Default::default())
+            .await?
+            .iter()
+            .find_map(|c| if c.id == id { Some(c.clone()) } else { None });
 
-        return Ok(ContainerInfo{ container: c, details, })
+        return Ok(ContainerInfo {
+            container: c,
+            details,
+        });
     }
 
     pub async fn image_info(&self, id: &str) -> Result<ImageInfo> {
         let images = self.docker.images();
         let image = images.get(id);
         let details = image.inspect().await?;
-        let i = images.list(&Default::default()).await?.iter().find_map(|i|{
-            if i.id == id {
-                Some(i.clone())
-            } else {
-                None
-            }
-        });
+        let i = images
+            .list(&Default::default())
+            .await?
+            .iter()
+            .find_map(|i| if i.id == id { Some(i.clone()) } else { None });
 
-        Ok(ImageInfo{ image: i, details })
+        Ok(ImageInfo { image: i, details })
     }
 
     async fn image_exist(&self, image: &str, tag: &str) -> Result<bool> {
         let repo_tag = format!("{image}:{tag}");
-        let images = self.docker.images().list(&ImageListOptions::default()).await?;
+        let images = self
+            .docker
+            .images()
+            .list(&ImageListOptions::default())
+            .await?;
 
-        let op = images.iter().find(|image|{
+        let op = images.iter().find(|image| {
             let op = if let Some(list) = &image.repo_tags {
                 list.iter().find(|v| v == &&repo_tag)
             } else {
@@ -292,26 +320,28 @@ impl DockerManager {
             Ok(false)
         }
     }
-
 }
 
 #[cfg(test)]
 mod test {
+    use crate::service::Volumes;
+    use crate::{ContainerNewOption, DockerManager, Expose};
+    use poem::listener::TcpListener;
+    use poem::{Route, Server};
+    use poem_openapi::payload::PlainText;
+    use poem_openapi::{OpenApi, OpenApiService};
+    use serde_json::json;
     use std::collections::BTreeMap;
     use std::time::Duration;
-    use crate::{ContainerNewOption, DockerManager, Expose};
-    use poem::{Route, Server};
-    use poem::listener::TcpListener;
-    use poem_openapi::{OpenApi, OpenApiService};
-    use poem_openapi::payload::PlainText;
-    use serde_json::json;
-    use crate::service::Volumes;
 
     static DOCKER_MANAGER_UPDATE_URL: &str = "http://127.0.0.1:9900/api/images";
 
     #[test]
     fn test_image_list() {
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
         rt.block_on(async {
             let dm = DockerManager::new("").unwrap();
             let list = dm.image_list(0, 10).await.unwrap();
@@ -322,7 +352,10 @@ mod test {
 
     #[test]
     fn test_container_list() {
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
         rt.block_on(async {
             let dm = DockerManager::new("").unwrap();
             let list = dm.container_list(0, 10).await.unwrap();
@@ -340,7 +373,6 @@ mod test {
             .build()
             .unwrap();
         rt.block_on(async {
-
             // run docker images server
             tokio::spawn(async {
                 docker_images_server().await;
@@ -364,18 +396,16 @@ mod test {
                     list.push("POSTGRES_PASSWORD=1".to_string());
                     list
                 };
-                let op = ContainerNewOption{
+                let op = ContainerNewOption {
                     cpu_shares: None,
                     cpus: None,
                     env: Some(env),
                     cmd: None,
-                    expose: Some(vec![
-                        Expose{
-                            src_port: 5432,
-                            protocol: "tcp".to_string(),
-                            host_port: 5432,
-                        }
-                    ]),
+                    expose: Some(vec![Expose {
+                        src_port: 5432,
+                        protocol: "tcp".to_string(),
+                        host_port: 5432,
+                    }]),
                     memory: None,
                     volumes: None,
                 };
@@ -402,7 +432,7 @@ mod test {
 
             // 6. remove
             dm.remove_container(&cc_info.id).await.unwrap();
-            let container_list = dm.container_list(0,10).await.unwrap();
+            let container_list = dm.container_list(0, 10).await.unwrap();
             println!("container list: {:?}", container_list);
         })
     }
@@ -417,7 +447,6 @@ mod test {
     */
     #[test]
     fn test_run_celestia() {
-
         env_logger::init();
 
         let rt = tokio::runtime::Builder::new_current_thread()
@@ -460,37 +489,37 @@ mod test {
                     "P2P_NETWORK=mocha".to_string(),
                 ];
 
-
-                let op = ContainerNewOption{
+                let op = ContainerNewOption {
                     cpu_shares: None,
                     cpus: None,
                     env: Some(env),
                     cmd: Some(cmd),
                     expose: Some(vec![
-                        Expose{
+                        Expose {
                             src_port: 26650,
                             protocol: "tcp".to_string(),
                             host_port: 26650,
                         },
-                        Expose{
+                        Expose {
                             src_port: 26658,
                             protocol: "tcp".to_string(),
                             host_port: 26658,
                         },
-                        Expose{
+                        Expose {
                             src_port: 26659,
                             protocol: "tcp".to_string(),
                             host_port: 26659,
-                        }
+                        },
                     ]),
                     memory: None,
                     // volumes: None,
-                    volumes: Some(vec![
-                        Volumes{
-                            src_volumes: "/home/celestia/.celestia-light-mocha-4".to_string(),
-                            host_volumes: format!("{}/.celestia-light-mocha-4", std::env::var("HOME").unwrap())
-                        }
-                    ]),
+                    volumes: Some(vec![Volumes {
+                        src_volumes: "/home/celestia/.celestia-light-mocha-4".to_string(),
+                        host_volumes: format!(
+                            "{}/.celestia-light-mocha-4",
+                            std::env::var("HOME").unwrap()
+                        ),
+                    }]),
                 };
 
                 (repo, tag, op)
@@ -520,12 +549,11 @@ mod test {
         });
     }
 
-
     async fn docker_images_server() {
         struct Api;
 
         #[OpenApi]
-        impl Api{
+        impl Api {
             #[oai(path = "/images", method = "get")]
             async fn index(&self) -> PlainText<String> {
                 let json = json!({
