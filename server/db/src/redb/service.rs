@@ -80,4 +80,17 @@ impl ReDB {
 
         Ok(list)
     }
+
+    pub async fn controller_set_entry(&self) -> Result<(ControllerKey, ControllerValue)> {
+        let key = self.query_controller_set().await?;
+        let txn = self.db.begin_read()?;
+
+        let table = txn.open_table(CONTROLLER_TABLE)?;
+
+        let Some(val) = table.get(&key)? else {
+            return Err(anyhow!("set key: {:?} not match val", key.0));
+        };
+
+        Ok((key, val.value()))
+    }
 }
