@@ -14,6 +14,7 @@ const LOCAL_SK1 = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2f
 module.exports = {
   docgen: {
     exclude: ["utils", "interface"],
+    pages: "files",
   },
   networks: {
     hardhat: {
