@@ -52,9 +52,13 @@ pub struct ApiService {
 
 #[OpenApi]
 impl ApiService {
-    pub async fn new(cfg: &Config, db: Arc<ReDB>, docker_manager: DockerManager) -> Result<Self> {
+    pub async fn new(
+        cfg: &Config,
+        db: Arc<ReDB>,
+        docker_manager: DockerManager,
+        eth_cli: Provider<Http>,
+    ) -> Result<Self> {
         let host = format!("{}:{}", cfg.host, cfg.port);
-        let eth_cli = Provider::<Http>::connect(&cfg.endpoint).await;
         let domain = Authority::from_str(&cfg.domain)?;
 
         Ok(Self {
@@ -163,12 +167,12 @@ impl ApiService {
         log::debug!("[controller/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let list = self.db.controller_list(begin, take_count).await?;
-            let data = serde_json::to_value(list).map_err(|e| {
-                log::error!("controller list to value err: {e:?}");
-                anyhow!("controller list to value err: {e:?}")
-            })?;
-            data
+            let res = self.db.controller_list(begin, take_count).await?;
+
+            json!({
+                "data": res.data,
+                "total": res.total
+            })
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
@@ -276,9 +280,12 @@ impl ApiService {
         log::debug!("[image/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let list = self.docker_manager.image_list(begin, take_count).await?;
-            serde_json::to_value(&list)
-                .map_err(|e| anyhow!("parse image list to data err: {e:?}"))?
+            let res = self.docker_manager.image_list(begin, take_count).await?;
+
+            json!({
+                "data": res.data,
+                "total": res.total
+            })
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
@@ -395,12 +402,16 @@ impl ApiService {
         log::debug!("[container/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let list = self
+            let res = self
                 .docker_manager
                 .container_list(begin, take_count)
                 .await?;
-            serde_json::to_value(&list)
-                .map_err(|e| anyhow!("parse container list to data err: {e:?}"))?
+            // serde_json::to_value(&list)
+            //     .map_err(|e| anyhow!("parse container list to data err: {e:?}"))?
+            json!({
+                "data": res.data,
+                "total": res.total
+            })
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))

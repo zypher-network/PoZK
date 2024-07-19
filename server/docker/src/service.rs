@@ -25,9 +25,21 @@ pub struct ImageInfo {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ImageInfoList {
+    pub data: Vec<ImageInfo>,
+    pub total: usize,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ContainerInfo {
     pub container: Option<Container>,
     pub details: ContainerDetails,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ContainerInfoList {
+    pub data: Vec<ContainerInfo>,
+    pub total: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
@@ -214,18 +226,17 @@ impl DockerManager {
             .map_err(|e| anyhow!("stop container : {e:?}"))
     }
 
-    pub async fn image_list(&self, from: usize, size: usize) -> Result<Vec<ImageInfo>> {
+    pub async fn image_list(&self, from: usize, size: usize) -> Result<ImageInfoList> {
         let images = self.docker.images();
-        let image_list = images
-            .list(&ImageListOptions::default())
-            .await?
-            .into_iter()
-            .skip(from)
-            .take(size);
+        let image_list = images.list(&ImageListOptions::default()).await?;
+
+        let total = image_list.len();
+
+        let image_list_pagination = image_list.into_iter().skip(from).take(size);
 
         let mut list = vec![];
 
-        for i in image_list {
+        for i in image_list_pagination {
             let image = images.get(&i.id);
             let details = image.inspect().await?;
 
@@ -235,21 +246,18 @@ impl DockerManager {
             })
         }
 
-        Ok(list)
+        Ok(ImageInfoList { data: list, total })
     }
 
-    pub async fn container_list(&self, from: usize, size: usize) -> Result<Vec<ContainerInfo>> {
+    pub async fn container_list(&self, from: usize, size: usize) -> Result<ContainerInfoList> {
         let containers = self.docker.containers();
-        let container_list = containers
-            .list(&Default::default())
-            .await?
-            .into_iter()
-            .skip(from)
-            .take(size);
+        let container_list = containers.list(&Default::default()).await?;
+        let total = container_list.len();
+        let container_list_pagination = container_list.into_iter().skip(from).take(size);
 
         let mut list = vec![];
 
-        for c in container_list {
+        for c in container_list_pagination {
             let container = containers.get(&c.id);
 
             let details = container.inspect().await?;
@@ -260,7 +268,7 @@ impl DockerManager {
             })
         }
 
-        Ok(list)
+        Ok(ContainerInfoList { data: list, total })
     }
 
     pub async fn container_info(&self, id: &str) -> Result<ContainerInfo> {
@@ -292,7 +300,7 @@ impl DockerManager {
         Ok(ImageInfo { image: i, details })
     }
 
-    async fn image_exist(&self, image: &str, tag: &str) -> Result<bool> {
+    pub async fn image_exist(&self, image: &str, tag: &str) -> Result<bool> {
         let repo_tag = format!("{image}:{tag}");
         let images = self
             .docker

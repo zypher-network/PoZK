@@ -2,5 +2,20 @@
 name = "monitor"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
+anyhow = { workspace = true, features = ["backtrace"] }
+tokio.workspace = true
+db = { path = "../db" }
+serde_json.workspace = true
+serde.workspace = true
+log.worspace = true
+ethers.workspace = true
+clap.workspace = true
+docker = { path = "../docker" }
+
+[dev-dependencies]
+
+[build-dependencies]
+serde_json.workspace = true

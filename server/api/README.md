@@ -128,10 +128,13 @@ authorization error
 ```jsonc
 {
   "code": 0,
-  "data": [
-    "0x0afa050c5d068d3d569daa5e50c440e231549141",
-    "0x1f84ab26cbda7d70c32171382873d9c2a4a234c2"
-  ],
+  "data": {
+    "data": [
+        "0x0afa050c5d068d3d569daa5e50c440e231549141",
+        "0x1f84ab26cbda7d70c32171382873d9c2a4a234c2"
+    ],
+    "total": 2
+  },
   "msg": null,
   "uid": "5966b408-8ac5-4f7a-bc80-679df6100430"
 }
