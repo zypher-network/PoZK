@@ -2,6 +2,7 @@ require('@openzeppelin/hardhat-upgrades');
 require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-contract-sizer");
 require("hardhat-gas-reporter");
+require("solidity-docgen");
 require("dotenv").config();
 
 const SECRET_KEY = process.env.SECRET_KEY ?? '';
@@ -11,6 +12,9 @@ const LOCAL_SK1 = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2f
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
+  docgen: {
+    exclude: ["utils", "interface"],
+  },
   networks: {
     hardhat: {
       mining: {

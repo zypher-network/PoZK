@@ -14,18 +14,19 @@ import "./interface/IGameMarket.sol";
 import "./interface/IVesting.sol";
 import "./utils/FixedMath.sol";
 
-/**
- * @title Reward Contract
- */
+/// @notice Reward Contract for reward distribute and claim, miner & player can get reward,
+/// when they play game and prove zkp, all of them can get reward,
+/// use cobb-douglas function for work and labor
 contract Reward is Initializable, OwnableUpgradeable, IReward {
     using SafeERC20 for IERC20;
 
+    /// @notice The unit struct of stake and labor
     struct StakerLabor {
         uint256 staking;
         uint256 working;
     }
 
-    /// @notice Game pool
+    /// @notice The struct of game pool
     struct GamePool {
         /// miner + player work (double)
         uint256 totalWorking;
@@ -46,6 +47,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         mapping(address => StakerLabor) playerLabor;
     }
 
+    /// @notice The struct of a game status
     struct RunningGame {
         uint unclaim;
         // first is 0 for better use
@@ -53,6 +55,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         mapping(address => uint) index;
     }
 
+    /// @notice The struct of the epoch status
     struct EpochPool {
         uint256 unclaim;
         uint256 totalGameStaking;
@@ -61,29 +64,30 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         mapping(address => RunningGame) playerUnclaimedGames;
     }
 
+    /// @notice Common Addresses contract
     address addresses;
 
+    /// @notice Store all epoch games
     mapping(uint256 => EpochPool) private pools;
 
-    /// @notice the numerator of Percentage of the game stake and labor (1-alpha) in the total
+    /// @notice The numerator of Percentage of the game stake and labor (1-alpha) in the total
     int256 public alphaNumerator;
 
-    /// @notice the denominator of the alpha
+    /// @notice The denominator of the alpha
     int256 public alphaDenominator;
 
-    /// @notice the numerator of Percentage of the miner stake and labor (1-beta) in the total
+    /// @notice The numerator of Percentage of the miner stake and labor (1-beta) in the total
     int256 public betaNumerator;
 
-    /// @notice the denominator of the beta
+    /// @notice The denominator of the beta
     int256 public betaDenominator;
 
-    /// @notice the numerator of Percentage of the player stake and labor (1-beta) in the total
+    /// @notice The numerator of Percentage of the player stake and labor (1-beta) in the total
     int256 public gammaNumerator;
 
-    /// @notice the denominator of the gamma
+    /// @notice The denominator of the gamma
     int256 public gammaDenominator;
 
-    /// @dev ### EVENTS
     /// @notice Emitted when update the alpha for cobb-douglas function
     event Alpha(int256 alphaNumerator, int256 alphaDenominator);
 
@@ -105,20 +109,22 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     /// @notice Emitted when collect reward (stake) from pool
     event PlayerCollect(uint256 epoch, address game, address player, uint256 amount);
 
+    /// @notice Initialize
+    /// @param _addresses the Addresses contract
     function initialize(address _addresses) public initializer {
         __Ownable_init(msg.sender);
         addresses = _addresses;
     }
 
+    /// @notice Set the Addresses contract
+    /// @param _addresses the Addresses contract
     function setAddresses(address _addresses) external onlyOwner {
         addresses = _addresses;
     }
 
-    /**
-     * @notice Update the alpha for cobb-douglas function
-     * @param _alphaNumerator the numerator of the alpha
-     * @param _alphaDenominator the denominator of the alpha
-     */
+    /// @notice Update the alpha for cobb-douglas function
+    /// @param _alphaNumerator the numerator of the alpha
+    /// @param _alphaDenominator the denominator of the alpha
     function setAlpha(int256 _alphaNumerator, int256 _alphaDenominator) public onlyOwner {
         require(_alphaNumerator > 0 && _alphaDenominator > 0, 'R01');
         alphaNumerator = _alphaNumerator;
@@ -127,11 +133,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         emit Alpha(alphaNumerator, alphaDenominator);
     }
 
-    /**
-     * @notice Update the beta for cobb-douglas function
-     * @param _betaNumerator the numerator of the beta
-     * @param _betaDenominator the denominator of the beta
-     */
+    /// @notice Update the beta for cobb-douglas function
+    /// @param _betaNumerator the numerator of the beta
+    /// @param _betaDenominator the denominator of the beta
     function setBeta(int256 _betaNumerator, int256 _betaDenominator) public onlyOwner {
         require(_betaNumerator > 0 && _betaDenominator > 0, 'R01');
         betaNumerator = _betaNumerator;
@@ -140,11 +144,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         emit Beta(betaNumerator, betaDenominator);
     }
 
-    /**
-     * @notice Update the gamma for cobb-douglas function
-     * @param _gammaNumerator the numerator of the gamma
-     * @param _gammaDenominator the denominator of the gamma
-     */
+    /// @notice Update the gamma for cobb-douglas function
+    /// @param _gammaNumerator the numerator of the gamma
+    /// @param _gammaDenominator the denominator of the gamma
     function setGamma(int256 _gammaNumerator, int256 _gammaDenominator) public onlyOwner {
         require(_gammaNumerator > 0 && _gammaDenominator > 0, 'R01');
         gammaNumerator = _gammaNumerator;
@@ -153,6 +155,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         emit Gamma(gammaNumerator, gammaDenominator);
     }
 
+    /// @notice Add work(labor) to current epoch & game, only call from TaskMarket
+    /// @param game the game address
+    /// @param player player account
+    /// @param miner miner account
     function work(address game, address player, address miner) external {
         require(msg.sender == IAddresses(addresses).get(Contracts.TaskMarket), "R01"); // only task contract
 
@@ -212,7 +218,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         emit PlayerLabor(currentEpoch, game, player, gp.playerLabor[player].working);
     }
 
-    /// miner collect reward in epoch and game
+    /// @notice Miner collect reward in epoch and game, collect reward to unstaking list
+    /// @param epoch the epoch height
+    /// @param game the game address
+    /// @param miner the miner account
     function minerCollect(uint256 epoch, address game, address miner) public {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
@@ -265,7 +274,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         emit MinerCollect(epoch, game, miner, amount);
     }
 
-    /// player collect reward in epoch and game
+    /// @notice Player collect reward in epoch and game, collect to player wallet
+    /// @param epoch the epoch height
+    /// @param game the game address
+    /// @param player the player account
     function playerCollect(uint256 epoch, address game, address player) public {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
@@ -318,7 +330,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         emit PlayerCollect(epoch, game, player, amount);
     }
 
-    /// miner batch collect all games in a epoch
+    /// @notice Miner batch collect all games in a epoch
+    /// @param epoch the epoch height
+    /// @param miner the miner account
     function minerBatchCollect(uint256 epoch, address miner) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
@@ -333,7 +347,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         }
     }
 
-    /// player batch collect all games in a epoch
+    /// @notice Player batch collect all games in a epoch
+    /// @param epoch the epoch height
+    /// @param player the player account
     function playerBatchCollect(uint256 epoch, address player) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
@@ -348,6 +364,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         }
     }
 
+    /// @notice private function about claim reward
+    /// @param epoch the epoch height
+    /// @param game the game address
     function _claimGameRewards(uint256 epoch, address game) private {
         EpochPool storage ep = pools[epoch];
         GamePool storage gp = ep.gamePools[game];
@@ -377,6 +396,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         }
     }
 
+    /// @notice private function about clear pool
+    /// @param epoch the epoch height
+    /// @param game the game address
     function _clearPool(uint256 epoch, address game) private {
         EpochPool storage ep = pools[epoch];
         GamePool storage gp = ep.gamePools[game];
@@ -399,14 +421,14 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     }
 
     /// @notice The cobb-doublas function has the form:
-    /// @notice `reward * feeRatio ^ alpha * stakeRatio ^ (1-alpha)`
-    /// @notice This is equivalent to:
-    /// @notice `reward * stakeRatio * e^(alpha * (ln(feeRatio / stakeRatio)))`
-    /// @notice However, because `ln(x)` has the domain of `0 < x < 1`
-    /// @notice and `exp(x)` has the domain of `x < 0`,
-    /// @notice and fixed-point math easily overflows with multiplication,
-    /// @notice we will choose the following if `stakeRatio > feeRatio`:
-    /// @notice `reward * stakeRatio / e^(alpha * (ln(stakeRatio / feeRatio)))`
+    /// `reward * feeRatio ^ alpha * stakeRatio ^ (1-alpha)`
+    /// This is equivalent to:
+    /// `reward * stakeRatio * e^(alpha * (ln(feeRatio / stakeRatio)))`
+    /// However, because `ln(x)` has the domain of `0 < x < 1`
+    /// and `exp(x)` has the domain of `x < 0`,
+    /// and fixed-point math easily overflows with multiplication,
+    /// we will choose the following if `stakeRatio > feeRatio`:
+    /// `reward * stakeRatio / e^(alpha * (ln(stakeRatio / feeRatio)))`
     function _cobbDouglas(
         uint256 reward,
         uint256 myLabor,

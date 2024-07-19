@@ -11,68 +11,82 @@ import "./interface/IEpoch.sol";
 import "./interface/IVesting.sol";
 import "./interface/IStake.sol";
 
-/**
- * @title Stake Contract
- */
+
+/// @notice Stake Contract, including player, miner & game,
+/// every change will work in next epoch, and unstake can claim in next epoch
 contract Stake is Initializable, OwnableUpgradeable, IStake {
     using SafeERC20 for IERC20;
 
-    /// uint for staking/unstaking
+    /// @notice Unit struct about staking/unstaking
     struct Staking {
         uint256 value;
         uint256 newValue;
         uint256 newEpoch;
     }
 
-    /// staking in a game
+    /// @notice Unit struct about staking in a game
     struct GameStaking {
-        /// game self total staking
+        /// @notice Game self total staking
         Staking gamerTotal;
-        /// game self staking list
+        /// @notice Game self staking list
         mapping(address => uint256) gamers;
-        /// miner total staking
+        /// @notice Miner total staking
         Staking minerTotal;
-        /// miner staking list
+        /// @notice Miner staking list
         mapping(address => Staking) miners;
     }
 
+    /// @notice Common Addresses contract
     address addresses;
 
-    /// miner minStakeAmount
+    /// @notice Miner minStakeAmount
     uint256 public minStakeAmount;
 
-    /// game => game staking
+    /// @notice Store all games staking
     mapping(address => GameStaking) private gamesStaking;
 
-    /// player total staking
+    /// @notice Total players staking
     Staking private playerTotal;
-    /// player => staking
+
+    /// @notice Store all players staking
     mapping(address => Staking) private playersStaking;
 
-    /// miners/players unstaking list
+    /// @notice Store miners/players unstaking list
     mapping(address => Staking) private unstakings;
 
+    /// @notice Emit when game staking change
     event GameStakeChange(uint256 epoch, address game, address account, int256 changed, uint256 total);
+
+    /// @notice Emit when miner staking change
     event MinerStakeChange(uint256 epoch, address game, address account, int256 changed, uint256 total);
+
+    /// @notice Emit when player staking change
     event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 total);
 
+    /// @notice Initialize
+    /// @param _addresses the Addresses contract
     function initialize(address _addresses) public initializer {
         __Ownable_init(msg.sender);
         addresses = _addresses;
     }
 
+    /// @notice Set the Addresses contract
+    /// @param _addresses the Addresses contract
     function setAddresses(address _addresses) external onlyOwner {
         addresses = _addresses;
     }
 
-    /// set minimum stake amount
+    /// @notice Set minimum stake amount
+    /// @param _minStakeAmount the minimum value of miner staking
     function setMinStakeAmount(uint256 _minStakeAmount) external onlyOwner {
         minStakeAmount = _minStakeAmount;
     }
 
     /// --------------- Game --------------- ///
 
-    /// get total game staking
+    /// @notice Get total game staking
+    /// @param game the game address
+    /// @return total game staking amount
     function gameTotalStaking(address game) external view returns (uint256) {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
 
@@ -85,12 +99,17 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
     }
 
-    /// get game staking by account
+    /// @notice Get game staking by account
+    /// @param game the game address
+    /// @param account the staking account
+    /// @return the staking amount of this account
     function gameStaking(address game, address account) external view returns (uint256) {
         return gamesStaking[game].gamers[account];
     }
 
-    // stake by game self
+    /// @notice Stake by game self(others)
+    /// @param game the game address
+    /// @param amount new staking amount
     function gameStake(address game, uint256 amount) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
@@ -113,7 +132,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         emit GameStakeChange(st.newEpoch, game, msg.sender, int256(amount), st.newValue);
     }
 
-    /// unstake by game self
+    /// @notice Unstake by game self(others)
+    /// @param game the game address
+    /// @param amount the unstaking amount
     function gameUnstake(address game, uint256 amount) external {
         GameStaking storage gs = gamesStaking[game];
         require(gs.gamers[msg.sender] >= amount, "S01");
@@ -137,7 +158,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// --------------- Miner --------------- ///
 
-    /// get total miner staking
+    /// @notice Get total miner staking
+    /// @param game the game address
+    /// @return the total miner staking amount
     function minerTotalStaking(address game) external view returns (uint256) {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = gamesStaking[game].minerTotal;
@@ -151,7 +174,10 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
     }
 
-    /// get miner staking
+    /// @notice Get miner staking
+    /// @param game the game address
+    /// @param account miner account
+    /// @return the miner staking amount
     function minerStaking(address game, address account) public view returns (uint256) {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = gamesStaking[game].miners[account];
@@ -165,13 +191,18 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
     }
 
-    // check account is miner or not
+    /// @notice Check account is miner or not
+    /// @param game the game address
+    /// @param account the checking account
+    /// @return account is miner or not
     function isMiner(address game, address account) external view returns (bool) {
         uint256 staking = minerStaking(game, account);
         return staking >= minStakeAmount;
     }
 
-    // stake by miner
+    /// @notice Stake by miner
+    /// @param game the game address
+    /// @param amount the new staking amount
     function minerStake(address game, uint256 amount) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
@@ -200,7 +231,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         emit MinerStakeChange(st.newEpoch, game, msg.sender, int256(amount), st.newValue);
     }
 
-    // unstake by miner
+    /// @notice Unstake by miner
+    /// @param game the game address
+    /// @param amount the unstaking amount
     function minerUnStake(address game, uint256 amount) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
@@ -240,7 +273,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// --------------- Player --------------- ///
 
-    /// get total player staking
+    /// @notice Get total player staking
+    /// @return the total staking amount of players
     function playerTotalStaking() external view returns (uint256) {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = playerTotal;
@@ -252,7 +286,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
     }
 
-    /// get player staking
+    /// @notice Get player staking
+    /// @param account the player account
+    /// @return the staking amount of player
     function playerStaking(address account) external view returns (uint256) {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = playersStaking[account];
@@ -264,7 +300,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
     }
 
-    /// stake by player
+    /// @notice Stake by player
+    /// @param amount the new staking amount of player
     function playerStake(uint256 amount) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
@@ -290,7 +327,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         emit PlayerStakeChange(st.newEpoch, msg.sender, int256(amount), st.newValue);
     }
 
-    /// unstake by player
+    /// @notice Unstake by player
+    /// @param amount the unstaking amount
     function playerUnStake(uint256 amount) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
@@ -328,7 +366,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// --------------- Unstaking --------------- ///
 
-    /// get claimable unstaking amount
+    /// @notice Get claimable unstaking amount
+    /// @param account the claiming account
+    /// @return the amount which can claim now
     function claimable(address account) external view returns (uint256) {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage su = unstakings[account];
@@ -340,7 +380,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
     }
 
-    /// claim unstaking to account
+    /// @notice Claim unstaking to account
+    /// @param account the claiming account
     function claim(address account) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         Staking storage su = unstakings[account];

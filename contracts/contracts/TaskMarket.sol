@@ -14,39 +14,67 @@ import "./interface/IStake.sol";
 import "./interface/ITaskMarket.sol";
 import "./interface/IVerifier.sol";
 
+/// @notice Manage all proof tasks, player create new zk task, and miner can accept it,
+/// when miner acceped, miner need submit the proof within overtime, if overflow, others
+/// can accept and replace, and previous miner will be punished
 contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
     using SafeERC20 for IERC20;
 
+    /// @notice Struct of ZK Task
     struct Task {
+        /// notice TaskStatus including: Over, Waiting, Proving
         TaskStatus status;
+        /// @notice the game address
         address game;
+        /// @notice the player account
         address player;
+        /// @notice the fee for this task
         uint256 fee;
+        /// @notice the miner account
         address miner;
+        /// @notice the overtime of this task
         uint256 overtime;
+        /// @notice the proof inputs data
         bytes data;
     }
 
+    /// @notice Common Addresses contract
     address addresses;
 
-    /// next task id
+    /// @notice Next task id
     uint256 public nextId;
 
+    /// @notice Store all tasks
     mapping(uint256 => Task) private tasks;
 
+    /// @notice Emit when created a new task
     event CreateTask(uint256 id, address game, address player, uint256 fee, bytes data);
+
+    /// @notice Emit when miner accepted a task
     event AcceptTask(uint256 id, address miner, uint256 overtime);
+
+    /// @notice Emit when miner submit a proof for a task
     event SubmitTask(uint256 id, uint256 fee);
 
+    /// @notice Initialize
+    /// @param _addresses the Addresses contract
     function initialize(address _addresses) public initializer {
         __Ownable_init(msg.sender);
         addresses = _addresses;
     }
 
+    /// @notice Set the Addresses contract
+    /// @param _addresses the Addresses contract
     function setAddresses(address _addresses) external onlyOwner {
         addresses = _addresses;
     }
 
+    /// @notice Create new zk task of a game
+    /// @param game the game address
+    /// @param player the player account
+    /// @param fee the fee fot this task
+    /// @param data the zk serialized inputs data
+    /// @return the task id
     function create(address game, address player, uint256 fee, bytes calldata data) external returns(uint256) {
         // transfer fee from msg.sender
         if (fee > 0) {
@@ -68,6 +96,9 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         return nextId - 1;
     }
 
+    /// @notice Accept a task by miner, can be called by miner or controller
+    /// @param tid the task id
+    /// @param miner the miner account
     function accept(uint256 tid, address miner) external {
         require(IController(IAddresses(addresses).get(Contracts.Controller)).check(miner, msg.sender), "T02");
 
@@ -85,6 +116,10 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         emit AcceptTask(tid, miner, task.overtime);
     }
 
+    /// @notice Submit a proof for a task, will call verifier to verify
+    /// @param tid the task id
+    /// @param publics the zk serialized publics data
+    /// @param proof the zk proof
     function submit(uint256 tid, bytes calldata publics, bytes calldata proof) external {
         Task storage task = tasks[tid];
 
