@@ -167,12 +167,12 @@ impl ApiService {
         log::debug!("[controller/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let list = self.db.controller_list(begin, take_count).await?;
-            let data = serde_json::to_value(list).map_err(|e| {
-                log::error!("controller list to value err: {e:?}");
-                anyhow!("controller list to value err: {e:?}")
-            })?;
-            data
+            let res = self.db.controller_list(begin, take_count).await?;
+
+            json!({
+                "data": res.data,
+                "total": res.total
+            })
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))

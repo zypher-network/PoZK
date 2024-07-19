@@ -9,6 +9,12 @@ pub struct ReDB {
     db: Arc<Database>,
 }
 
+
+pub struct ControllerList {
+    pub data: Vec<ControllerKey>,
+    pub total: usize
+}
+
 impl ReDB {
     pub fn new(db_path: &PathBuf, remove: bool) -> Result<Self> {
         let path = db_path.as_path();
@@ -67,9 +73,11 @@ impl ReDB {
         Ok(val.value())
     }
 
-    pub async fn controller_list(&self, from: usize, size: usize) -> Result<Vec<ControllerKey>> {
+    pub async fn controller_list(&self, from: usize, size: usize) -> Result<ControllerList> {
         let txn = self.db.begin_read()?;
         let table = txn.open_table(CONTROLLER_TABLE)?;
+        let total = table.len()? as usize;
+
         let mut iter = table.iter()?.skip(from).take(size);
         let mut list = vec![];
 
@@ -78,7 +86,7 @@ impl ReDB {
             list.push(key.value());
         }
 
-        Ok(list)
+        Ok(ControllerList{ data: list, total })
     }
 
     pub async fn controller_set_entry(&self) -> Result<(ControllerKey, ControllerValue)> {
