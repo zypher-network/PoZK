@@ -36,12 +36,48 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint64",
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "work",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "version",
-        "type": "uint64"
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "overtime",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "verifier",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "minable",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
       }
     ],
-    "name": "Initialized",
+    "name": "ApproveProver",
     "type": "event"
   },
   {
@@ -49,36 +85,12 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "epoch",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "int256",
-        "name": "changed",
-        "type": "int256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "total",
-        "type": "uint256"
+        "internalType": "uint64",
+        "name": "version",
+        "type": "uint64"
       }
     ],
-    "name": "MinerStakeChange",
+    "name": "Initialized",
     "type": "event"
   },
   {
@@ -105,30 +117,36 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
-        "name": "epoch",
+        "name": "work",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "version",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "overtime",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "address",
-        "name": "account",
+        "name": "verifier",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "int256",
-        "name": "changed",
-        "type": "int256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "total",
-        "type": "uint256"
       }
     ],
-    "name": "PlayerStakeChange",
+    "name": "RegisterProver",
     "type": "event"
   },
   {
@@ -136,10 +154,17 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "epoch",
-        "type": "uint256"
-      },
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      }
+    ],
+    "name": "StopProver",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
       {
         "indexed": false,
         "internalType": "address",
@@ -149,55 +174,71 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "account",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "TransferProver",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "prover",
         "type": "address"
       },
       {
         "indexed": false,
-        "internalType": "int256",
-        "name": "changed",
-        "type": "int256"
+        "internalType": "uint256",
+        "name": "work",
+        "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "total",
+        "name": "version",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "overtime",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "verifier",
+        "type": "address"
       }
     ],
-    "name": "ProverStakeChange",
+    "name": "UpgradeProver",
     "type": "event"
   },
   {
     "inputs": [
       {
         "internalType": "address",
-        "name": "account",
+        "name": "prover",
         "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "minable",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
       }
     ],
-    "name": "claim",
+    "name": "approve",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "claimable",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -219,14 +260,9 @@
         "internalType": "address",
         "name": "prover",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
       }
     ],
-    "name": "isMiner",
+    "name": "isProver",
     "outputs": [
       {
         "internalType": "bool",
@@ -238,8 +274,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "minStakeAmount",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      }
+    ],
+    "name": "overtime",
     "outputs": [
       {
         "internalType": "uint256",
@@ -248,85 +290,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "minerStake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "minerStaking",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
-      }
-    ],
-    "name": "minerTotalStaking",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "minerUnStake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -345,136 +308,32 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "playerStake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "playerStaking",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "playerTotalStaking",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "playerUnStake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "prover",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "_work",
         "type": "uint256"
-      }
-    ],
-    "name": "proverStake",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "proverStaking",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
-      }
-    ],
-    "name": "proverTotalStaking",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "_version",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_overtime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_verifier",
+        "type": "address"
       }
     ],
-    "name": "proverUnstake",
+    "name": "register",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -502,14 +361,27 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      }
+    ],
+    "name": "stop",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalWork",
+    "outputs": [
+      {
         "internalType": "uint256",
-        "name": "_minStakeAmount",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "setMinStakeAmount",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -523,6 +395,127 @@
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "transferProverOwner",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      }
+    ],
+    "name": "unregister",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_work",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_version",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_overtime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_verifier",
+        "type": "address"
+      }
+    ],
+    "name": "upgrade",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      }
+    ],
+    "name": "verifier",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      }
+    ],
+    "name": "version",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      }
+    ],
+    "name": "work",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]

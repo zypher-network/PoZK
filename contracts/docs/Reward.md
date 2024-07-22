@@ -17,12 +17,12 @@ struct StakerLabor {
 }
 ```
 
-### GamePool
+### ProverPool
 
-The struct of game pool
+The struct of prover pool
 
 ```solidity
-struct GamePool {
+struct ProverPool {
   uint256 totalWorking;
   uint256 totalStaking;
   uint256 totalMinerStaking;
@@ -36,14 +36,14 @@ struct GamePool {
 }
 ```
 
-### RunningGame
+### RunningProver
 
-The struct of a game status
+The struct of a prover status
 
 ```solidity
-struct RunningGame {
+struct RunningProver {
   uint256 unclaim;
-  address[] games;
+  address[] provers;
   mapping(address => uint256) index;
 }
 ```
@@ -55,10 +55,10 @@ The struct of the epoch status
 ```solidity
 struct EpochPool {
   uint256 unclaim;
-  uint256 totalGameStaking;
-  mapping(address => struct Reward.GamePool) gamePools;
-  mapping(address => struct Reward.RunningGame) minerUnclaimedGames;
-  mapping(address => struct Reward.RunningGame) playerUnclaimedGames;
+  uint256 totalProverStaking;
+  mapping(address => struct Reward.ProverPool) proverPools;
+  mapping(address => struct Reward.RunningProver) minerUnclaimedProvers;
+  mapping(address => struct Reward.RunningProver) playerUnclaimedProvers;
 }
 ```
 
@@ -76,7 +76,7 @@ Common Addresses contract
 int256 alphaNumerator
 ```
 
-The numerator of Percentage of the game stake and labor (1-alpha) in the total
+The numerator of Percentage of the prover stake and labor (1-alpha) in the total
 
 ### alphaDenominator
 
@@ -145,7 +145,7 @@ Emitted when update the alpha for cobb-douglas function
 ### MinerLabor
 
 ```solidity
-event MinerLabor(uint256 epoch, address game, address miner, uint256 work)
+event MinerLabor(uint256 epoch, address prover, address miner, uint256 work)
 ```
 
 Emitted when add Labor(reward) for current pool
@@ -153,7 +153,7 @@ Emitted when add Labor(reward) for current pool
 ### PlayerLabor
 
 ```solidity
-event PlayerLabor(uint256 epoch, address game, address player, uint256 play)
+event PlayerLabor(uint256 epoch, address prover, address player, uint256 play)
 ```
 
 Emitted when add Labor(reward) for current pool
@@ -161,7 +161,7 @@ Emitted when add Labor(reward) for current pool
 ### MinerCollect
 
 ```solidity
-event MinerCollect(uint256 epoch, address game, address miner, uint256 amount)
+event MinerCollect(uint256 epoch, address prover, address miner, uint256 amount)
 ```
 
 Emitted when collect reward (stake) from pool
@@ -169,7 +169,7 @@ Emitted when collect reward (stake) from pool
 ### PlayerCollect
 
 ```solidity
-event PlayerCollect(uint256 epoch, address game, address player, uint256 amount)
+event PlayerCollect(uint256 epoch, address prover, address player, uint256 amount)
 ```
 
 Emitted when collect reward (stake) from pool
@@ -250,49 +250,49 @@ Update the gamma for cobb-douglas function
 ### work
 
 ```solidity
-function work(address game, address player, address miner) external
+function work(address prover, address player, address miner) external
 ```
 
-Add work(labor) to current epoch & game, only call from TaskMarket
+Add work(labor) to current epoch & prover, only call from TaskMarket
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | player | address | player account |
 | miner | address | miner account |
 
 ### minerCollect
 
 ```solidity
-function minerCollect(uint256 epoch, address game, address miner) public
+function minerCollect(uint256 epoch, address prover, address miner) public
 ```
 
-Miner collect reward in epoch and game, collect reward to unstaking list
+Miner collect reward in epoch and prover, collect reward to unstaking list
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | epoch | uint256 | the epoch height |
-| game | address | the game address |
+| prover | address | the prover address |
 | miner | address | the miner account |
 
 ### playerCollect
 
 ```solidity
-function playerCollect(uint256 epoch, address game, address player) public
+function playerCollect(uint256 epoch, address prover, address player) public
 ```
 
-Player collect reward in epoch and game, collect to player wallet
+Player collect reward in epoch and prover, collect to player wallet
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | epoch | uint256 | the epoch height |
-| game | address | the game address |
+| prover | address | the prover address |
 | player | address | the player account |
 
 ### minerBatchCollect
@@ -301,7 +301,7 @@ Player collect reward in epoch and game, collect to player wallet
 function minerBatchCollect(uint256 epoch, address miner) external
 ```
 
-Miner batch collect all games in a epoch
+Miner batch collect all provers in a epoch
 
 #### Parameters
 
@@ -316,7 +316,7 @@ Miner batch collect all games in a epoch
 function playerBatchCollect(uint256 epoch, address player) external
 ```
 
-Player batch collect all games in a epoch
+Player batch collect all provers in a epoch
 
 #### Parameters
 

@@ -30,7 +30,7 @@ fn main() {
     };
 
     let _game_market_info = {
-        let json_content = std::fs::read_to_string("./../../public/ABI/GameMarket.json").unwrap();
+        let json_content = std::fs::read_to_string("./../../public/ABI/ProverMarket.json").unwrap();
 
         let mut f = File::create(&format!("{dest_path}{GAME_MARKET_INFO}")).unwrap();
         f.write_all(

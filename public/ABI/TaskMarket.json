@@ -68,7 +68,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {
@@ -166,7 +166,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {

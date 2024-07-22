@@ -8,5 +8,5 @@ enum TaskStatus {
 }
 
 interface ITaskMarket {
-    function create(address game, address player, uint256 fee, bytes calldata data) external returns(uint256);
+    function create(address prover, address player, uint256 fee, bytes calldata data) external returns(uint256);
 }

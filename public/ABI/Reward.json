@@ -113,7 +113,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {
@@ -144,7 +144,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {
@@ -194,7 +194,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {
@@ -225,7 +225,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {
@@ -362,7 +362,7 @@
       },
       {
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {
@@ -416,7 +416,7 @@
       },
       {
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {
@@ -521,7 +521,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "game",
+        "name": "prover",
         "type": "address"
       },
       {

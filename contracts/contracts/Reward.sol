@@ -10,7 +10,7 @@ import "./interface/IAddresses.sol";
 import "./interface/IEpoch.sol";
 import "./interface/IStake.sol";
 import "./interface/IReward.sol";
-import "./interface/IGameMarket.sol";
+import "./interface/IProverMarket.sol";
 import "./interface/IVesting.sol";
 import "./utils/FixedMath.sol";
 
@@ -26,12 +26,12 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         uint256 working;
     }
 
-    /// @notice The struct of game pool
-    struct GamePool {
+    /// @notice The struct of prover pool
+    struct ProverPool {
         /// miner + player work (double)
         uint256 totalWorking;
 
-        /// game total staking
+        /// prover total staking
         uint256 totalStaking;
 
         uint256 totalMinerStaking;
@@ -47,30 +47,30 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         mapping(address => StakerLabor) playerLabor;
     }
 
-    /// @notice The struct of a game status
-    struct RunningGame {
+    /// @notice The struct of a prover status
+    struct RunningProver {
         uint unclaim;
         // first is 0 for better use
-        address[] games;
+        address[] provers;
         mapping(address => uint) index;
     }
 
     /// @notice The struct of the epoch status
     struct EpochPool {
         uint256 unclaim;
-        uint256 totalGameStaking;
-        mapping(address => GamePool) gamePools;
-        mapping(address => RunningGame) minerUnclaimedGames;
-        mapping(address => RunningGame) playerUnclaimedGames;
+        uint256 totalProverStaking;
+        mapping(address => ProverPool) proverPools;
+        mapping(address => RunningProver) minerUnclaimedProvers;
+        mapping(address => RunningProver) playerUnclaimedProvers;
     }
 
     /// @notice Common Addresses contract
     address addresses;
 
-    /// @notice Store all epoch games
+    /// @notice Store all epoch provers
     mapping(uint256 => EpochPool) private pools;
 
-    /// @notice The numerator of Percentage of the game stake and labor (1-alpha) in the total
+    /// @notice The numerator of Percentage of the prover stake and labor (1-alpha) in the total
     int256 public alphaNumerator;
 
     /// @notice The denominator of the alpha
@@ -98,16 +98,16 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     event Gamma(int256 betaNumerator, int256 betaDenominator);
 
     /// @notice Emitted when add Labor(reward) for current pool
-    event MinerLabor(uint256 epoch, address game, address miner, uint256 work);
+    event MinerLabor(uint256 epoch, address prover, address miner, uint256 work);
 
     /// @notice Emitted when add Labor(reward) for current pool
-    event PlayerLabor(uint256 epoch, address game, address player, uint256 play);
+    event PlayerLabor(uint256 epoch, address prover, address player, uint256 play);
 
     /// @notice Emitted when collect reward (stake) from pool
-    event MinerCollect(uint256 epoch, address game, address miner, uint256 amount);
+    event MinerCollect(uint256 epoch, address prover, address miner, uint256 amount);
 
     /// @notice Emitted when collect reward (stake) from pool
-    event PlayerCollect(uint256 epoch, address game, address player, uint256 amount);
+    event PlayerCollect(uint256 epoch, address prover, address player, uint256 amount);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -155,11 +155,11 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         emit Gamma(gammaNumerator, gammaDenominator);
     }
 
-    /// @notice Add work(labor) to current epoch & game, only call from TaskMarket
-    /// @param game the game address
+    /// @notice Add work(labor) to current epoch & prover, only call from TaskMarket
+    /// @param prover the prover address
     /// @param player player account
     /// @param miner miner account
-    function work(address game, address player, address miner) external {
+    function work(address prover, address player, address miner) external {
         require(msg.sender == IAddresses(addresses).get(Contracts.TaskMarket), "R01"); // only task contract
 
         IStake s = IStake(IAddresses(addresses).get(Contracts.Stake));
@@ -167,23 +167,23 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         EpochPool storage ep = pools[currentEpoch];
 
-        GamePool storage gp = ep.gamePools[game];
-        RunningGame storage rgm = ep.minerUnclaimedGames[miner];
-        RunningGame storage rgp = ep.playerUnclaimedGames[player];
+        ProverPool storage gp = ep.proverPools[prover];
+        RunningProver storage rgm = ep.minerUnclaimedProvers[miner];
+        RunningProver storage rgp = ep.playerUnclaimedProvers[player];
 
-        // game first has reward in this epoch
+        // prover first has reward in this epoch
         if (gp.totalWorking == 0) {
-            uint256 gameStaking = s.gameTotalStaking(game);
+            uint256 proverStaking = s.proverTotalStaking(prover);
             ep.unclaim += 1;
-            ep.totalGameStaking += gameStaking;
-            gp.totalStaking = gameStaking;
+            ep.totalProverStaking += proverStaking;
+            gp.totalStaking = proverStaking;
         }
 
         gp.totalWorking += 2;
         gp.unclaimLabor += 2;
 
         if (gp.minerLabor[miner].working == 0) {
-            uint256 minerStaking = s.minerStaking(game, miner);
+            uint256 minerStaking = s.minerStaking(prover, miner);
             gp.minerLabor[miner].staking = minerStaking;
             gp.totalMinerStaking += minerStaking;
         }
@@ -196,44 +196,44 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         }
         gp.playerLabor[player].working += 1;
 
-        if (rgm.index[game] == 0) {
+        if (rgm.index[prover] == 0) {
             if (rgm.unclaim == 0) {
-                rgm.games.push(address(0));
+                rgm.provers.push(address(0));
             }
-            rgm.games.push(game);
+            rgm.provers.push(prover);
             rgm.unclaim += 1;
-            rgm.index[game] = rgm.unclaim;
+            rgm.index[prover] = rgm.unclaim;
         }
 
-        if (rgp.index[game] == 0) {
+        if (rgp.index[prover] == 0) {
             if (rgp.unclaim == 0) {
-                rgp.games.push(address(0));
+                rgp.provers.push(address(0));
             }
-            rgp.games.push(game);
+            rgp.provers.push(prover);
             rgp.unclaim += 1;
-            rgp.index[game] = rgp.unclaim;
+            rgp.index[prover] = rgp.unclaim;
         }
 
-        emit MinerLabor(currentEpoch, game, miner, gp.minerLabor[miner].working);
-        emit PlayerLabor(currentEpoch, game, player, gp.playerLabor[player].working);
+        emit MinerLabor(currentEpoch, prover, miner, gp.minerLabor[miner].working);
+        emit PlayerLabor(currentEpoch, prover, player, gp.playerLabor[player].working);
     }
 
-    /// @notice Miner collect reward in epoch and game, collect reward to unstaking list
+    /// @notice Miner collect reward in epoch and prover, collect reward to unstaking list
     /// @param epoch the epoch height
-    /// @param game the game address
+    /// @param prover the prover address
     /// @param miner the miner account
-    function minerCollect(uint256 epoch, address game, address miner) public {
+    function minerCollect(uint256 epoch, address prover, address miner) public {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         // prevent duplicated collect
-        require(pools[epoch].minerUnclaimedGames[miner].index[game] > 0, "R03");
+        require(pools[epoch].minerUnclaimedProvers[miner].index[prover] > 0, "R03");
 
-        _claimGameRewards(epoch, game);
+        _claimProverRewards(epoch, prover);
 
         EpochPool storage ep = pools[epoch];
-        GamePool storage gp = ep.gamePools[game];
-        RunningGame storage rgm = ep.minerUnclaimedGames[miner];
+        ProverPool storage gp = ep.proverPools[prover];
+        RunningProver storage rgm = ep.minerUnclaimedProvers[miner];
 
         uint256 labor = gp.minerLabor[miner].working;
         uint256 amount = _cobbDouglas(
@@ -251,45 +251,45 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             // TODO
         }
 
-        // clear unclaim game
-        uint index = rgm.index[game];
-        address lastGame = rgm.games[rgm.unclaim];
-        rgm.games[index] = lastGame;
-        rgm.games.pop();
-        rgm.index[lastGame] = index;
-        delete rgm.index[game];
+        // clear unclaim prover
+        uint index = rgm.index[prover];
+        address lastProver = rgm.provers[rgm.unclaim];
+        rgm.provers[index] = lastProver;
+        rgm.provers.pop();
+        rgm.index[lastProver] = index;
+        delete rgm.index[prover];
 
         // clear miner
         rgm.unclaim -= 1;
         if (rgm.unclaim == 0) {
-            delete ep.minerUnclaimedGames[miner];
+            delete ep.minerUnclaimedProvers[miner];
             delete gp.minerLabor[miner];
         }
 
         gp.unclaimLabor -= labor;
         gp.unclaimReward -= amount;
 
-        _clearPool(epoch, game);
+        _clearPool(epoch, prover);
 
-        emit MinerCollect(epoch, game, miner, amount);
+        emit MinerCollect(epoch, prover, miner, amount);
     }
 
-    /// @notice Player collect reward in epoch and game, collect to player wallet
+    /// @notice Player collect reward in epoch and prover, collect to player wallet
     /// @param epoch the epoch height
-    /// @param game the game address
+    /// @param prover the prover address
     /// @param player the player account
-    function playerCollect(uint256 epoch, address game, address player) public {
+    function playerCollect(uint256 epoch, address prover, address player) public {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
         require(epoch < currentEpoch, "R02");
 
         // prevent duplicated collect
-        require(pools[epoch].playerUnclaimedGames[player].index[game] > 0, "R03");
+        require(pools[epoch].playerUnclaimedProvers[player].index[prover] > 0, "R03");
 
-        _claimGameRewards(epoch, game);
+        _claimProverRewards(epoch, prover);
 
         EpochPool storage ep = pools[epoch];
-        GamePool storage gp = ep.gamePools[game];
-        RunningGame storage rgp = ep.playerUnclaimedGames[player];
+        ProverPool storage gp = ep.proverPools[prover];
+        RunningProver storage rgp = ep.playerUnclaimedProvers[player];
 
         uint256 labor = gp.playerLabor[player].working;
         uint256 amount = _cobbDouglas(
@@ -307,30 +307,30 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             // TODO
         }
 
-        // clear unclaim game
-        uint index = rgp.index[game];
-        address lastGame = rgp.games[rgp.unclaim];
-        rgp.games[index] = lastGame;
-        rgp.games.pop();
-        rgp.index[lastGame] = index;
-        delete rgp.index[game];
+        // clear unclaim prover
+        uint index = rgp.index[prover];
+        address lastProver = rgp.provers[rgp.unclaim];
+        rgp.provers[index] = lastProver;
+        rgp.provers.pop();
+        rgp.index[lastProver] = index;
+        delete rgp.index[prover];
 
         // clear player
         rgp.unclaim -= 1;
         if (rgp.unclaim == 0) {
-            delete ep.playerUnclaimedGames[player];
+            delete ep.playerUnclaimedProvers[player];
             delete gp.playerLabor[player];
         }
 
         gp.unclaimLabor -= labor;
         gp.unclaimReward -= amount;
 
-        _clearPool(epoch, game);
+        _clearPool(epoch, prover);
 
-        emit PlayerCollect(epoch, game, player, amount);
+        emit PlayerCollect(epoch, prover, player, amount);
     }
 
-    /// @notice Miner batch collect all games in a epoch
+    /// @notice Miner batch collect all provers in a epoch
     /// @param epoch the epoch height
     /// @param miner the miner account
     function minerBatchCollect(uint256 epoch, address miner) external {
@@ -338,16 +338,16 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         require(epoch < currentEpoch, "R02");
 
         EpochPool storage ep = pools[epoch];
-        RunningGame storage rgm = ep.minerUnclaimedGames[miner];
+        RunningProver storage rgm = ep.minerUnclaimedProvers[miner];
 
         uint lastIndex = rgm.unclaim;
         for (uint i = lastIndex; i > 0; i--) {
-            address game = rgm.games[i];
-            minerCollect(epoch, game, miner);
+            address prover = rgm.provers[i];
+            minerCollect(epoch, prover, miner);
         }
     }
 
-    /// @notice Player batch collect all games in a epoch
+    /// @notice Player batch collect all provers in a epoch
     /// @param epoch the epoch height
     /// @param player the player account
     function playerBatchCollect(uint256 epoch, address player) external {
@@ -355,34 +355,34 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         require(epoch < currentEpoch, "R02");
 
         EpochPool storage ep = pools[epoch];
-        RunningGame storage rgm = ep.playerUnclaimedGames[player];
+        RunningProver storage rgm = ep.playerUnclaimedProvers[player];
 
         uint lastIndex = rgm.unclaim;
         for (uint i = lastIndex; i > 0; i--) {
-            address game = rgm.games[i];
-            playerCollect(epoch, game, player);
+            address prover = rgm.provers[i];
+            playerCollect(epoch, prover, player);
         }
     }
 
     /// @notice private function about claim reward
     /// @param epoch the epoch height
-    /// @param game the game address
-    function _claimGameRewards(uint256 epoch, address game) private {
+    /// @param prover the prover address
+    function _claimProverRewards(uint256 epoch, address prover) private {
         EpochPool storage ep = pools[epoch];
-        GamePool storage gp = ep.gamePools[game];
+        ProverPool storage gp = ep.proverPools[prover];
 
-        // check or collect game total reward,
+        // check or collect prover total reward,
         // and release epoch token to reward
         if (gp.totalMinerReward == 0 && gp.totalPlayerReward == 0) {
-            IGameMarket gm = IGameMarket(IAddresses(addresses).get(Contracts.GameMarket));
+            IProverMarket gm = IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket));
             IVesting vesting = IVesting(IAddresses(addresses).get(Contracts.Vesting));
 
             uint256 amount = _cobbDouglas(
                 vesting.mine(epoch),
-                gm.work(game),
+                gm.work(prover),
                 gm.totalWork(),
                 gp.totalStaking,
-                ep.totalGameStaking,
+                ep.totalProverStaking,
                 alphaNumerator,
                 alphaDenominator
             );
@@ -398,19 +398,19 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
     /// @notice private function about clear pool
     /// @param epoch the epoch height
-    /// @param game the game address
-    function _clearPool(uint256 epoch, address game) private {
+    /// @param prover the prover address
+    function _clearPool(uint256 epoch, address prover) private {
         EpochPool storage ep = pools[epoch];
-        GamePool storage gp = ep.gamePools[game];
+        ProverPool storage gp = ep.proverPools[prover];
 
-        // clear game pool
+        // clear prover pool
         if (gp.unclaimLabor == 0) {
             // TODO return the remained
             if (gp.unclaimReward > 0) {
                 //
             }
 
-            delete ep.gamePools[game];
+            delete ep.proverPools[prover];
             ep.unclaim -= 1;
 
             // clear epoch pool

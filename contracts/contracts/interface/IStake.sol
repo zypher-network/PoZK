@@ -2,20 +2,20 @@
 pragma solidity ^0.8.20;
 
 interface IStake {
-    /// get total game staking
-    function gameTotalStaking(address game) external view returns (uint256);
+    /// get total prover staking
+    function proverTotalStaking(address prover) external view returns (uint256);
 
-    /// get game staking by account
-    function gameStaking(address game, address account) external view returns (uint256);
+    /// get prover staking by account
+    function proverStaking(address prover, address account) external view returns (uint256);
 
     /// get total miner staking
-    function minerTotalStaking(address game) external view returns (uint256);
+    function minerTotalStaking(address prover) external view returns (uint256);
 
     /// get miner staking
-    function minerStaking(address game, address account) external view returns (uint256);
+    function minerStaking(address prover, address account) external view returns (uint256);
 
     // check account is miner or not
-    function isMiner(address game, address account) external view returns (bool);
+    function isMiner(address prover, address account) external view returns (bool);
 
     /// get total player staking
     function playerTotalStaking() external view returns (uint256);

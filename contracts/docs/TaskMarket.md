@@ -13,7 +13,7 @@ Struct of ZK Task
 ```solidity
 struct Task {
   enum TaskStatus status;
-  address game;
+  address prover;
   address player;
   uint256 fee;
   address miner;
@@ -41,7 +41,7 @@ Next task id
 ### CreateTask
 
 ```solidity
-event CreateTask(uint256 id, address game, address player, uint256 fee, bytes data)
+event CreateTask(uint256 id, address prover, address player, uint256 fee, bytes data)
 ```
 
 Emit when created a new task
@@ -93,16 +93,16 @@ Set the Addresses contract
 ### create
 
 ```solidity
-function create(address game, address player, uint256 fee, bytes data) external returns (uint256)
+function create(address prover, address player, uint256 fee, bytes data) external returns (uint256)
 ```
 
-Create new zk task of a game
+Create new zk task of a prover
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | player | address | the player account |
 | fee | uint256 | the fee fot this task |
 | data | bytes | the zk serialized inputs data |

@@ -45,7 +45,7 @@ async function deploy() {
   const epoch = await deployContractWithProxy("Epoch", [addresses, 100]);
   const stake = await deployContractWithProxy("Stake", [addresses]);
   const reward = await deployContractWithProxy("Reward", [addresses]);
-  const gameMarket = await deployContractWithProxy("GameMarket", [addresses]);
+  const proverMarket = await deployContractWithProxy("ProverMarket", [addresses]);
   const taskMarket = await deployContractWithProxy("TaskMarket", [addresses]);
   const controller = await deployContractWithProxy("Controller", [addresses]);
 
@@ -58,7 +58,7 @@ async function deploy() {
       2, // Contracts.Epoch,
       3, // Contracts.Stake,
       4, // Contracts.Reward,
-      5, // Contracts.GameMarket,
+      5, // Contracts.ProverMarket,
       6, // Contracts.TaskMarket,
       7, // Contracts.Controller
     ],
@@ -68,7 +68,7 @@ async function deploy() {
       epoch,
       stake,
       reward,
-      gameMarket,
+      proverMarket,
       taskMarket,
       controller
     ]
@@ -81,7 +81,7 @@ async function deploy() {
     Epoch: epoch,
     Stake: stake,
     Reward: reward,
-    GameMarket: gameMarket,
+    ProverMarket: proverMarket,
     TaskMarket: taskMarket,
     Controller: controller,
   };

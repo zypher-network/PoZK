@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./interface/IAddresses.sol";
 import "./interface/IController.sol";
-import "./interface/IGameMarket.sol";
+import "./interface/IProverMarket.sol";
 import "./interface/IReward.sol";
 import "./interface/IStake.sol";
 import "./interface/ITaskMarket.sol";
@@ -24,8 +24,8 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
     struct Task {
         /// notice TaskStatus including: Over, Waiting, Proving
         TaskStatus status;
-        /// @notice the game address
-        address game;
+        /// @notice the prover address
+        address prover;
         /// @notice the player account
         address player;
         /// @notice the fee for this task
@@ -48,7 +48,7 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
     mapping(uint256 => Task) private tasks;
 
     /// @notice Emit when created a new task
-    event CreateTask(uint256 id, address game, address player, uint256 fee, bytes data);
+    event CreateTask(uint256 id, address prover, address player, uint256 fee, bytes data);
 
     /// @notice Emit when miner accepted a task
     event AcceptTask(uint256 id, address miner, uint256 overtime);
@@ -69,28 +69,28 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         addresses = _addresses;
     }
 
-    /// @notice Create new zk task of a game
-    /// @param game the game address
+    /// @notice Create new zk task of a prover
+    /// @param prover the prover address
     /// @param player the player account
     /// @param fee the fee fot this task
     /// @param data the zk serialized inputs data
     /// @return the task id
-    function create(address game, address player, uint256 fee, bytes calldata data) external returns(uint256) {
+    function create(address prover, address player, uint256 fee, bytes calldata data) external returns(uint256) {
         // transfer fee from msg.sender
         if (fee > 0) {
             IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), fee);
         }
 
-        // check game is valid
-        require(IGameMarket(IAddresses(addresses).get(Contracts.GameMarket)).isGame(game), "T01");
+        // check prover is valid
+        require(IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket)).isProver(prover), "T01");
 
         Task storage task = tasks[nextId];
-        task.game = game;
+        task.prover = prover;
         task.player = player;
         task.fee = fee;
         task.data = data;
 
-        emit CreateTask(nextId, game, player, fee, data);
+        emit CreateTask(nextId, prover, player, fee, data);
 
         nextId += 1;
         return nextId - 1;
@@ -103,12 +103,12 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         require(IController(IAddresses(addresses).get(Contracts.Controller)).check(miner, msg.sender), "T02");
 
         Task storage task = tasks[tid];
-        require(IStake(IAddresses(addresses).get(Contracts.Stake)).isMiner(task.game, miner), "T03");
+        require(IStake(IAddresses(addresses).get(Contracts.Stake)).isMiner(task.prover, miner), "T03");
 
         bool acceptable = task.status == TaskStatus.Waiting || task.overtime < block.timestamp;
         require(acceptable, "T04");
 
-        uint256 overtime = IGameMarket(IAddresses(addresses).get(Contracts.GameMarket)).overtime(task.game);
+        uint256 overtime = IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket)).overtime(task.prover);
         task.status = TaskStatus.Proving;
         task.miner = miner;
         task.overtime = block.timestamp + overtime;
@@ -126,7 +126,7 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         require(task.status == TaskStatus.Proving, "T05");
 
         // zk verifier
-        address verifier = IGameMarket(IAddresses(addresses).get(Contracts.GameMarket)).verifier(task.game);
+        address verifier = IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket)).verifier(task.prover);
         require(IVerifier(verifier).verify(publics, proof), "T99");
 
         // send fee to miner
@@ -136,7 +136,7 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         emit SubmitTask(tid, task.fee);
 
         // PoZK to reward
-        IReward(IAddresses(addresses).get(Contracts.Reward)).work(task.game, task.player, task.miner);
+        IReward(IAddresses(addresses).get(Contracts.Reward)).work(task.prover, task.player, task.miner);
 
         delete tasks[tid];
     }

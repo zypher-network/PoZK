@@ -2,7 +2,7 @@
 
 ## Stake
 
-Stake Contract, including player, miner & game,
+Stake Contract, including player, miner & prover,
 every change will work in next epoch, and unstake can claim in next epoch
 
 ### Staking
@@ -17,14 +17,14 @@ struct Staking {
 }
 ```
 
-### GameStaking
+### ProverStaking
 
-Unit struct about staking in a game
+Unit struct about staking in a prover
 
 ```solidity
-struct GameStaking {
-  struct Stake.Staking gamerTotal;
-  mapping(address => uint256) gamers;
+struct ProverStaking {
+  struct Stake.Staking proverTotal;
+  mapping(address => uint256) provers;
   struct Stake.Staking minerTotal;
   mapping(address => struct Stake.Staking) miners;
 }
@@ -46,18 +46,18 @@ uint256 minStakeAmount
 
 Miner minStakeAmount
 
-### GameStakeChange
+### ProverStakeChange
 
 ```solidity
-event GameStakeChange(uint256 epoch, address game, address account, int256 changed, uint256 total)
+event ProverStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 total)
 ```
 
-Emit when game staking change
+Emit when prover staking change
 
 ### MinerStakeChange
 
 ```solidity
-event MinerStakeChange(uint256 epoch, address game, address account, int256 changed, uint256 total)
+event MinerStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 total)
 ```
 
 Emit when miner staking change
@@ -112,39 +112,39 @@ Set minimum stake amount
 | ---- | ---- | ----------- |
 | _minStakeAmount | uint256 | the minimum value of miner staking |
 
-### gameTotalStaking
+### proverTotalStaking
 
 ```solidity
-function gameTotalStaking(address game) external view returns (uint256)
+function proverTotalStaking(address prover) external view returns (uint256)
 ```
 
-Get total game staking
+Get total prover staking
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 | total game staking amount |
+| [0] | uint256 | total prover staking amount |
 
-### gameStaking
+### proverStaking
 
 ```solidity
-function gameStaking(address game, address account) external view returns (uint256)
+function proverStaking(address prover, address account) external view returns (uint256)
 ```
 
-Get game staking by account
+Get prover staking by account
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | account | address | the staking account |
 
 #### Return Values
@@ -153,40 +153,40 @@ Get game staking by account
 | ---- | ---- | ----------- |
 | [0] | uint256 | the staking amount of this account |
 
-### gameStake
+### proverStake
 
 ```solidity
-function gameStake(address game, uint256 amount) external
+function proverStake(address prover, uint256 amount) external
 ```
 
-Stake by game self(others)
+Stake by prover self(others)
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | amount | uint256 | new staking amount |
 
-### gameUnstake
+### proverUnstake
 
 ```solidity
-function gameUnstake(address game, uint256 amount) external
+function proverUnstake(address prover, uint256 amount) external
 ```
 
-Unstake by game self(others)
+Unstake by prover self(others)
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | amount | uint256 | the unstaking amount |
 
 ### minerTotalStaking
 
 ```solidity
-function minerTotalStaking(address game) external view returns (uint256)
+function minerTotalStaking(address prover) external view returns (uint256)
 ```
 
 Get total miner staking
@@ -195,7 +195,7 @@ Get total miner staking
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 
 #### Return Values
 
@@ -206,7 +206,7 @@ Get total miner staking
 ### minerStaking
 
 ```solidity
-function minerStaking(address game, address account) public view returns (uint256)
+function minerStaking(address prover, address account) public view returns (uint256)
 ```
 
 Get miner staking
@@ -215,7 +215,7 @@ Get miner staking
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | account | address | miner account |
 
 #### Return Values
@@ -227,7 +227,7 @@ Get miner staking
 ### isMiner
 
 ```solidity
-function isMiner(address game, address account) external view returns (bool)
+function isMiner(address prover, address account) external view returns (bool)
 ```
 
 Check account is miner or not
@@ -236,7 +236,7 @@ Check account is miner or not
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | account | address | the checking account |
 
 #### Return Values
@@ -248,7 +248,7 @@ Check account is miner or not
 ### minerStake
 
 ```solidity
-function minerStake(address game, uint256 amount) external
+function minerStake(address prover, uint256 amount) external
 ```
 
 Stake by miner
@@ -257,13 +257,13 @@ Stake by miner
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | amount | uint256 | the new staking amount |
 
 ### minerUnStake
 
 ```solidity
-function minerUnStake(address game, uint256 amount) external
+function minerUnStake(address prover, uint256 amount) external
 ```
 
 Unstake by miner
@@ -272,7 +272,7 @@ Unstake by miner
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| game | address | the game address |
+| prover | address | the prover address |
 | amount | uint256 | the unstaking amount |
 
 ### playerTotalStaking

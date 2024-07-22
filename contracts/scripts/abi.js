@@ -9,7 +9,7 @@ const main = async () => {
       "Epoch",
       "Stake",
       "Reward",
-      "GameMarket",
+      "ProverMarket",
       "TaskMarket",
       "Controller"
     ];

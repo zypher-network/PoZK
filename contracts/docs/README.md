@@ -10,7 +10,7 @@ Interaction with the contract.
 - [set controller](./Controller.md#add)
 
 ### back-end (miner management)
-- [download game docker image](./GameMarket.md#version)
+- [download game docker image](./ProverMarket.md#version)
 - [accept task](./TaskMarket.md#accept)
 - [submit task](./TaskMarket.md#submit)
 
@@ -21,12 +21,12 @@ Interaction with the contract.
 - [set controller](./Controller.md#add)
 
 ## Game developer
-- [game register](./GameMarket.md#register)
+- [game register](./ProverMarket.md#register)
 - [stake/unstake](./Stake.md#gamestake)
 - [claim unstaking](./Stake.md#claim)
 - [create task (integrated)](./TaskMarket.md#create)
 
 ## Subgraph
-- [game list](./GameMarket.md#registergame)
+- [game list](./ProverMarket.md#registergame)
 - [staking list](./Stake.md#gamestakechange)
 - [reward list](./Reward.md#minercollect)
