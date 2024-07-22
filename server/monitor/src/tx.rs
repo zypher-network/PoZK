@@ -474,3 +474,73 @@ impl TxService {
         Ok(client)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::event::EventType;
+    use crate::tx::{TxChanData, TxService};
+    use db::ReDB;
+    use docker::DockerManager;
+    use ethers::prelude::{Provider, ProviderExt};
+    use ethers::types::Address;
+    use std::collections::BTreeMap;
+    use std::path::PathBuf;
+    use std::str::FromStr;
+    use std::sync::Arc;
+    use std::time::Duration;
+    use tokio::spawn;
+    use tokio::sync::mpsc::unbounded_channel;
+
+    #[test]
+    fn test_tx_service() {
+        env_logger::init();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            let db = {
+                let db_path = PathBuf::from("/tmp/pozk");
+                let db = ReDB::new(&db_path, true).unwrap();
+                Arc::new(db)
+            };
+
+            let (sender, receiver) = unbounded_channel();
+
+            let task_market_address = Address::from_str("0x").unwrap();
+            let stake_address = Address::from_str("0x").unwrap();
+            let game_market_address = Address::from_str("0x").unwrap();
+
+            let miner = Address::from_str("0x").unwrap();
+
+            let docker_manager = DockerManager::new("").unwrap();
+
+            let opbnb_testnet_cli = Provider::connect("http://127.0.0.1:8545").await;
+
+            let tx_service = TxService::new(
+                db,
+                receiver,
+                opbnb_testnet_cli,
+                task_market_address,
+                stake_address,
+                game_market_address,
+                docker_manager,
+                miner,
+            )
+            .unwrap();
+
+            tx_service.run();
+
+            tokio::time::sleep(Duration::from_secs(5)).await;
+
+            sender
+                .send(TxChanData {
+                    ty: EventType::CreateTask,
+                    data: BTreeMap::new(),
+                })
+                .unwrap();
+
+            tokio::signal::ctrl_c().await.unwrap();
+        });
+    }
+}

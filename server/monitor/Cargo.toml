@@ -16,6 +16,7 @@ clap.workspace = true
 docker = { path = "../docker" }
 
 [dev-dependencies]
+env_logger.workspace = true
 
 [build-dependencies]
 serde_json.workspace = true

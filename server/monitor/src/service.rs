@@ -183,3 +183,38 @@ impl Monitor {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::service::Monitor;
+    use crate::Config;
+    use ethers::prelude::{Provider, ProviderExt};
+
+    #[test]
+    fn test_monitor() {
+        env_logger::init();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            let opbnb_testnet_cli = Provider::connect("http://127.0.0.1:8545").await;
+            let cfg = Config {
+                task_market_address: "".to_string(),
+                from: 0,
+                delay_sec: 0,
+                latest_step: 0,
+                wait_time: 0,
+                rpc_url: "".to_string(),
+                block_number: "34736669".to_string(),
+                miner: "".to_string(),
+            };
+
+            let mut monitor = Monitor::new(&cfg, opbnb_testnet_cli.clone()).await.unwrap();
+
+            monitor.run();
+
+            tokio::signal::ctrl_c().await.unwrap();
+        });
+    }
+}
