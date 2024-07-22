@@ -16,4 +16,7 @@ pub struct Config {
     pub rpc_url: String,
     #[clap(long)]
     pub block_number: String,
+
+    #[clap(long)]
+    pub miner: String,
 }

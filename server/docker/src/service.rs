@@ -4,6 +4,7 @@ use poem_openapi::Object;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use shiplift::builder::ContainerListOptionsBuilder;
 use shiplift::rep::{Container, ContainerCreateInfo, ContainerDetails, Image, ImageDetails};
 use shiplift::{
     ContainerOptions, Docker, Error, ImageListOptions, PullOptions, RmContainerOptions,
@@ -251,7 +252,15 @@ impl DockerManager {
 
     pub async fn container_list(&self, from: usize, size: usize) -> Result<ContainerInfoList> {
         let containers = self.docker.containers();
-        let container_list = containers.list(&Default::default()).await?;
+
+        let op = {
+            let mut op_builder = ContainerListOptionsBuilder::default();
+            op_builder.all().build();
+
+            op_builder.build()
+        };
+
+        let container_list = containers.list(&op).await?;
         let total = container_list.len();
         let container_list_pagination = container_list.into_iter().skip(from).take(size);
 

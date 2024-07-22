@@ -13,7 +13,7 @@ use std::str::FromStr;
 use time::format_description::well_known::Rfc3339;
 use time::{Duration, OffsetDateTime};
 
-pub static DEFAULT_EXPIRY_MIN: i64 = 1;
+pub static DEFAULT_EXPIRY_MIN: i64 = 60;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
 pub struct LoginReq {

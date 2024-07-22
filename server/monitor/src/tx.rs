@@ -1,7 +1,7 @@
 use crate::event::EventType;
 use crate::{GAME_MARKET_CONTRACT_ABI, STAKE_CONTRACT_ABI, TASK_MARKET_CONTRACT_ABI};
 use anyhow::{anyhow, Result};
-use db::ReDB;
+use db::{ControllerKey, ReDB};
 use docker::DockerManager;
 use ethers::abi::{Contract, Function, Log as AbiLog, Token};
 use ethers::core::k256::ecdsa::SigningKey;
@@ -53,10 +53,10 @@ pub struct TxService {
     receiver: UnboundedReceiver<TxChanData>,
     functions: BTreeMap<FuncType, (Address, Function)>,
     docker_manager: DockerManager,
+    miner: Address,
 }
 
 impl TxService {
-
     pub fn new(
         db: Arc<ReDB>,
         receiver: UnboundedReceiver<TxChanData>,
@@ -65,6 +65,7 @@ impl TxService {
         stake_address: Address,
         game_market_address: Address,
         docker_manager: DockerManager,
+        miner: Address,
     ) -> Result<Self> {
         let mut functions = BTreeMap::new();
 
@@ -114,6 +115,7 @@ impl TxService {
             receiver,
             functions,
             docker_manager,
+            miner,
         })
     }
 
@@ -134,20 +136,14 @@ impl TxService {
     /// 8. judge receipt
     pub fn run(mut self) {
         spawn(async move {
-            while let Some(data) = self.receiver.recv().await {
+            let miner_key = ControllerKey(self.miner);
 
+            while let Some(data) = self.receiver.recv().await {
                 // - get controller & wallet cli
                 let (controller, eth_cli) = {
-                    let result = self.db.controller_set_entry().await;
+                    let result = self.db.controller_set_entry(&miner_key).await;
                     match result {
-                        Ok((key, val)) => {
-                            let signing_key = match SigningKey::from_slice(&val.0) {
-                                Ok(v) => v,
-                                Err(e) => {
-                                    panic!("controller to signing key: {:?}", e);
-                                }
-                            };
-
+                        Ok((key, signing_key)) => {
                             let eth_cli = match self.gen_client(signing_key, key.0).await {
                                 Ok(v) => v,
                                 Err(e) => {
@@ -181,7 +177,7 @@ impl TxService {
                     };
 
                     let tx_data =
-                        match func.encode_input(&vec![game.clone(), Token::Address(controller)]) {
+                        match func.encode_input(&vec![game.clone(), Token::Address(self.miner)]) {
                             Ok(v) => v,
                             Err(e) => {
                                 log::error!("func: {:?}, encode input: {:?}", func_type, e);
@@ -347,7 +343,7 @@ impl TxService {
                         id.clone()
                     };
 
-                    let tx_data = match func.encode_input(&vec![id, Token::Address(controller)]) {
+                    let tx_data = match func.encode_input(&vec![id, Token::Address(self.miner)]) {
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("func: {:?}, encode input: {:?}", func_type, e);
