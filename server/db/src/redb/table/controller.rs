@@ -4,16 +4,19 @@ use ethers::utils::keccak256;
 use redb::{Key, TableDefinition, TypeName, Value};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::fmt::Debug;
+use std::collections::BTreeMap;
+use std::fmt::{Debug, Display, Formatter};
 
+/// miner -> map<controller, signing_key>
 pub const CONTROLLER_TABLE: TableDefinition<ControllerKey, ControllerValue> =
     TableDefinition::new("controller_table");
 
+/// miner -> map<CONTROLLER_SET_KEY, controller>
 pub static CONTROLLER_SET_KEY: &str = "CONTROLLER_SET_KEY";
-pub const CONTROLLER_SET: TableDefinition<&str, ControllerKey> =
+pub const CONTROLLER_SET: TableDefinition<ControllerKey, ControllerKey> =
     TableDefinition::new("controller_set");
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct ControllerKey(pub Address);
 
 impl From<&SigningKey> for ControllerKey {
@@ -28,15 +31,8 @@ impl From<&SigningKey> for ControllerKey {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ControllerValue(pub Vec<u8>);
-
-impl From<&SigningKey> for ControllerValue {
-    fn from(value: &SigningKey) -> Self {
-        let data = value.to_bytes().to_vec();
-        Self(data)
-    }
-}
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ControllerValue(pub BTreeMap<ControllerKey, Vec<u8>>);
 
 impl Value for ControllerKey {
     type SelfType<'a> = ControllerKey where Self: 'a;
@@ -84,7 +80,7 @@ impl Value for ControllerValue {
     where
         Self: 'a,
     {
-        bincode::deserialize(data).unwrap_or(ControllerValue(vec![]))
+        bincode::deserialize(data).unwrap_or(ControllerValue(BTreeMap::new()))
     }
 
     fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a>

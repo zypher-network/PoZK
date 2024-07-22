@@ -1,4 +1,5 @@
 use crate::poem::req::{ContainerNewReq, ControllerAddReq, ImagesUpdateReq};
+use crate::poem::service::ApiTags::Controller;
 use crate::poem::{ApiAuth, LoginReq, Pagination, User, SERVER_KEY};
 use crate::{Config, Resp, RespData};
 use anyhow::{anyhow, Result};
@@ -123,7 +124,11 @@ impl ApiService {
         param
             .check(block_num.as_u64(), self.chain_id, &self.domain)
             .map_err(|e| {
-                log::error!("[login] uid: [{uid}], err: {:?}", e.backtrace());
+                log::error!(
+                    "[login] uid: [{uid}], err: {:?}, backtrace: {:?}",
+                    e,
+                    e.backtrace()
+                );
                 e
             })?;
 
@@ -149,9 +154,14 @@ impl ApiService {
     #[oai(path = "/controller/list", method = "get", tag = "ApiTags::Controller")]
     pub async fn controller_list(
         &self,
+        auth: ApiAuth,
         page_size: Query<Option<usize>>,
         page_count: Query<Option<usize>>,
     ) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
         let uid = Uuid::new_v4().to_string();
         log::info!(
             "[controller/list] uid: [{uid}], page_size: [{:?}], page_count: [{:?}]",
@@ -167,7 +177,7 @@ impl ApiService {
         log::debug!("[controller/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let res = self.db.controller_list(begin, take_count).await?;
+            let res = self.db.controller_list(&miner, begin, take_count).await?;
 
             json!({
                 "data": res.data,
@@ -179,7 +189,16 @@ impl ApiService {
     }
 
     #[oai(path = "/controller/add", method = "post", tag = "ApiTags::Controller")]
-    pub async fn controller_add(&self, req: Json<ControllerAddReq>) -> poem::Result<Resp> {
+    pub async fn controller_add(
+        &self,
+        auth: ApiAuth,
+        req: Json<ControllerAddReq>,
+    ) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
         let uid = Uuid::new_v4().to_string();
         log::info!("[controller/add] uid: [{uid}], req: [{req:?}]");
 
@@ -189,13 +208,11 @@ impl ApiService {
             e
         })?;
 
-        let (key, value) = {
-            let key = ControllerKey::from(&param.signing_key);
-            let value = ControllerValue::from(&param.signing_key);
-            (key, value)
-        };
+        let key = ControllerKey::from(&param.signing_key);
 
-        self.db.controller_add(&key, &value).await?;
+        self.db
+            .controller_add(&miner, &key, &param.signing_key)
+            .await?;
         log::info!("[controller/add] uid: [{uid}] success");
 
         Ok(Resp::Ok(Json(RespData::new(&uid))))
@@ -206,7 +223,12 @@ impl ApiService {
         method = "post",
         tag = "ApiTags::Controller"
     )]
-    pub async fn controller_set(&self, address: Path<String>) -> poem::Result<Resp> {
+    pub async fn controller_set(&self, auth: ApiAuth, address: Path<String>) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
         let uid = Uuid::new_v4().to_string();
         log::info!("[controller/set] uid: [{uid}], req: [{}]", address.0);
 
@@ -215,18 +237,23 @@ impl ApiService {
 
         let key = ControllerKey(address);
 
-        self.db.controller_set(&key).await?;
+        self.db.controller_set(&miner, &key).await?;
         log::info!("[controller/set] uid: [{uid}] success");
 
         Ok(Resp::Ok(Json(RespData::new(&uid))))
     }
 
     #[oai(path = "/controller/set", method = "get", tag = "ApiTags::Controller")]
-    pub async fn query_controller_set(&self) -> poem::Result<Resp> {
+    pub async fn query_controller_set(&self, auth: ApiAuth) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
         let uid = Uuid::new_v4().to_string();
         log::info!("[get/controller/set] uid: [{uid}]");
 
-        let controller = self.db.query_controller_set().await?;
+        let controller = self.db.query_controller_set(&miner).await?;
         Ok(Resp::Ok(Json(RespData::new_data(
             &json!({
                 "controller": format!("{:?}",controller.0)
@@ -236,19 +263,20 @@ impl ApiService {
     }
 
     #[oai(path = "/controller/new", method = "post", tag = "ApiTags::Controller")]
-    pub async fn controller_new(&self) -> poem::Result<Resp> {
+    pub async fn controller_new(&self, auth: ApiAuth) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
         let uid = Uuid::new_v4().to_string();
         log::info!("[controller/new] uid: [{uid}]");
 
-        let sk = SigningKey::random(&mut thread_rng());
+        let signing_key = SigningKey::random(&mut thread_rng());
 
-        let (key, value) = {
-            let key = ControllerKey::from(&sk);
-            let value = ControllerValue::from(&sk);
-            (key, value)
-        };
+        let key = ControllerKey::from(&signing_key);
 
-        self.db.controller_add(&key, &value).await?;
+        self.db.controller_add(&miner, &key, &signing_key).await?;
         log::info!("[controller/new] uid: [{uid}] success");
 
         Ok(Resp::Ok(Json(RespData::new_data(
@@ -262,6 +290,7 @@ impl ApiService {
     #[oai(path = "/prover/image/list", method = "get", tag = "ApiTags::Prover")]
     pub async fn images_list(
         &self,
+        auth: ApiAuth,
         page_size: Query<Option<usize>>,
         page_count: Query<Option<usize>>,
     ) -> poem::Result<Resp> {
@@ -292,13 +321,40 @@ impl ApiService {
     }
 
     #[oai(
+        path = "/prover/image/pull/:image/:tag",
+        method = "get",
+        tag = "ApiTags::Prover"
+    )]
+    pub async fn image_pull(
+        &self,
+        auth: ApiAuth,
+        image: Path<String>,
+        tag: Path<String>,
+    ) -> poem::Result<Resp> {
+        let uid = Uuid::new_v4().to_string();
+        log::info!(
+            "[image/pull] uid: [{uid}], image: {}, tag: {}",
+            image.0,
+            tag.0
+        );
+
+        self.docker_manager.pull_images(&image.0, &tag.0).await?;
+
+        Ok(Resp::Ok(Json(RespData::new(&uid))))
+    }
+
+    #[oai(
         path = "/prover/image/update/:url",
         method = "post",
         tag = "ApiTags::Prover"
     )]
-    pub async fn images_update(&self, url: Path<Option<String>>) -> poem::Result<Resp> {
+    pub async fn image_update(
+        &self,
+        auth: ApiAuth,
+        url: Path<Option<String>>,
+    ) -> poem::Result<Resp> {
         let uid = Uuid::new_v4().to_string();
-        log::info!("[images/update] uid: [{uid}], req: {:?}", url.0);
+        log::info!("[image/update] uid: [{uid}], req: {:?}", url.0);
 
         let data = {
             let update_list = self.docker_manager.update_images(url.0).await?;
@@ -306,10 +362,10 @@ impl ApiService {
                 .map_err(|e| anyhow!("parse image update to data err: {e:?}"))?
         };
 
-        log::info!("[images/update] uid: [{uid}] success");
+        log::info!("[image/update] uid: [{uid}] success");
         Ok(Resp::Ok(Json(RespData::new_data(
             &json!({
-                "images": data
+                "image": data
             }),
             &uid,
         ))))
@@ -320,7 +376,11 @@ impl ApiService {
         method = "post",
         tag = "ApiTags::Prover"
     )]
-    pub async fn container_remove(&self, docker_id: Path<String>) -> poem::Result<Resp> {
+    pub async fn container_remove(
+        &self,
+        auth: ApiAuth,
+        docker_id: Path<String>,
+    ) -> poem::Result<Resp> {
         let uid = Uuid::new_v4().to_string();
         log::info!("[container/remove] uid: [{uid}], req: {:?}", docker_id.0);
 
@@ -334,7 +394,11 @@ impl ApiService {
         method = "post",
         tag = "ApiTags::Prover"
     )]
-    pub async fn container_new(&self, req: Json<ContainerNewReq>) -> poem::Result<Resp> {
+    pub async fn container_new(
+        &self,
+        auth: ApiAuth,
+        req: Json<ContainerNewReq>,
+    ) -> poem::Result<Resp> {
         let uid = Uuid::new_v4().to_string();
         log::info!("[container/new] uid: [{uid}], req: {:?}", req.0);
 
@@ -354,7 +418,11 @@ impl ApiService {
         method = "post",
         tag = "ApiTags::Prover"
     )]
-    pub async fn container_stop(&self, docker_id: Path<String>) -> poem::Result<Resp> {
+    pub async fn container_stop(
+        &self,
+        auth: ApiAuth,
+        docker_id: Path<String>,
+    ) -> poem::Result<Resp> {
         let uid = Uuid::new_v4().to_string();
         log::info!("[container/stop] uid: [{uid}], req: {:?}", docker_id.0);
 
@@ -368,7 +436,11 @@ impl ApiService {
         method = "post",
         tag = "ApiTags::Prover"
     )]
-    pub async fn container_start(&self, docker_id: Path<String>) -> poem::Result<Resp> {
+    pub async fn container_start(
+        &self,
+        auth: ApiAuth,
+        docker_id: Path<String>,
+    ) -> poem::Result<Resp> {
         let uid = Uuid::new_v4().to_string();
         log::info!("[container/start] uid: [{uid}], req: {:?}", docker_id.0);
 
@@ -384,6 +456,7 @@ impl ApiService {
     )]
     pub async fn container_list(
         &self,
+        auth: ApiAuth,
         page_size: Query<Option<usize>>,
         page_count: Query<Option<usize>>,
     ) -> poem::Result<Resp> {
@@ -546,7 +619,7 @@ pub mod test {
                 let result = client.execute(req).await.unwrap().json::<Value>().await.unwrap();
                 println!("login: {result:?}");
 
-                let token = result["data"]["token"].clone().to_string();
+                let token = result["data"]["token"].clone().as_str().unwrap().to_string();
                 let req = client.get("http://127.0.0.1:8090/api/hello")
                     .header("X-API-Key", token)
                     .build()
@@ -726,6 +799,84 @@ pub mod test {
                 println!("** controller list: {resp:?}");
 
                 println!("**************************");
+            }
+        });
+    }
+
+    #[test]
+    fn test_prover() {
+        env_logger::init();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+
+            let eth_cli = Provider::connect("http://127.0.0.1:8545").await;
+            let domain = Authority::from_str("0.0.0.0:8090").unwrap();
+            let db = {
+                let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
+                Arc::new(db)
+            };
+            let docker_manager = DockerManager::new(DOCKER_MANAGER_UPDATE_URL).unwrap();
+
+            let api = ApiService {
+                host: "0.0.0.0:8090".to_string(),
+                chain_id: 31337,
+                eth_cli,
+                domain,
+                db,
+                docker_manager,
+            };
+            api.run().await.unwrap();
+
+            let client = reqwest::Client::new();
+
+            let token = {
+                let client = reqwest::Client::new();
+
+                let req = client.post("http://127.0.0.1:8090/api/login")
+                    .json(&json!({
+                            "domain": "0.0.0.0:8090",
+                            "address": "0xaa6321F2A813c720F0fa19f13789932d05c11e25",
+                            "uri": "http://0.0.0.0:8090/api/login",
+                            "version": "1",
+                            "chain_id": 31337,
+                            "nonce": "00000000",
+                            "issued_at": "2024-07-08T11:42:18.807Z",
+                            "v": 27,
+                            "r": "0x953391bcbad53d9c770728471840dfd57ce7c1622616a11e9e5385afd998f883",
+                            "s": "0x69e42b5f14e193d591b94d614fa41995b22f8ed00ca2309deea3753481f86ad0",
+                            "resources": []
+                    }))
+                    .build().unwrap();
+                let result = client.execute(req).await.unwrap().json::<Value>().await.unwrap();
+                println!("login: {result:?}");
+
+                let token = result["data"]["token"].clone().as_str().unwrap().to_string();
+                token
+            };
+
+            // test image list
+            {
+                let req = client.get("http://127.0.0.1:8090/api/prover/image/list?page_size=20")
+                    .header("X-API-Key", token.clone())
+                    .build().unwrap();
+                let result = client.execute(req).await.unwrap();
+                println!("result: {result:?}");
+                let body = result.json::<Value>().await.unwrap();
+                let str = serde_json::to_string_pretty(&body).unwrap();
+                println!("prover/image/list: {str}");
+            }
+
+            // test container list
+            {
+                let req = client.get("http://127.0.0.1:8090/api/prover/container/list")
+                    .header("X-API-Key", token.clone())
+                    .build().unwrap();
+                let result = client.execute(req).await.unwrap().json::<Value>().await.unwrap();
+                let str = serde_json::to_string_pretty(&result).unwrap();
+                println!("prover/container/list: {str}");
             }
         });
     }

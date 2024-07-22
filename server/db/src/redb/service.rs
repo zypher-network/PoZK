@@ -1,6 +1,9 @@
 use crate::{ControllerKey, ControllerValue, CONTROLLER_SET, CONTROLLER_SET_KEY, CONTROLLER_TABLE};
 use anyhow::{anyhow, Result};
+use ethers::core::k256::ecdsa::SigningKey;
+use ethers::types::Address;
 use redb::{Database, ReadableTable, ReadableTableMetadata};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -9,10 +12,9 @@ pub struct ReDB {
     db: Arc<Database>,
 }
 
-
 pub struct ControllerList {
     pub data: Vec<ControllerKey>,
-    pub total: usize
+    pub total: usize,
 }
 
 impl ReDB {
@@ -33,29 +35,53 @@ impl ReDB {
         Ok(Self { db: Arc::new(db) })
     }
 
-    pub async fn controller_add(&self, key: &ControllerKey, value: &ControllerValue) -> Result<()> {
+    pub async fn controller_add(
+        &self,
+        miner: &ControllerKey,
+        controller: &ControllerKey,
+        value: &SigningKey,
+    ) -> Result<()> {
         let txn = self.db.begin_write()?;
         {
             let mut table = txn.open_table(CONTROLLER_TABLE)?;
-            table.insert(key, value)?;
+            let mut map = if let Some(map) = table.get(miner)? {
+                map.value()
+            } else {
+                ControllerValue(BTreeMap::new())
+            };
+
+            map.0.insert(controller.clone(), value.to_bytes().to_vec());
+
+            table.insert(miner, map)?;
         }
         txn.commit()?;
         Ok(())
     }
 
-    pub async fn controller_set(&self, key: &ControllerKey) -> Result<()> {
+    pub async fn controller_set(
+        &self,
+        miner: &ControllerKey,
+        controller: &ControllerKey,
+    ) -> Result<()> {
         let txn = self.db.begin_read()?;
         let table = txn.open_table(CONTROLLER_TABLE)?;
 
-        let Some(val) = table.get(key)? else {
-            return Err(anyhow!("key not exist: {key:?}"));
+        let Some(controller_map) = table.get(miner)? else {
+            return Err(anyhow!("miner not exist controllers: {miner:?}"));
         };
+
+        if controller_map.value().0.get(controller).is_none() {
+            return Err(anyhow!(
+                "controller: {controller:?} not exist miner controllers"
+            ));
+        }
 
         let txn = self.db.begin_write()?;
 
         {
             let mut table = txn.open_table(CONTROLLER_SET)?;
-            table.insert(CONTROLLER_SET_KEY, key)?;
+
+            table.insert(miner, controller)?;
         }
 
         txn.commit()?;
@@ -63,42 +89,59 @@ impl ReDB {
         Ok(())
     }
 
-    pub async fn query_controller_set(&self) -> Result<ControllerKey> {
+    pub async fn query_controller_set(&self, miner: &ControllerKey) -> Result<ControllerKey> {
         let txn = self.db.begin_read()?;
         let table = txn.open_table(CONTROLLER_SET)?;
-        let Some(val) = table.get(CONTROLLER_SET_KEY)? else {
-            return Err(anyhow!("not set controller"));
+        let Some(controller) = table.get(miner)? else {
+            return Err(anyhow!("miner:{miner:?} not exist controllers"));
         };
 
-        Ok(val.value())
+        Ok(controller.value())
     }
 
-    pub async fn controller_list(&self, from: usize, size: usize) -> Result<ControllerList> {
+    pub async fn controller_list(
+        &self,
+        miner: &ControllerKey,
+        from: usize,
+        size: usize,
+    ) -> Result<ControllerList> {
         let txn = self.db.begin_read()?;
         let table = txn.open_table(CONTROLLER_TABLE)?;
-        let total = table.len()? as usize;
+        let Some(controllers) = table.get(miner)? else {
+            return Err(anyhow!("miner: {miner:?} not exits controllers"));
+        };
 
-        let mut iter = table.iter()?.skip(from).take(size);
+        let total = controllers.value().0.len();
+
+        let map = controllers.value().0;
+        let mut iter = map.iter().skip(from).take(size);
         let mut list = vec![];
 
-        while let Some(res) = iter.next() {
-            let (key, _val) = res?;
-            list.push(key.value());
+        while let Some((key, _val)) = iter.next() {
+            list.push(key.clone());
         }
 
-        Ok(ControllerList{ data: list, total })
+        Ok(ControllerList { data: list, total })
     }
 
-    pub async fn controller_set_entry(&self) -> Result<(ControllerKey, ControllerValue)> {
-        let key = self.query_controller_set().await?;
+    pub async fn controller_set_entry(
+        &self,
+        miner: &ControllerKey,
+    ) -> Result<(ControllerKey, SigningKey)> {
+        let controller = self.query_controller_set(miner).await?;
         let txn = self.db.begin_read()?;
 
         let table = txn.open_table(CONTROLLER_TABLE)?;
-
-        let Some(val) = table.get(&key)? else {
-            return Err(anyhow!("set key: {:?} not match val", key.0));
+        let Some(controllers) = table.get(miner)? else {
+            return Err(anyhow!("miner: {miner:?} not exist controllers"));
         };
 
-        Ok((key, val.value()))
+        let signing_key = if let Some(val) = controllers.value().0.get(&controller) {
+            SigningKey::from_slice(val)?
+        } else {
+            return Err(anyhow!("set key: {:?} not match val", controller));
+        };
+
+        Ok((controller, signing_key))
     }
 }
