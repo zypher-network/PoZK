@@ -8,15 +8,16 @@ expiry_time: `default 1 min`
 ```jsonc
 {
     "domain": "0.0.0.0:8090",
-    "address": "0xaa6321F2A813c720F0fa19f13789932d05c11e25",
+    "address": "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc",
     "uri": "http://0.0.0.0:8090/api/login",
     "version": "1",
     "chain_id": 31337,
     "nonce": "00000000",
-    "issued_at": "2024-07-08T11:42:18.807Z",
+    "issued_at": "2024-07-23T11:42:18.807Z",
     "v": 27,
-    "r": "0x953391bcbad53d9c770728471840dfd57ce7c1622616a11e9e5385afd998f883",
-    "s": "0x69e42b5f14e193d591b94d614fa41995b22f8ed00ca2309deea3753481f86ad0",
+    "r": "0xf69e02fdeb811acab1d39938de4bec54931e2f0b4357f3793f6717e1f39d4665",
+    "s": "0x126cc57b71ffad79ceabffbc3d88a39afb0a62e0132e0cff3450a9db2e06ade9",
+    "statement": "Welcome to Zytron!",
     "resources": []
 }
 ```
