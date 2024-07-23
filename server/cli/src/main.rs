@@ -87,7 +87,7 @@ async fn main() -> Result<()> {
         dm
     };
 
-    let _monitor_tx = {
+    if co.open_monitor {
         let mut monitor = Monitor::new(
             &co.monitor_config,
             eth_cli.clone(),
@@ -113,7 +113,7 @@ async fn main() -> Result<()> {
 
         tx_service.run();
         monitor.run();
-    };
+    }
 
     let _api = {
         let api = ApiService::new(
