@@ -6,9 +6,9 @@ interface IVerifier {
 
     /// show how to serialize/deseriaze the inputs params
     /// e.g. "uint256,bytes32,string,bytes32[],address[],ipfs"
-    function inputs() external pure returns (string calldata);
+    function inputs() external pure returns (string memory);
 
     /// show how to serialize/deserialize the publics params
     /// e.g. "uint256,bytes32,string,bytes32[],address[],ipfs"
-    function publics() external pure returns (string calldata);
+    function publics() external pure returns (string memory);
 }

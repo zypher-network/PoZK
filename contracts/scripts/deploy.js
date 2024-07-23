@@ -8,13 +8,6 @@ const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
 const { writeFile } = require('fs');
 
-async function main() {
-  const Box = await ethers.getContractFactory("Box");
-  const box = await upgrades.deployProxy(Box, [42]);
-  await box.waitForDeployment();
-  console.log("Box deployed to:", await box.getAddress());
-}
-
 async function deployContractWithProxy(name, params=[]) {
   const Factory = await ethers.getContractFactory(name);
   //  use upgradeable deploy, then contracts can be upgraded success, otherwise will get error about ERC 1967 proxy

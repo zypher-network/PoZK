@@ -98,7 +98,7 @@ contract ProverMarket is Initializable, OwnableUpgradeable, IProverMarket {
     /// @param _verifier the verifier contract, uses the IVerifier interface
     function register(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
         require(provers[prover].version.value == 0 && _version > 0, "G01");
-        require(prover.supportsInterface(type(IProver).interfaceId), "G04");
+        require(prover.supportsInterface(type(IProver).interfaceId), "G05");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
 
         Prover storage g = provers[prover];
@@ -201,6 +201,7 @@ contract ProverMarket is Initializable, OwnableUpgradeable, IProverMarket {
         g.overtime.newEpoch = currentEpoch; // overtime update immediately
         g.verifier.newEpoch = currentEpoch; // verifier update immediately
         if (approved) {
+            g.status = ProverStatus.Working;
             g.work.newEpoch = currentEpoch + 1; // work need upgrade next epoch
 
             g.version.value = g.version.newValue;
