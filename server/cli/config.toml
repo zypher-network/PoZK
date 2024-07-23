@@ -1,6 +1,8 @@
 
 db_path = "/tmp/pozk"
+db_remove = true
 endpoint = "http://127.0.0.1:8545"
+open_monitor = false
 
 [monitor_config]
 task_market_address = "0x6c0B94931832dA710b08616ddC224F4248F51c55"

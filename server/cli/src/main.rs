@@ -39,8 +39,14 @@ pub struct ConfigOption {
     #[clap(long, help = "redb file path, eg. /tmp/pozk/")]
     pub db_path: String,
 
+    #[clap(long, help = "Whether to delete db")]
+    pub db_remove: bool,
+
     #[clap(long, help = "blockchain rpc, eg. http://127.0.0.1:8545")]
     pub endpoint: String,
+
+    #[clap(long, help = "Whether to delete db")]
+    pub open_monitor: bool,
 
     #[clap(long, help = "docker update url, eg. http://127.0.0.1:7777/XXX")]
     pub docker_update_url: Option<String>,
