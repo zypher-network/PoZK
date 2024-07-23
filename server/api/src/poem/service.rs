@@ -1,7 +1,7 @@
 use crate::poem::req::{ContainerNewReq, ControllerAddReq, ImagesUpdateReq};
 use crate::poem::service::ApiTags::Controller;
 use crate::poem::{ApiAuth, LoginReq, Pagination, User, SERVER_KEY};
-use crate::{Config, Resp, RespData};
+use crate::{ApiConfig, Resp, RespData};
 use anyhow::{anyhow, Result};
 use db::{ControllerKey, ControllerValue, ReDB};
 use docker::DockerManager;
@@ -54,17 +54,18 @@ pub struct ApiService {
 #[OpenApi]
 impl ApiService {
     pub async fn new(
-        cfg: &Config,
+        cfg: &ApiConfig,
         db: Arc<ReDB>,
         docker_manager: DockerManager,
         eth_cli: Provider<Http>,
     ) -> Result<Self> {
         let host = format!("{}:{}", cfg.host, cfg.port);
-        let domain = Authority::from_str(&cfg.domain)?;
+        let domain = Authority::from_str(&host)?;
+        let chain_id = eth_cli.get_chainid().await?;
 
         Ok(Self {
             host,
-            chain_id: cfg.chain_id,
+            chain_id: chain_id.as_u64(),
             eth_cli,
             domain,
             db,
@@ -109,7 +110,7 @@ impl ApiService {
 
         // to param
         let param = req.to_param().map_err(|e| {
-            log::error!("[login] uid: [{uid}], err: {:?}", e.backtrace());
+            log::error!("[login] uid: [{uid}], err: {:?}, backtrace: {:?}", e, e.backtrace());
             e
         })?;
 
@@ -498,7 +499,7 @@ pub mod test {
     use db::{ControllerKey, ReDB};
     use ethers::core::k256::ecdsa::SigningKey;
     use ethers::core::rand::thread_rng;
-    use ethers::prelude::{Provider, ProviderExt};
+    use ethers::prelude::{LocalWallet, Provider, ProviderExt, Signer};
     use ethers::utils::hex::encode;
     use poem::http::uri::Authority;
     use reqwest::StatusCode;
@@ -507,7 +508,9 @@ pub mod test {
     use std::str::FromStr;
     use std::sync::Arc;
     use std::time::Duration;
-
+    use ethers::abi::AbiEncode;
+    use ethers::utils::hex;
+    use siwe::Message;
     use docker::DockerManager;
 
     static DOCKER_MANAGER_UPDATE_URL: &str = "http://127.0.0.1:9900/api/images";
@@ -542,6 +545,44 @@ pub mod test {
     }
 
     #[test]
+    fn test_eip4361() {
+
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            let msg = r#"0.0.0.0:8090 wants you to sign in with your Ethereum account:
+0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc
+
+Welcome to Zytron!
+
+URI: http://0.0.0.0:8090/api/login
+Version: 1
+Chain ID: 31337
+Nonce: 00000000
+Issued At: 2024-07-23T11:42:18.807Z"#;
+
+            let message: Message = msg.parse().unwrap();
+            println!("message: {message:?}");
+            let sk = "96dfba9d7b2967155b3e29d02df72a412bb935f899c99af7be41b68243949790";
+            let wallet = LocalWallet::from_str(sk).unwrap();
+
+            let sign = wallet.sign_message(message.to_string()).await.unwrap();
+
+            println!("r: {:?}", sign.r.encode_hex());
+            println!("s: {:?}", sign.s.encode_hex());
+            println!("v: {:?}", sign.v);
+
+            let sig: [u8; 65] = sign.into();
+            println!("sig: {}", hex::encode(&sig));
+            message.verify_eip191(&sig).unwrap();
+        });
+
+
+    }
+
+    #[test]
     fn test_login() {
         env_logger::init();
 
@@ -550,8 +591,9 @@ pub mod test {
         eip4361 message:
 
         0.0.0.0:8090 wants you to sign in with your Ethereum account:
-        0xaa6321F2A813c720F0fa19f13789932d05c11e25
+        0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc
 
+        Welcome to Zytron!
 
         URI: http://0.0.0.0:8090/api/login
         Version: 1
@@ -562,15 +604,16 @@ pub mod test {
         req data:
         {
             "domain": "0.0.0.0:8090",
-            "address": "0xaa6321F2A813c720F0fa19f13789932d05c11e25",
+            "address": "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc",
             "uri": "http://0.0.0.0:8090/api/login",
             "version": "1",
             "chain_id": 31337,
             "nonce": "00000000",
-            "issued_at": "2024-07-08T11:42:18.807Z",
+            "issued_at": "2024-07-08T23:42:18.807Z",
             "v": 27,
-            "r": "0x953391bcbad53d9c770728471840dfd57ce7c1622616a11e9e5385afd998f883",
-            "s": "0x69e42b5f14e193d591b94d614fa41995b22f8ed00ca2309deea3753481f86ad0",
+            "r": "0xcb7d50792e40e536b3bfff99fb6428bc5f7b78ef36bb0309f28e0c9918f0bbdd",
+            "s": "0x4b17270ff28b73e2a414dc7c619b0f090163e888b764bbd9480bbcb6b0d34026",
+            "statement": "Welcome to Zytron!",
             "resources": []
         }
         */
@@ -604,28 +647,38 @@ pub mod test {
                 let req = client.post("http://127.0.0.1:8090/api/login")
                     .json(&json!({
                             "domain": "0.0.0.0:8090",
-                            "address": "0xaa6321F2A813c720F0fa19f13789932d05c11e25",
+                            "address": "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc",
                             "uri": "http://0.0.0.0:8090/api/login",
                             "version": "1",
                             "chain_id": 31337,
                             "nonce": "00000000",
-                            "issued_at": "2024-07-08T11:42:18.807Z",
+                            "issued_at": "2024-07-23T11:42:18.807Z",
                             "v": 27,
-                            "r": "0x953391bcbad53d9c770728471840dfd57ce7c1622616a11e9e5385afd998f883",
-                            "s": "0x69e42b5f14e193d591b94d614fa41995b22f8ed00ca2309deea3753481f86ad0",
+                            "r": "0xf69e02fdeb811acab1d39938de4bec54931e2f0b4357f3793f6717e1f39d4665",
+                            "s": "0x126cc57b71ffad79ceabffbc3d88a39afb0a62e0132e0cff3450a9db2e06ade9",
+                            "statement": "Welcome to Zytron!",
                             "resources": []
                     }))
                     .build().unwrap();
-                let result = client.execute(req).await.unwrap().json::<Value>().await.unwrap();
-                println!("login: {result:?}");
-
-                let token = result["data"]["token"].clone().as_str().unwrap().to_string();
-                let req = client.get("http://127.0.0.1:8090/api/hello")
-                    .header("X-API-Key", token)
-                    .build()
-                    .unwrap();
                 let result = client.execute(req).await.unwrap();
-                println!("hello: {result:?}")
+                if result.status() == StatusCode::OK {
+                    let body = result.json::<Value>().await.unwrap();
+                    println!("login: {body:?}");
+
+                    let token = body["data"]["token"].clone().as_str().unwrap().to_string();
+                    let req = client.get("http://127.0.0.1:8090/api/hello")
+                        .header("X-API-Key", token)
+                        .build()
+                        .unwrap();
+                    let result = client.execute(req).await.unwrap();
+                    println!("hello: {result:?}")
+                } else {
+                    let body = result.bytes().await.unwrap();
+                    let str = String::from_utf8(body.to_vec()).unwrap();
+                    println!("login fail: {str}");
+                }
+
+
             }
         });
     }

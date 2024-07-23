@@ -1,6 +1,6 @@
 use crate::event::EventManager;
 use crate::tx::TxChanData;
-use crate::Config;
+use crate::MonitorConfig;
 use anyhow::{anyhow, Result};
 use db::ReDB;
 use ethers::prelude::{Http, Middleware, Provider, ProviderExt};
@@ -18,7 +18,7 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 #[derive(Clone)]
 pub struct Monitor {
     eth_cli: Provider<Http>,
-    cfg: Config,
+    cfg: MonitorConfig,
     filter: Filter,
     event_manager: EventManager,
     tx_sender: Option<UnboundedSender<TxChanData>>,
@@ -30,7 +30,7 @@ struct StartParam {
 }
 
 impl Monitor {
-    pub async fn new(cfg: &Config, eth_cli: Provider<Http>) -> Result<Self> {
+    pub async fn new(cfg: &MonitorConfig, eth_cli: Provider<Http>) -> Result<Self> {
         let event_manager = EventManager::new(&cfg.task_market_address)?;
         let filter = event_manager.get_filter()?;
 
@@ -51,7 +51,7 @@ impl Monitor {
 
     pub fn run(self) {
         spawn(async move {
-            let block_number = match BlockNumber::from_str(&self.cfg.block_number) {
+            let block_number = match BlockNumber::from_str(&self.cfg.block_number_type) {
                 Ok(v) => v,
                 Err(e) => {
                     log::error!("decode BlockNumber err: {e:?}");
@@ -82,7 +82,7 @@ impl Monitor {
                 };
                 let finalized = finalized.as_u64();
 
-                let step = self.cfg.latest_step;
+                let step = self.cfg.step;
 
                 // If to + step is greater than the latest height,
                 // it sleeps until it is less than the latest height,
@@ -136,7 +136,7 @@ impl Monitor {
 
     async fn pares_from_and_to(&self) -> Result<StartParam> {
         let block_number =
-            BlockNumber::from_str(&self.cfg.block_number).map_err(|e| anyhow!("{e}"))?;
+            BlockNumber::from_str(&self.cfg.block_number_type).map_err(|e| anyhow!("{e}"))?;
 
         let block = self
             .eth_cli
@@ -158,20 +158,20 @@ impl Monitor {
             if self.cfg.from == 0 {
                 // latest
                 (
-                    finalized.saturating_sub(self.cfg.latest_step * 2),
-                    finalized.saturating_sub(self.cfg.latest_step),
+                    finalized.saturating_sub(self.cfg.step * 2),
+                    finalized.saturating_sub(self.cfg.step),
                 )
             } else {
                 // latest
-                if self.cfg.from + self.cfg.latest_step < finalized {
+                if self.cfg.from + self.cfg.step < finalized {
                     (
-                        self.cfg.from.saturating_sub(self.cfg.latest_step),
+                        self.cfg.from.saturating_sub(self.cfg.step),
                         self.cfg.from,
                     )
                 } else {
                     (
-                        finalized.saturating_sub(self.cfg.latest_step * 2),
-                        finalized.saturating_sub(self.cfg.latest_step),
+                        finalized.saturating_sub(self.cfg.step * 2),
+                        finalized.saturating_sub(self.cfg.step),
                     )
                 }
             }
@@ -187,7 +187,7 @@ impl Monitor {
 #[cfg(test)]
 mod test {
     use crate::service::Monitor;
-    use crate::Config;
+    use crate::MonitorConfig;
     use ethers::prelude::{Provider, ProviderExt};
 
     #[test]
@@ -199,14 +199,15 @@ mod test {
             .unwrap();
         rt.block_on(async {
             let opbnb_testnet_cli = Provider::connect("http://127.0.0.1:8545").await;
-            let cfg = Config {
+            let cfg = MonitorConfig {
                 task_market_address: "".to_string(),
+                prover_market_address: "".to_string(),
+                stake_address: "".to_string(),
                 from: 0,
                 delay_sec: 0,
-                latest_step: 0,
+                step: 0,
                 wait_time: 0,
-                rpc_url: "".to_string(),
-                block_number: "34736669".to_string(),
+                block_number_type: "34736669".to_string(),
                 miner: "".to_string(),
             };
 

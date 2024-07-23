@@ -1,5 +1,5 @@
 use crate::event::EventType;
-use crate::{GAME_MARKET_CONTRACT_ABI, STAKE_CONTRACT_ABI, TASK_MARKET_CONTRACT_ABI};
+use crate::{PROVER_MARKET_CONTRACT_ABI, STAKE_CONTRACT_ABI, TASK_MARKET_CONTRACT_ABI};
 use anyhow::{anyhow, Result};
 use db::{ControllerKey, ReDB};
 use docker::DockerManager;
@@ -31,7 +31,7 @@ pub struct TxChanData {
 pub enum FuncType {
     AcceptTask,
     IsMiner,
-    GameVersion,
+    ProverVersion,
 }
 
 impl From<&EventType> for FuncType {
@@ -63,7 +63,7 @@ impl TxService {
         eth_cli: Provider<Http>,
         task_market_address: Address,
         stake_address: Address,
-        game_market_address: Address,
+        prover_market_address: Address,
         docker_manager: DockerManager,
         miner: Address,
     ) -> Result<Self> {
@@ -96,7 +96,7 @@ impl TxService {
         };
 
         let _game_market = {
-            let game_market = serde_json::from_str::<Contract>(GAME_MARKET_CONTRACT_ABI)?;
+            let game_market = serde_json::from_str::<Contract>(PROVER_MARKET_CONTRACT_ABI)?;
             let version_func = game_market
                 .functions
                 .get("version")
@@ -104,8 +104,8 @@ impl TxService {
                 .get(0)
                 .ok_or(anyhow!("functions[0] is nil"))?;
             functions.insert(
-                FuncType::GameVersion,
-                (game_market_address, version_func.clone()),
+                FuncType::ProverVersion,
+                (prover_market_address, version_func.clone()),
             );
         };
 
@@ -247,7 +247,7 @@ impl TxService {
                     };
 
                     let tag = {
-                        let func_type = FuncType::GameVersion;
+                        let func_type = FuncType::ProverVersion;
                         let Some((game_market_address, func)) = self.functions.get(&func_type)
                         else {
                             log::warn!("event type: {:?}, func type: {func_type:?} not match in self.functions", data.ty);
