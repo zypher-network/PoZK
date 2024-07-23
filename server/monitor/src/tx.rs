@@ -1,5 +1,5 @@
 use crate::event::EventType;
-use crate::{GAME_MARKET_CONTRACT_ABI, STAKE_CONTRACT_ABI, TASK_MARKET_CONTRACT_ABI};
+use crate::{PROVER_MARKET_CONTRACT_ABI, STAKE_CONTRACT_ABI, TASK_MARKET_CONTRACT_ABI};
 use anyhow::{anyhow, Result};
 use db::{ControllerKey, ReDB};
 use docker::DockerManager;
@@ -31,7 +31,7 @@ pub struct TxChanData {
 pub enum FuncType {
     AcceptTask,
     IsMiner,
-    GameVersion,
+    ProverVersion,
 }
 
 impl From<&EventType> for FuncType {
@@ -63,7 +63,7 @@ impl TxService {
         eth_cli: Provider<Http>,
         task_market_address: Address,
         stake_address: Address,
-        game_market_address: Address,
+        prover_market_address: Address,
         docker_manager: DockerManager,
         miner: Address,
     ) -> Result<Self> {
@@ -96,7 +96,7 @@ impl TxService {
         };
 
         let _game_market = {
-            let game_market = serde_json::from_str::<Contract>(GAME_MARKET_CONTRACT_ABI)?;
+            let game_market = serde_json::from_str::<Contract>(PROVER_MARKET_CONTRACT_ABI)?;
             let version_func = game_market
                 .functions
                 .get("version")
@@ -104,8 +104,8 @@ impl TxService {
                 .get(0)
                 .ok_or(anyhow!("functions[0] is nil"))?;
             functions.insert(
-                FuncType::GameVersion,
-                (game_market_address, version_func.clone()),
+                FuncType::ProverVersion,
+                (prover_market_address, version_func.clone()),
             );
         };
 
@@ -247,7 +247,7 @@ impl TxService {
                     };
 
                     let tag = {
-                        let func_type = FuncType::GameVersion;
+                        let func_type = FuncType::ProverVersion;
                         let Some((game_market_address, func)) = self.functions.get(&func_type)
                         else {
                             log::warn!("event type: {:?}, func type: {func_type:?} not match in self.functions", data.ty);
@@ -472,5 +472,75 @@ impl TxService {
         let middleware = SignerMiddleware::new(self.eth_cli.clone(), wallet);
         let client = NonceManagerMiddleware::new(middleware, address);
         Ok(client)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::event::EventType;
+    use crate::tx::{TxChanData, TxService};
+    use db::ReDB;
+    use docker::DockerManager;
+    use ethers::prelude::{Provider, ProviderExt};
+    use ethers::types::Address;
+    use std::collections::BTreeMap;
+    use std::path::PathBuf;
+    use std::str::FromStr;
+    use std::sync::Arc;
+    use std::time::Duration;
+    use tokio::spawn;
+    use tokio::sync::mpsc::unbounded_channel;
+
+    #[test]
+    fn test_tx_service() {
+        env_logger::init();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            let db = {
+                let db_path = PathBuf::from("/tmp/pozk");
+                let db = ReDB::new(&db_path, true).unwrap();
+                Arc::new(db)
+            };
+
+            let (sender, receiver) = unbounded_channel();
+
+            let task_market_address = Address::from_str("0x").unwrap();
+            let stake_address = Address::from_str("0x").unwrap();
+            let game_market_address = Address::from_str("0x").unwrap();
+
+            let miner = Address::from_str("0x").unwrap();
+
+            let docker_manager = DockerManager::new("").unwrap();
+
+            let opbnb_testnet_cli = Provider::connect("http://127.0.0.1:8545").await;
+
+            let tx_service = TxService::new(
+                db,
+                receiver,
+                opbnb_testnet_cli,
+                task_market_address,
+                stake_address,
+                game_market_address,
+                docker_manager,
+                miner,
+            )
+            .unwrap();
+
+            tx_service.run();
+
+            tokio::time::sleep(Duration::from_secs(5)).await;
+
+            sender
+                .send(TxChanData {
+                    ty: EventType::CreateTask,
+                    data: BTreeMap::new(),
+                })
+                .unwrap();
+
+            tokio::signal::ctrl_c().await.unwrap();
+        });
     }
 }

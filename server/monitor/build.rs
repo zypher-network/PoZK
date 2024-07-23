@@ -6,7 +6,7 @@ use std::io::Write;
 static TASK_MARKET_INFO: &str = "/task_market.rs";
 static STAKE_INFO: &str = "/stake.rs";
 
-static GAME_MARKET_INFO: &str = "/game_market.rs";
+static GAME_MARKET_INFO: &str = "/prover_market.rs";
 
 fn main() {
     let dest_path = env::var("OUT_DIR").unwrap();
@@ -29,12 +29,12 @@ fn main() {
             .unwrap();
     };
 
-    let _game_market_info = {
+    let _prover_market_info = {
         let json_content = std::fs::read_to_string("./../../public/ABI/ProverMarket.json").unwrap();
 
         let mut f = File::create(&format!("{dest_path}{GAME_MARKET_INFO}")).unwrap();
         f.write_all(
-            format!("pub const GAME_MARKET_CONTRACT_ABI: &str = {json_content:?};\n").as_bytes(),
+            format!("pub const PROVER_MARKET_CONTRACT_ABI: &str = {json_content:?};\n").as_bytes(),
         )
         .unwrap();
     };

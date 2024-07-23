@@ -1,12 +1,21 @@
 [package]
-name = "cli"
+name = "pozk-miner"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 clap.workspace = true
 anyhow.workspace = true
+toml.workspace = true
+serde.workspace = true
+tokio.workspace = true
+ethers.workspace = true
+env_logger.workspace = true
+
 api = { path = "../api" }
+docker = { path = "../docker" }
+db = { path = "../db" }
+monitor = { path = "../monitor" }
 
 [build-dependencies]
 git2.workspace = true

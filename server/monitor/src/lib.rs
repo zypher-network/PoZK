@@ -3,10 +3,13 @@ mod event;
 mod service;
 mod tx;
 
-pub use config::Config;
+pub use config::MonitorConfig;
+
+pub use service::Monitor;
+pub use tx::TxService;
 
 include!(concat!(env!("OUT_DIR"), "/task_market.rs"));
-include!(concat!(env!("OUT_DIR"), "/game_market.rs"));
+include!(concat!(env!("OUT_DIR"), "/prover_market.rs"));
 include!(concat!(env!("OUT_DIR"), "/stake.rs"));
 
 pub fn add(left: usize, right: usize) -> usize {
