@@ -1122,7 +1122,7 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 
 ```
 
-## get: prover/image/list?page_size=1&page_count=10
+## get: prover/container/list?page_size=1&page_count=10
 
 ### req
 ```jsonc
