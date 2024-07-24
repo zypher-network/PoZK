@@ -9,6 +9,7 @@ use ethers::core::k256::ecdsa::SigningKey;
 use ethers::core::rand::thread_rng;
 use ethers::prelude::{Http, LocalWallet, Middleware, Provider, ProviderExt, Wallet};
 use ethers::types::Address;
+use ethers::utils::hex;
 use jwt::SignWithKey;
 use once_cell::sync::OnceCell;
 use poem::error::InternalServerError;
@@ -110,7 +111,11 @@ impl ApiService {
 
         // to param
         let param = req.to_param().map_err(|e| {
-            log::error!("[login] uid: [{uid}], err: {:?}, backtrace: {:?}", e, e.backtrace());
+            log::error!(
+                "[login] uid: [{uid}], err: {:?}, backtrace: {:?}",
+                e,
+                e.backtrace()
+            );
             e
         })?;
 
@@ -258,6 +263,44 @@ impl ApiService {
         Ok(Resp::Ok(Json(RespData::new_data(
             &json!({
                 "controller": format!("{:?}",controller.0)
+            }),
+            &uid,
+        ))))
+    }
+
+    #[oai(
+        path = "/controller/export/:address",
+        method = "get",
+        tag = "ApiTags::Controller"
+    )]
+    pub async fn export_controller(
+        &self,
+        auth: ApiAuth,
+        address: Path<String>,
+    ) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
+        let uid = Uuid::new_v4().to_string();
+        log::info!("[get/controller/export] uid: [{uid}]");
+
+        let (controller_key, singing_key) = {
+            let address =
+                Address::from_str(&address.0).map_err(|e| anyhow!("address parse err: {e:?}"))?;
+
+            let key = ControllerKey(address);
+
+            let singing_key = self.db.controller_export(&miner, &key).await?;
+            let singing_key_hex = hex::encode(singing_key.to_bytes().as_slice());
+
+            (key, singing_key_hex)
+        };
+        Ok(Resp::Ok(Json(RespData::new_data(
+            &json!({
+                "controller": format!("{:?}",controller.0),
+                "singing_key": format!("0x{}",singing_key)
             }),
             &uid,
         ))))
@@ -497,21 +540,21 @@ pub mod test {
     use crate::poem::req::{ControllerAddReq, ControllerSetReq};
     use crate::ApiService;
     use db::{ControllerKey, ReDB};
+    use docker::DockerManager;
+    use ethers::abi::AbiEncode;
     use ethers::core::k256::ecdsa::SigningKey;
     use ethers::core::rand::thread_rng;
     use ethers::prelude::{LocalWallet, Provider, ProviderExt, Signer};
+    use ethers::utils::hex;
     use ethers::utils::hex::encode;
     use poem::http::uri::Authority;
     use reqwest::StatusCode;
     use serde_json::{json, Value};
+    use siwe::Message;
     use std::path::PathBuf;
     use std::str::FromStr;
     use std::sync::Arc;
     use std::time::Duration;
-    use ethers::abi::AbiEncode;
-    use ethers::utils::hex;
-    use siwe::Message;
-    use docker::DockerManager;
 
     static DOCKER_MANAGER_UPDATE_URL: &str = "http://127.0.0.1:9900/api/images";
 
@@ -546,7 +589,6 @@ pub mod test {
 
     #[test]
     fn test_eip4361() {
-
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -578,8 +620,6 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
             println!("sig: {}", hex::encode(&sig));
             message.verify_eip191(&sig).unwrap();
         });
-
-
     }
 
     #[test]

@@ -164,10 +164,7 @@ impl Monitor {
             } else {
                 // latest
                 if self.cfg.from + self.cfg.step < finalized {
-                    (
-                        self.cfg.from.saturating_sub(self.cfg.step),
-                        self.cfg.from,
-                    )
+                    (self.cfg.from.saturating_sub(self.cfg.step), self.cfg.from)
                 } else {
                     (
                         finalized.saturating_sub(self.cfg.step * 2),

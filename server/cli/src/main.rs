@@ -1,41 +1,39 @@
-use std::fs;
 use anyhow::Result;
+use api::{ApiConfig, ApiService};
 use clap::{Args, Parser, Subcommand};
+use db::ReDB;
+use ethers::prelude::{Provider, ProviderExt};
+use ethers::types::Address;
+use monitor::{Monitor, MonitorConfig, TxService};
+use serde::Deserialize;
+use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use ethers::prelude::{Provider, ProviderExt};
-use ethers::types::Address;
-use serde::Deserialize;
-use api::{ApiConfig, ApiService};
-use db::ReDB;
-use monitor::{Monitor, MonitorConfig, TxService};
 
 #[derive(Parser)]
 #[command(version, about, long_about, long_version = env!("BUILD_INFO_VERSION_LONG"))]
 pub struct Command {
     #[command(subcommand)]
     pub sub: SubCmd,
-
 }
-#[derive(Subcommand,Debug)]
+#[derive(Subcommand, Debug)]
 pub enum SubCmd {
     #[command(about = "Use a configuration file")]
     File(ConfigFile),
 
     #[command(about = "Use configuration options")]
-    Option(ConfigOption)
+    Option(ConfigOption),
 }
 
 #[derive(Args, Debug)]
 pub struct ConfigFile {
     #[clap(long, help = "Toml configuration file path")]
-    pub path: String
+    pub path: String,
 }
 
 #[derive(Args, Debug, Deserialize)]
 pub struct ConfigOption {
-
     #[clap(long, help = "redb file path, eg. /tmp/pozk/")]
     pub db_path: String,
 
@@ -69,9 +67,7 @@ async fn main() -> Result<()> {
             let co: ConfigOption = toml::from_str(&toml_str)?;
             co
         }
-        SubCmd::Option(co) => {
-            co
-        }
+        SubCmd::Option(co) => co,
     };
 
     let eth_cli = Provider::connect(&co.endpoint).await;
@@ -88,10 +84,7 @@ async fn main() -> Result<()> {
     };
 
     if co.open_monitor {
-        let mut monitor = Monitor::new(
-            &co.monitor_config,
-            eth_cli.clone(),
-        ).await?;
+        let mut monitor = Monitor::new(&co.monitor_config, eth_cli.clone()).await?;
 
         let receiver = monitor.register_tx_sender();
 
@@ -116,12 +109,7 @@ async fn main() -> Result<()> {
     }
 
     let _api = {
-        let api = ApiService::new(
-            &co.api_config,
-            db,
-            docker_manager,
-            eth_cli,
-        ).await?;
+        let api = ApiService::new(&co.api_config, db, docker_manager, eth_cli).await?;
 
         api.run().await?;
     };

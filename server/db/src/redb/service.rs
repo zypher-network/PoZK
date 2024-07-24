@@ -144,4 +144,24 @@ impl ReDB {
 
         Ok((controller, signing_key))
     }
+
+    pub async fn controller_export(
+        &self,
+        miner: &ControllerKey,
+        controller: &ControllerKey,
+    ) -> Result<SigningKey> {
+        let txn = self.db.begin_read()?;
+        let table = txn.open_table(CONTROLLER_TABLE)?;
+        let Some(controllers) = table.get(miner)? else {
+            return Err(anyhow!("miner: {miner:?} not exist controllers"));
+        };
+
+        let signing_key = if let Some(val) = controllers.value().0.get(&controller) {
+            SigningKey::from_slice(val)?
+        } else {
+            return Err(anyhow!("set key: {:?} not match val", controller));
+        };
+
+        Ok(signing_key)
+    }
 }

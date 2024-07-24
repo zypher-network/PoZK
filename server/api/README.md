@@ -103,6 +103,28 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 }
 ```
 
+## get:controller/export/{address}
+
+### req
+```jsonc
+X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
+
+{}
+```
+
+### resp
+```jsonc
+{
+  "code": 0,
+  "data": {
+    "controller": "0x0afa050c5d068d3d569daa5e50c440e231549141",
+    "singing_key": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+  },
+  "msg": null,
+  "uid": "1aa10f9d-be51-4549-823d-36063888d02b"
+}
+```
+
 ## query get:controller/set
 
 ### req
