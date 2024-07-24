@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
         }
     };
 
-    let eth_cli = Provider::connect("http://127.0.0.1:8545").await;
+    let eth_cli = Provider::connect(&co.endpoint).await;
 
     let db = {
         let db_path = PathBuf::from(co.db_path);
