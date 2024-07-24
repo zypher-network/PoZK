@@ -18,3 +18,4 @@ miner = "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc"
 [api_config]
 host = "0.0.0.0"
 port = 9098
+login_domain = "localhost:4000"

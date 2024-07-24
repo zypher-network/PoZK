@@ -60,7 +60,7 @@ impl ApiService {
         eth_cli: Provider<Http>,
     ) -> Result<Self> {
         let host = format!("{}:{}", cfg.host, cfg.port);
-        let domain = Authority::from_str(&host)?;
+        let domain = Authority::from_str(&cfg.login_domain)?;
         let chain_id = eth_cli.get_chainid().await?;
 
         Ok(Self {
@@ -624,7 +624,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
             .unwrap();
         rt.block_on(async {
             let eth_cli = Provider::connect("http://127.0.0.1:8545").await;
-            let domain = Authority::from_str("0.0.0.0:8090").unwrap();
+            let domain = Authority::from_str("localhost:4000").unwrap();
             let db = {
                 let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
                 Arc::new(db)
@@ -646,7 +646,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
 
                 let req = client.post("http://127.0.0.1:8090/api/login")
                     .json(&json!({
-                            "domain": "0.0.0.0:8090",
+                            "domain": "localhost:4000",
                             "address": "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc",
                             "uri": "http://0.0.0.0:8090/api/login",
                             "version": "1",

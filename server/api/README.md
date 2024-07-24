@@ -7,7 +7,7 @@ expiry_time: `default 1 min`
 ### req:
 ```jsonc
 {
-    "domain": "0.0.0.0:8090",
+    "domain": "localhost:4000", 
     "address": "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc",
     "uri": "http://0.0.0.0:8090/api/login",
     "version": "1",
