@@ -286,7 +286,7 @@ impl ApiService {
         let uid = Uuid::new_v4().to_string();
         log::info!("[get/controller/export] uid: [{uid}]");
 
-        let (controller_key, singing_key) = {
+        let (controller, singing_key) = {
             let address =
                 Address::from_str(&address.0).map_err(|e| anyhow!("address parse err: {e:?}"))?;
 
