@@ -4,44 +4,20 @@ use poem_openapi::Object;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use shiplift::builder::ContainerListOptionsBuilder;
+use shiplift::builder::{ContainerListOptionsBuilder, ImageListOptionsBuilder};
 use shiplift::rep::{Container, ContainerCreateInfo, ContainerDetails, Image, ImageDetails};
 use shiplift::{
     ContainerOptions, Docker, Error, ImageListOptions, PullOptions, RmContainerOptions,
 };
 use std::collections::BTreeMap;
+use chrono::{DateTime, Utc};
 
 #[derive(Clone)]
 pub struct DockerManager {
     docker: Docker,
-    docker_images: BTreeMap<String, String>,
-    update_url: String,
     req_client: Client,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ImageInfo {
-    pub image: Option<Image>,
-    pub details: ImageDetails,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ImageInfoList {
-    pub data: Vec<ImageInfo>,
-    pub total: usize,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ContainerInfo {
-    pub container: Option<Container>,
-    pub details: ContainerDetails,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ContainerInfoList {
-    pub data: Vec<ContainerInfo>,
-    pub total: usize,
-}
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
 pub struct ContainerNewOption {
@@ -52,6 +28,24 @@ pub struct ContainerNewOption {
     pub expose: Option<Vec<Expose>>,
     pub memory: Option<u64>,
     pub volumes: Option<Vec<Volumes>>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Object)]
+pub struct ImageInfo {
+    pub repository: String,
+    pub created: String,
+    pub id: String,
+    pub tag: String,
+    pub container_list: Vec<ContainerInfo>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Object)]
+pub struct ContainerInfo {
+    pub id: String,
+    pub created: String,
+    pub status: String,
+    pub image: String,
+    pub running: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
@@ -74,41 +68,17 @@ fn convert_to_vec_of_strs<'a>(vec: &'a Vec<String>) -> Vec<&'a str> {
 }
 
 impl DockerManager {
-    pub fn new(update_url: &str) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let docker = Docker::new();
         let client = Client::new();
-        let map = BTreeMap::new();
         Ok(Self {
             docker,
-            docker_images: map,
-            update_url: update_url.to_string(),
             req_client: client,
         })
     }
 
-    pub async fn update_images(&self, url: Option<String>) -> Result<BTreeMap<String, String>> {
-        let url = if let Some(url) = url {
-            url
-        } else {
-            self.update_url.clone()
-        };
-
-        let req = self.req_client.get(&url).build()?;
-        let resp = self.req_client.execute(req).await?;
-
-        if resp.status() == StatusCode::OK {
-            let body = resp.json::<Value>().await?;
-            let data = serde_json::from_value::<BTreeMap<String, String>>(body["data"].clone())?;
-            Ok(data)
-        } else {
-            let body = resp.bytes().await?;
-            let msg = String::from_utf8(body.to_vec())?;
-            Err(anyhow!("update images fail: {msg}, url: {url}"))
-        }
-    }
-
-    pub async fn pull_images(&self, image: &str, tag: &str) -> Result<()> {
-        let repo_tag = format!("{image}:{tag}");
+    pub async fn pull_image(&self, repository: &str, tag: &str) -> Result<()> {
+        let repo_tag = format!("{repository}:{tag}");
         let pull_options = PullOptions::builder().image(&repo_tag).build();
         let mut pull_stream = self.docker.images().pull(&pull_options);
         while let Some(pull_result) = pull_stream.next().await {
@@ -123,6 +93,7 @@ impl DockerManager {
             }
         }
 
+
         Ok(())
     }
 
@@ -133,7 +104,7 @@ impl DockerManager {
         option: &ContainerNewOption,
     ) -> Result<ContainerCreateInfo> {
         if !self.image_exist(image, tag).await? {
-            self.pull_images(image, tag).await?;
+            self.pull_image(image, tag).await?;
         }
 
         let repo_tag = format!("{image}:{tag}");
@@ -227,88 +198,6 @@ impl DockerManager {
             .map_err(|e| anyhow!("stop container : {e:?}"))
     }
 
-    pub async fn image_list(&self, from: usize, size: usize) -> Result<ImageInfoList> {
-        let images = self.docker.images();
-        let image_list = images.list(&ImageListOptions::default()).await?;
-
-        let total = image_list.len();
-
-        let image_list_pagination = image_list.into_iter().skip(from).take(size);
-
-        let mut list = vec![];
-
-        for i in image_list_pagination {
-            let image = images.get(&i.id);
-            let details = image.inspect().await?;
-
-            list.push(ImageInfo {
-                image: Some(i),
-                details,
-            })
-        }
-
-        Ok(ImageInfoList { data: list, total })
-    }
-
-    pub async fn container_list(&self, from: usize, size: usize) -> Result<ContainerInfoList> {
-        let containers = self.docker.containers();
-
-        let op = {
-            let mut op_builder = ContainerListOptionsBuilder::default();
-            op_builder.all().build();
-
-            op_builder.build()
-        };
-
-        let container_list = containers.list(&op).await?;
-        let total = container_list.len();
-        let container_list_pagination = container_list.into_iter().skip(from).take(size);
-
-        let mut list = vec![];
-
-        for c in container_list_pagination {
-            let container = containers.get(&c.id);
-
-            let details = container.inspect().await?;
-
-            list.push(ContainerInfo {
-                container: Some(c),
-                details,
-            })
-        }
-
-        Ok(ContainerInfoList { data: list, total })
-    }
-
-    pub async fn container_info(&self, id: &str) -> Result<ContainerInfo> {
-        let containers = self.docker.containers();
-        let container = containers.get(id);
-        let details = container.inspect().await?;
-        let c = containers
-            .list(&Default::default())
-            .await?
-            .iter()
-            .find_map(|c| if c.id == id { Some(c.clone()) } else { None });
-
-        return Ok(ContainerInfo {
-            container: c,
-            details,
-        });
-    }
-
-    pub async fn image_info(&self, id: &str) -> Result<ImageInfo> {
-        let images = self.docker.images();
-        let image = images.get(id);
-        let details = image.inspect().await?;
-        let i = images
-            .list(&Default::default())
-            .await?
-            .iter()
-            .find_map(|i| if i.id == id { Some(i.clone()) } else { None });
-
-        Ok(ImageInfo { image: i, details })
-    }
-
     pub async fn image_exist(&self, image: &str, tag: &str) -> Result<bool> {
         let repo_tag = format!("{image}:{tag}");
         let images = self
@@ -337,21 +226,91 @@ impl DockerManager {
             Ok(false)
         }
     }
+
+    pub async fn get_image_by_repository(
+        &self,
+        repository: &str,
+    ) -> Result<Option<String>> {
+        let op = {
+            let mut op = ImageListOptionsBuilder::default();
+            op.all();
+            op
+        };
+
+        let images = self.docker.images().list(&op.build()).await?;
+
+        for image in images {
+            let Some(repo_tags) = image.repo_tags else {
+                continue;
+            };
+
+            let Some(repo_tag) = repo_tags.get(0) else {
+                continue;
+            };
+
+            let split = repo_tag.split(":").collect::<Vec<_>>();
+            let Some(repo) = split.get(0) else {
+                continue;
+            };
+
+            if repo.eq(&repository) {
+                let split = image.id.split(":").collect::<Vec<_>>();;
+                let id = split.get(1).unwrap().to_string();
+                return Ok(Some(id))
+            }
+        }
+
+        Ok(None)
+    }
+
+    pub async fn prover_image_list(
+        &self,
+        image_id: &str,
+        container_ids: Vec<String>,
+    ) -> Result<ImageInfo> {
+        let image = self.docker.images().get(image_id);
+        let image_detail = image.inspect().await?;
+
+        let s = image_detail.repo_tags
+            .unwrap_or_default().get(0)
+            .unwrap_or(&"".to_string()).clone();
+
+        let split = s.split(":").collect::<Vec<_>>();
+        let repository = split.get(0).unwrap_or(&"").to_string();
+        let tag = split.get(1).unwrap_or(&"").to_string();
+
+        let mut image_info = ImageInfo{
+            repository,
+            created: image_detail.created.to_rfc3339(),
+            id: image_detail.id,
+            tag,
+            container_list: vec![],
+        };
+
+        for container_id in container_ids {
+            let container = self.docker.containers().get(container_id);
+            let container_detail = container.inspect().await?;
+
+            let container_info = ContainerInfo{
+                id: container_detail.id,
+                created: container_detail.created.to_rfc3339(),
+                status: container_detail.state.status,
+                image: container_detail.image,
+                running: container_detail.state.running,
+            };
+
+            image_info.container_list.push(container_info);
+        }
+
+        Ok(image_info)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use crate::service::Volumes;
     use crate::{ContainerNewOption, DockerManager, Expose};
-    use poem::listener::TcpListener;
-    use poem::{Route, Server};
-    use poem_openapi::payload::PlainText;
-    use poem_openapi::{OpenApi, OpenApiService};
-    use serde_json::json;
-    use std::collections::BTreeMap;
     use std::time::Duration;
-
-    static DOCKER_MANAGER_UPDATE_URL: &str = "http://127.0.0.1:9900/api/images";
 
     #[test]
     fn test_image_list() {
@@ -360,7 +319,7 @@ mod test {
             .build()
             .unwrap();
         rt.block_on(async {
-            let dm = DockerManager::new("").unwrap();
+            let dm = DockerManager::new().unwrap();
             let list = dm.image_list(0, 10).await.unwrap();
             let json = serde_json::to_string_pretty(&list).unwrap();
             println!("image list: {json}");
@@ -374,7 +333,7 @@ mod test {
             .build()
             .unwrap();
         rt.block_on(async {
-            let dm = DockerManager::new("").unwrap();
+            let dm = DockerManager::new().unwrap();
             let list = dm.container_list(0, 10).await.unwrap();
             let json = serde_json::to_string_pretty(&list).unwrap();
             println!("container list: {json}");
@@ -390,24 +349,14 @@ mod test {
             .build()
             .unwrap();
         rt.block_on(async {
-            // run docker images server
-            tokio::spawn(async {
-                docker_images_server().await;
-            });
 
-            tokio::time::sleep(Duration::from_secs(5)).await;
+            let mut dm = DockerManager::new().unwrap();
 
-            let mut dm = DockerManager::new(DOCKER_MANAGER_UPDATE_URL).unwrap();
-
-            // 1.
-            let remote_images = dm.update_images(None).await.unwrap();
-            dm.docker_images = remote_images;
-            println!("update images: {:?}", dm.docker_images);
 
             // image, tag, op
             let (image, tag, op) = {
                 let repo = "postgres";
-                let tag = dm.docker_images.get(repo).unwrap();
+                let tag = "latest";
                 let env = {
                     let mut list = vec![];
                     list.push("POSTGRES_PASSWORD=1".to_string());
@@ -471,24 +420,16 @@ mod test {
             .build()
             .unwrap();
         rt.block_on(async {
-            // run docker images server
-            tokio::spawn(async {
-                docker_images_server().await;
-            });
 
             tokio::time::sleep(Duration::from_secs(5)).await;
 
-            let mut dm = DockerManager::new(DOCKER_MANAGER_UPDATE_URL).unwrap();
+            let mut dm = DockerManager::new().unwrap();
 
-            // 1.
-            let remote_images = dm.update_images(None).await.unwrap();
-            dm.docker_images = remote_images;
-            println!("update images: {:?}", dm.docker_images);
 
             // image, tag, op
             let (image, tag, op) = {
                 let repo = "ghcr.io/rollkit/celestia-da";
-                let tag = dm.docker_images.get(repo).unwrap();
+                let tag = "v0.12.10";
 
                 let cmd = vec![
                     "celestia-da".to_string(),
@@ -566,32 +507,4 @@ mod test {
         });
     }
 
-    async fn docker_images_server() {
-        struct Api;
-
-        #[OpenApi]
-        impl Api {
-            #[oai(path = "/images", method = "get")]
-            async fn index(&self) -> PlainText<String> {
-                let json = json!({
-                    "data": {
-                        "ubuntu": "22.04",
-                        "postgres": "latest",
-                        "ghcr.io/rollkit/celestia-da": "v0.12.10"
-                    }
-                });
-
-                let data = serde_json::to_string_pretty(&json).unwrap();
-                PlainText(data)
-            }
-        }
-
-        let api_service =
-            OpenApiService::new(Api, "images server", "1.0").server("http://localhost:9900/api");
-
-        Server::new(TcpListener::bind("0.0.0.0:9900"))
-            .run(Route::new().nest("/api", api_service))
-            .await
-            .unwrap()
-    }
 }
