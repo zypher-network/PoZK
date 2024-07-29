@@ -167,6 +167,31 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minerMaxPer",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minerMinPer",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "playerMaxNum",
+        "type": "uint256"
+      }
+    ],
+    "name": "MinerPlayerPer",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "previousOwner",
@@ -378,6 +403,32 @@
   },
   {
     "inputs": [],
+    "name": "minerMaxPer",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "minerMinPer",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "owner",
     "outputs": [
       {
@@ -428,6 +479,19 @@
     "name": "playerCollect",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "playerMaxNum",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -500,6 +564,29 @@
       }
     ],
     "name": "setGamma",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_minerMaxPer",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_minerMinPer",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerMaxNum",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMinerPlayerPer",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

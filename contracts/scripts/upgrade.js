@@ -17,7 +17,9 @@ async function upgradeContractWithProxy(name) {
 }
 
 async function upgrade() {
-  await upgradeContractWithProxy("ProverMarket");
+  await upgradeContractWithProxy("Epoch");
+  await upgradeContractWithProxy("Reward");
+  await upgradeContractWithProxy("Stake");
 }
 
 async function main() {

@@ -45,6 +45,14 @@ bool maintenance
 
 Enter/esc maintenance mode, when entry maintenance mode, stake and reward will be stopped
 
+### NewEpoch
+
+```solidity
+event NewEpoch(uint256 now, uint256 startTime)
+```
+
+Emitted when entry new epoch
+
 ### initialize
 
 ```solidity

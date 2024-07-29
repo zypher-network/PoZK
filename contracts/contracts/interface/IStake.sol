@@ -23,6 +23,9 @@ interface IStake {
     /// get player staking
     function playerStaking(address account) external view returns (uint256);
 
+    /// add unstaking
+    function addUnstaking(address account, uint256 amount) external;
+
     /// get claimable unstaking amount
     function claimable(address account) external view returns (uint256);
 }

@@ -118,6 +118,30 @@ int256 gammaDenominator
 
 The denominator of the gamma
 
+### minerMaxPer
+
+```solidity
+uint256 minerMaxPer
+```
+
+The miner max percent of reward
+
+### minerMinPer
+
+```solidity
+uint256 minerMinPer
+```
+
+The miner min percent of reward
+
+### playerMaxNum
+
+```solidity
+uint256 playerMaxNum
+```
+
+The player max games number when reach minerMaxPer
+
 ### Alpha
 
 ```solidity
@@ -141,6 +165,14 @@ event Gamma(int256 betaNumerator, int256 betaDenominator)
 ```
 
 Emitted when update the alpha for cobb-douglas function
+
+### MinerPlayerPer
+
+```solidity
+event MinerPlayerPer(uint256 minerMaxPer, uint256 minerMinPer, uint256 playerMaxNum)
+```
+
+Emitted when update the percent of miner and player
 
 ### MinerLabor
 
@@ -246,6 +278,22 @@ Update the gamma for cobb-douglas function
 | ---- | ---- | ----------- |
 | _gammaNumerator | int256 | the numerator of the gamma |
 | _gammaDenominator | int256 | the denominator of the gamma |
+
+### setMinerPlayerPer
+
+```solidity
+function setMinerPlayerPer(uint256 _minerMaxPer, uint256 _minerMinPer, uint256 _playerMaxNum) public
+```
+
+Update the miner and player reward percent
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _minerMaxPer | uint256 | The miner max percent of reward |
+| _minerMinPer | uint256 | The miner min percent of reward |
+| _playerMaxNum | uint256 | The player max games number when reach minerMaxPer |
 
 ### work
 

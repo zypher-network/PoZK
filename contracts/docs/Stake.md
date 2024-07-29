@@ -70,6 +70,22 @@ event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 
 
 Emit when player staking change
 
+### AddUnstaking
+
+```solidity
+event AddUnstaking(uint256 epoch, address account, uint256 amount)
+```
+
+Emit when account add unstaking/reward
+
+### ClaimUnstaking
+
+```solidity
+event ClaimUnstaking(address account, uint256 amount)
+```
+
+Emit when account claimed the unstaking
+
 ### initialize
 
 ```solidity
@@ -335,6 +351,21 @@ Unstake by player
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
+| amount | uint256 | the unstaking amount |
+
+### addUnstaking
+
+```solidity
+function addUnstaking(address account, uint256 amount) public
+```
+
+Add new unstaking to next epoch, only this contract and reward contract.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| account | address | the unstaking account |
 | amount | uint256 | the unstaking amount |
 
 ### claimable

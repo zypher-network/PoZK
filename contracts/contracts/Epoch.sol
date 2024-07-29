@@ -24,6 +24,9 @@ contract Epoch is Initializable, OwnableUpgradeable, IEpoch {
     /// @notice Enter/esc maintenance mode, when entry maintenance mode, stake and reward will be stopped
     bool public maintenance;
 
+    /// @notice Emitted when entry new epoch
+    event NewEpoch(uint256 now, uint256 startTime);
+
     /// @notice Initialize
     /// @param _addresses the Addresses contract
     /// @param _period the epoch period time in seconds
@@ -59,6 +62,8 @@ contract Epoch is Initializable, OwnableUpgradeable, IEpoch {
         if (startTime + period < block.timestamp) {
             now++;
             startTime = block.timestamp;
+
+            emit NewEpoch(now, startTime);
         }
 
         return now;

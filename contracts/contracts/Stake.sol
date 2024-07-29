@@ -63,6 +63,12 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @notice Emit when player staking change
     event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 total);
 
+    /// @notice Emit when account add unstaking/reward
+    event AddUnstaking(uint256 epoch, address account, uint256 amount);
+
+    /// @notice Emit when account claimed the unstaking
+    event ClaimUnstaking(address account, uint256 amount);
+
     /// @notice Initialize
     /// @param _addresses the Addresses contract
     function initialize(address _addresses) public initializer {
@@ -252,13 +258,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         require(sm.newValue == 0 || sm.newValue >= minStakeAmount, "S04");
 
         // append to unstaking
-        Staking storage su = unstakings[msg.sender];
-        if (currentEpoch >= su.newEpoch) {
-            su.value += su.newValue;
-            su.newValue = 0;
-            su.newEpoch = currentEpoch + 1;
-        }
-        su.newValue += amount;
+        addUnstaking(msg.sender, amount);
 
         // remove from total staking
         Staking storage st = gs.minerTotal;
@@ -345,13 +345,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         sp.newValue -= amount;
 
         // append to unstaking
-        Staking storage su = unstakings[msg.sender];
-        if (currentEpoch >= su.newEpoch) {
-            su.value += su.newValue;
-            su.newValue = 0;
-            su.newEpoch = currentEpoch + 1;
-        }
-        su.newValue += amount;
+        addUnstaking(msg.sender, amount);
 
         // remove from total staking
         Staking storage st = playerTotal;
@@ -365,6 +359,25 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     }
 
     /// --------------- Unstaking --------------- ///
+
+    /// @notice Add new unstaking to next epoch, only this contract and reward contract.
+    /// @param account the unstaking account
+    /// @param amount the unstaking amount
+    function addUnstaking(address account, uint256 amount) public {
+        require(msg.sender == address(this) || msg.sender == IAddresses(addresses).get(Contracts.Reward), "S05");
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+
+        // append to unstaking
+        Staking storage su = unstakings[account];
+        if (currentEpoch >= su.newEpoch) {
+            su.value += su.newValue;
+            su.newValue = 0;
+            su.newEpoch = currentEpoch + 1;
+        }
+        su.newValue += amount;
+
+        emit AddUnstaking(currentEpoch + 1, account, amount);
+    }
 
     /// @notice Get claimable unstaking amount
     /// @param account the claiming account
@@ -397,5 +410,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
         // transfer amount to account
         IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(account, amount);
+
+        emit ClaimUnstaking(account, amount);
     }
 }

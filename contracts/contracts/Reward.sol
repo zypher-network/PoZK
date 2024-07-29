@@ -88,6 +88,15 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     /// @notice The denominator of the gamma
     int256 public gammaDenominator;
 
+    /// @notice The miner max percent of reward
+    uint256 public minerMaxPer;
+
+    /// @notice The miner min percent of reward
+    uint256 public minerMinPer;
+
+    /// @notice The player max games number when reach minerMaxPer
+    uint256 public playerMaxNum;
+
     /// @notice Emitted when update the alpha for cobb-douglas function
     event Alpha(int256 alphaNumerator, int256 alphaDenominator);
 
@@ -96,6 +105,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
     /// @notice Emitted when update the alpha for cobb-douglas function
     event Gamma(int256 betaNumerator, int256 betaDenominator);
+
+    /// @notice Emitted when update the percent of miner and player
+    event MinerPlayerPer(uint256 minerMaxPer, uint256 minerMinPer, uint256 playerMaxNum);
 
     /// @notice Emitted when add Labor(reward) for current pool
     event MinerLabor(uint256 epoch, address prover, address miner, uint256 work);
@@ -153,6 +165,18 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         gammaDenominator = _gammaDenominator;
 
         emit Gamma(gammaNumerator, gammaDenominator);
+    }
+
+    /// @notice Update the miner and player reward percent
+    /// @param _minerMaxPer The miner max percent of reward
+    /// @param _minerMinPer The miner min percent of reward
+    /// @param _playerMaxNum The player max games number when reach minerMaxPer
+    function setMinerPlayerPer(uint256 _minerMaxPer, uint256 _minerMinPer, uint256 _playerMaxNum) public onlyOwner {
+        minerMaxPer = _minerMaxPer;
+        minerMinPer = _minerMinPer;
+        playerMaxNum = _playerMaxNum;
+
+        emit MinerPlayerPer(minerMaxPer, minerMinPer, playerMaxNum);
     }
 
     /// @notice Add work(labor) to current epoch & prover, only call from TaskMarket
@@ -248,7 +272,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
         // Add amount to unstaking list
         if (amount > 0) {
-            // TODO
+            IStake(IAddresses(addresses).get(Contracts.Stake)).addUnstaking(miner, amount);
         }
 
         // clear unclaim prover
@@ -304,7 +328,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
         // Add amount to unstaking list
         if (amount > 0) {
-            // TODO
+            IStake(IAddresses(addresses).get(Contracts.Stake)).addUnstaking(player, amount);
         }
 
         // clear unclaim prover
@@ -375,7 +399,8 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // and release epoch token to reward
         if (gp.totalMinerReward == 0 && gp.totalPlayerReward == 0) {
             IProverMarket gm = IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket));
-            IVesting vesting = IVesting(IAddresses(addresses).get(Contracts.Vesting));
+            address vestingAddress = IAddresses(addresses).get(Contracts.Vesting);
+            IVesting vesting = IVesting(vestingAddress);
 
             uint256 amount = _cobbDouglas(
                 vesting.mine(epoch),
@@ -387,12 +412,22 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
                 alphaDenominator
             );
 
-            // TODO release epoch amount token to contract
+            // release epoch amount token to contract
             gp.unclaimReward = amount;
+            IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(vestingAddress, address(this), amount);
 
-            // TODO check or collect miner/player total reward,
-            gp.totalMinerReward = 1000;
-            gp.totalPlayerReward = 100;
+            // check or collect miner/player total reward,
+            // miner percent: y, player percent: 100 - y
+            // miner max per: p%，miner min per q%，
+            // player max num (games max number for reward): t, current games number: x
+            // (x - 1)  / (t - 1) * (p - q) + q = y => x * (p - q) / t + q = y
+            uint256 x = gp.totalWorking / 2;
+            uint256 y = minerMaxPer;
+            if (x < playerMaxNum) {
+                y = x * (minerMaxPer - minerMinPer) / playerMaxNum + minerMinPer;
+            }
+            gp.totalMinerReward = amount * y / 100;
+            gp.totalPlayerReward = amount - gp.totalMinerReward;
         }
     }
 
@@ -405,9 +440,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
         // clear prover pool
         if (gp.unclaimLabor == 0) {
-            // TODO return the remained
+            // return the remained
             if (gp.unclaimReward > 0) {
-                //
+                address vesting = IAddresses(addresses).get(Contracts.Vesting);
+                IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(vesting, gp.unclaimReward);
             }
 
             delete ep.proverPools[prover];
