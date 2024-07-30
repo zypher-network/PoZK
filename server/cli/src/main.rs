@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
     };
 
     let docker_manager = {
-        let dm = docker::DockerManager::new(&co.docker_update_url.unwrap_or_default())?;
+        let dm = docker::DockerManager::new()?;
         dm
     };
 

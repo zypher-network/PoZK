@@ -1,4 +1,4 @@
-use crate::poem::req::{ContainerNewReq, ControllerAddReq, ImagesUpdateReq};
+use crate::poem::req::{ContainerNewReq, ControllerAddReq, ImagePullReq, ImagesUpdateReq};
 use crate::poem::service::ApiTags::Controller;
 use crate::poem::{ApiAuth, LoginReq, Pagination, User, SERVER_KEY};
 use crate::{ApiConfig, Resp, RespData};
@@ -331,16 +331,48 @@ impl ApiService {
         ))))
     }
 
-    #[oai(path = "/prover/image/list", method = "get", tag = "ApiTags::Prover")]
-    pub async fn images_list(
+    #[oai(path = "/prover/add", method = "post", tag = "ApiTags::Prover")]
+    pub async fn prover_add(&self, auth: ApiAuth, req: Json<ImagePullReq>) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
+        let uid = Uuid::new_v4().to_string();
+        log::info!("[controller/add] uid: [{uid}]");
+
+        self.docker_manager.pull_image(&req.repository, &req.tag).await?;
+
+        let Some(image_id) = self.docker_manager.get_image_by_repository(&req.repository).await? else {
+            return Ok(Resp::Ok(Json(RespData::new_msg("pull image failed".to_string(), &uid, -1))));
+        };
+
+        self.db.docker_add(
+            &miner,
+            &image_id,
+            &req.name,
+            &req.repository,
+            &req.tag,
+            None,
+        ).await?;
+
+        Ok(Resp::Ok(Json(RespData::new(&uid))))
+    }
+
+    #[oai(path = "/prover/list", method = "get", tag = "ApiTags::Prover")]
+    pub async fn prover_list(
         &self,
         auth: ApiAuth,
         page_size: Query<Option<usize>>,
         page_count: Query<Option<usize>>,
     ) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
         let uid = Uuid::new_v4().to_string();
         log::info!(
-            "[image/list] uid: [{uid}], page_size: [{:?}], page_count: [{:?}]",
+            "[prover/list] uid: [{uid}], page_size: [{:?}], page_count: [{:?}]",
             page_size.0,
             page_count.0
         );
@@ -350,163 +382,32 @@ impl ApiService {
             page_size: page_size.0.unwrap_or_default(),
         };
         let (begin, take_count) = pagination.begin_and_take();
-        log::debug!("[image/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
+        log::debug!("[prover/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let res = self.docker_manager.image_list(begin, take_count).await?;
-
-            json!({
-                "data": res.data,
-                "total": res.total
-            })
+            let data = self.db.docker_image_list(&miner,begin,take_count).await?;
+            serde_json::to_value(&data).map_err(|e|anyhow!(e))?
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
     }
 
-    #[oai(
-        path = "/prover/image/pull/:image/:tag",
-        method = "get",
-        tag = "ApiTags::Prover"
-    )]
-    pub async fn image_pull(
-        &self,
-        auth: ApiAuth,
-        image: Path<String>,
-        tag: Path<String>,
-    ) -> poem::Result<Resp> {
-        let uid = Uuid::new_v4().to_string();
-        log::info!(
-            "[image/pull] uid: [{uid}], image: {}, tag: {}",
-            image.0,
-            tag.0
-        );
-
-        self.docker_manager.pull_images(&image.0, &tag.0).await?;
-
-        Ok(Resp::Ok(Json(RespData::new(&uid))))
-    }
-
-    #[oai(
-        path = "/prover/image/update/:url",
-        method = "post",
-        tag = "ApiTags::Prover"
-    )]
-    pub async fn image_update(
-        &self,
-        auth: ApiAuth,
-        url: Path<Option<String>>,
-    ) -> poem::Result<Resp> {
-        let uid = Uuid::new_v4().to_string();
-        log::info!("[image/update] uid: [{uid}], req: {:?}", url.0);
-
-        let data = {
-            let update_list = self.docker_manager.update_images(url.0).await?;
-            serde_json::to_value(update_list)
-                .map_err(|e| anyhow!("parse image update to data err: {e:?}"))?
-        };
-
-        log::info!("[image/update] uid: [{uid}] success");
-        Ok(Resp::Ok(Json(RespData::new_data(
-            &json!({
-                "image": data
-            }),
-            &uid,
-        ))))
-    }
-
-    #[oai(
-        path = "/prover/container/remove/:docker_id",
-        method = "post",
-        tag = "ApiTags::Prover"
-    )]
-    pub async fn container_remove(
-        &self,
-        auth: ApiAuth,
-        docker_id: Path<String>,
-    ) -> poem::Result<Resp> {
-        let uid = Uuid::new_v4().to_string();
-        log::info!("[container/remove] uid: [{uid}], req: {:?}", docker_id.0);
-
-        self.docker_manager.remove_container(&docker_id.0).await?;
-
-        Ok(Resp::Ok(Json(RespData::new(&uid))))
-    }
-
-    #[oai(
-        path = "/prover/container/new",
-        method = "post",
-        tag = "ApiTags::Prover"
-    )]
-    pub async fn container_new(
-        &self,
-        auth: ApiAuth,
-        req: Json<ContainerNewReq>,
-    ) -> poem::Result<Resp> {
-        let uid = Uuid::new_v4().to_string();
-        log::info!("[container/new] uid: [{uid}], req: {:?}", req.0);
-
-        let data = {
-            let container = self
-                .docker_manager
-                .new_container(&req.0.image, &req.0.tag, &req.0.option)
-                .await?;
-            serde_json::to_value(&container)
-                .map_err(|e| anyhow!("parse container to data err: {e:?}"))?
-        };
-        Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
-    }
-
-    #[oai(
-        path = "/prover/container/stop/:docker_id",
-        method = "post",
-        tag = "ApiTags::Prover"
-    )]
-    pub async fn container_stop(
-        &self,
-        auth: ApiAuth,
-        docker_id: Path<String>,
-    ) -> poem::Result<Resp> {
-        let uid = Uuid::new_v4().to_string();
-        log::info!("[container/stop] uid: [{uid}], req: {:?}", docker_id.0);
-
-        self.docker_manager.stop_container(&docker_id.0).await?;
-
-        Ok(Resp::Ok(Json(RespData::new(&uid))))
-    }
-
-    #[oai(
-        path = "/prover/container/start/:docker_id",
-        method = "post",
-        tag = "ApiTags::Prover"
-    )]
-    pub async fn container_start(
-        &self,
-        auth: ApiAuth,
-        docker_id: Path<String>,
-    ) -> poem::Result<Resp> {
-        let uid = Uuid::new_v4().to_string();
-        log::info!("[container/start] uid: [{uid}], req: {:?}", docker_id.0);
-
-        self.docker_manager.start_container(&docker_id.0).await?;
-
-        Ok(Resp::Ok(Json(RespData::new(&uid))))
-    }
-
-    #[oai(
-        path = "/prover/container/list",
-        method = "get",
-        tag = "ApiTags::Prover"
-    )]
+    #[oai(path = "/prover/:image_id/list", method = "get", tag = "ApiTags::Prover")]
     pub async fn container_list(
         &self,
         auth: ApiAuth,
         page_size: Query<Option<usize>>,
         page_count: Query<Option<usize>>,
+        image_id: Path<String>,
     ) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
         let uid = Uuid::new_v4().to_string();
         log::info!(
-            "[container/list] uid: [{uid}], page_size: [{:?}], page_count: [{:?}]",
+            "[prover/{}/list] uid: [{uid}], page_size: [{:?}], page_count: [{:?}]",
+            image_id.0,
             page_size.0,
             page_count.0
         );
@@ -516,23 +417,17 @@ impl ApiService {
             page_size: page_size.0.unwrap_or_default(),
         };
         let (begin, take_count) = pagination.begin_and_take();
-        log::debug!("[container/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
+        log::debug!("[prover/{}/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]",image_id.0);
 
         let data = {
-            let res = self
-                .docker_manager
-                .container_list(begin, take_count)
-                .await?;
-            // serde_json::to_value(&list)
-            //     .map_err(|e| anyhow!("parse container list to data err: {e:?}"))?
-            json!({
-                "data": res.data,
-                "total": res.total
-            })
+            let data = self.db.docker_container_list(&miner, &image_id.0, begin, take_count).await?;
+            serde_json::to_value(&data).map_err(|e|anyhow!(e))?
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
     }
+
+
 }
 
 #[cfg(test)]
@@ -571,7 +466,7 @@ pub mod test {
                 let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
                 Arc::new(db)
             };
-            let docker_manager = DockerManager::new(DOCKER_MANAGER_UPDATE_URL).unwrap();
+            let docker_manager = DockerManager::new().unwrap();
 
             let api = ApiService {
                 host: "0.0.0.0:8090".to_string(),
@@ -669,7 +564,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
                 let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
                 Arc::new(db)
             };
-            let docker_manager = DockerManager::new(DOCKER_MANAGER_UPDATE_URL).unwrap();
+            let docker_manager = DockerManager::new().unwrap();
 
             let api = ApiService {
                 host: "0.0.0.0:8090".to_string(),
@@ -738,7 +633,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
                 let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
                 Arc::new(db)
             };
-            let docker_manager = DockerManager::new(DOCKER_MANAGER_UPDATE_URL).unwrap();
+            let docker_manager = DockerManager::new().unwrap();
 
             let api = ApiService {
                 host: "0.0.0.0:8090".to_string(),
@@ -911,7 +806,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
                 let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
                 Arc::new(db)
             };
-            let docker_manager = DockerManager::new(DOCKER_MANAGER_UPDATE_URL).unwrap();
+            let docker_manager = DockerManager::new().unwrap();
 
             let api = ApiService {
                 host: "0.0.0.0:8090".to_string(),

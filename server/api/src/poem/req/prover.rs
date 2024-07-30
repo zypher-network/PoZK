@@ -14,3 +14,10 @@ pub struct ContainerNewReq {
     pub image: String,
     pub tag: String,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, Object)]
+pub struct ImagePullReq {
+    pub repository: String,
+    pub tag: String,
+    pub name: String,
+}
