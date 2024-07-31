@@ -97,16 +97,16 @@ impl DockerManager {
 
     pub async fn new_container(
         &self,
-        image: &str,
+        repo: &str,
         tag: &str,
         option: &ContainerNewOption,
     ) -> Result<ContainerCreateInfo> {
-        if !self.image_exist(image, tag).await? {
-            self.pull_image(image, tag).await?;
+        if !self.image_exist(repo, tag).await? {
+            self.pull_image(repo, tag).await?;
         }
 
-        let repo_tag = format!("{image}:{tag}");
-        let name = format!("minner-{}-{tag}", image.replace("/", "-"));
+        let repo_tag = format!("{repo}:{tag}");
+        let name = format!("minner-{}-{tag}", repo.replace("/", "-"));
 
         let mut container_options_builder = ContainerOptions::builder(&repo_tag);
         let mut container_options_builder_mut = container_options_builder.name(&name);

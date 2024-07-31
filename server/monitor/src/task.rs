@@ -1,12 +1,15 @@
 use crate::tx::{FuncType, TxChanData};
 use anyhow::Result;
+use db::{ControllerKey, ReDB};
 use docker::{ContainerNewOption, DockerManager, Volumes};
 use ethers::abi::{Bytes, Token, Uint};
+use ethers::types::Address;
 use ethers::utils::hex::hex::encode;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -22,11 +25,15 @@ pub struct TaskChanData {
     pub ty: TaskType,
     pub data: Vec<u8>,
     pub repo: String,
+    pub prover: Address,
     pub tag: String,
     pub tid: Uint,
+    pub miner: ControllerKey,
+    pub controller: ControllerKey,
 }
 
 pub struct TaskService {
+    db: Arc<ReDB>,
     docker_manager: DockerManager,
     task_receiver: UnboundedReceiver<TaskChanData>,
     tx_sender: UnboundedSender<TxChanData>,
@@ -35,6 +42,7 @@ pub struct TaskService {
 
 impl TaskService {
     pub fn new(
+        db: Arc<ReDB>,
         docker_manager: DockerManager,
         task_receiver: UnboundedReceiver<TaskChanData>,
         tx_sender: UnboundedSender<TxChanData>,
@@ -42,6 +50,7 @@ impl TaskService {
     ) -> Result<Self> {
         let base_path = PathBuf::from(bath_path);
         Ok(Self {
+            db,
             docker_manager,
             task_receiver,
             tx_sender,
@@ -49,15 +58,18 @@ impl TaskService {
         })
     }
 
+    ///
     pub fn run_task(
         data: TaskChanData,
         base_path: PathBuf,
         docker_manager: DockerManager,
         tx_sender: UnboundedSender<TxChanData>,
+        db: Arc<ReDB>,
     ) {
         spawn(async move {
             let mut base_path = base_path;
             let base_str = format!("{}:{}", data.repo, data.tag);
+
             // - mkdir folder
             base_path.push(&base_str);
             match tokio::fs::create_dir(&base_path).await {
@@ -153,6 +165,14 @@ impl TaskService {
                     }
                 };
 
+                // insert container_id to db
+                match db.prover_container_add(&data.miner, &data.prover, &ccf.id) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        log::error!("data: {data:?}, add container to db fail: {e:?}");
+                    }
+                }
+
                 match docker_manager.start_container(&ccf.id).await {
                     Ok(_) => {}
                     Err(e) => {
@@ -234,6 +254,7 @@ impl TaskService {
         });
     }
 
+    /// Execute tasks, and process messages received from the task channel according to different types
     pub fn run(mut self) {
         spawn(async move {
             while let Some(data) = self.task_receiver.recv().await {
@@ -246,6 +267,7 @@ impl TaskService {
                             base_path,
                             self.docker_manager.clone(),
                             self.tx_sender.clone(),
+                            self.db.clone(),
                         );
                     }
                 }

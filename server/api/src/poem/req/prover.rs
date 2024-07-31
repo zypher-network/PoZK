@@ -16,8 +16,16 @@ pub struct ContainerNewReq {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
-pub struct ImagePullReq {
+pub struct ProverPullReq {
     pub repository: String,
+    pub prover: String,
     pub tag: String,
     pub name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Object)]
+pub struct ProverNewReq {
+    pub option: ContainerNewOption,
+    pub prover: String,
+    pub tag: String,
 }

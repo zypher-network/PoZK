@@ -1,10 +1,12 @@
-use crate::poem::req::{ContainerNewReq, ControllerAddReq, ImagePullReq, ImagesUpdateReq};
+use crate::poem::req::{
+    ContainerNewReq, ControllerAddReq, ImagesUpdateReq, ProverNewReq, ProverPullReq,
+};
 use crate::poem::service::ApiTags::Controller;
 use crate::poem::{ApiAuth, LoginReq, Pagination, User, SERVER_KEY};
 use crate::{ApiConfig, Resp, RespData};
 use anyhow::{anyhow, Result};
 use db::{ControllerKey, ControllerValue, ReDB};
-use docker::DockerManager;
+use docker::{ContainerNewOption, DockerManager};
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::core::rand::thread_rng;
 use ethers::prelude::{Http, LocalWallet, Middleware, Provider, ProviderExt, Wallet};
@@ -183,7 +185,7 @@ impl ApiService {
         log::debug!("[controller/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let res = self.db.controller_list(&miner, begin, take_count).await?;
+            let res = self.db.controller_list(&miner, begin, take_count)?;
 
             json!({
                 "data": res.data,
@@ -216,9 +218,7 @@ impl ApiService {
 
         let key = ControllerKey::from(&param.signing_key);
 
-        self.db
-            .controller_add(&miner, &key, &param.signing_key)
-            .await?;
+        self.db.controller_add(&miner, &key, &param.signing_key)?;
         log::info!("[controller/add] uid: [{uid}] success");
 
         Ok(Resp::Ok(Json(RespData::new(&uid))))
@@ -243,7 +243,7 @@ impl ApiService {
 
         let key = ControllerKey(address);
 
-        self.db.controller_set(&miner, &key).await?;
+        self.db.controller_set(&miner, &key)?;
         log::info!("[controller/set] uid: [{uid}] success");
 
         Ok(Resp::Ok(Json(RespData::new(&uid))))
@@ -259,7 +259,7 @@ impl ApiService {
         let uid = Uuid::new_v4().to_string();
         log::info!("[get/controller/set] uid: [{uid}]");
 
-        let controller = self.db.query_controller_set(&miner).await?;
+        let controller = self.db.query_controller_set(&miner)?;
         Ok(Resp::Ok(Json(RespData::new_data(
             &json!({
                 "controller": format!("{:?}",controller.0)
@@ -292,7 +292,7 @@ impl ApiService {
 
             let key = ControllerKey(address);
 
-            let singing_key = self.db.controller_export(&miner, &key).await?;
+            let singing_key = self.db.controller_export(&miner, &key)?;
             let singing_key_hex = hex::encode(singing_key.to_bytes().as_slice());
 
             (key, singing_key_hex)
@@ -320,7 +320,7 @@ impl ApiService {
 
         let key = ControllerKey::from(&signing_key);
 
-        self.db.controller_add(&miner, &key, &signing_key).await?;
+        self.db.controller_add(&miner, &key, &signing_key)?;
         log::info!("[controller/new] uid: [{uid}] success");
 
         Ok(Resp::Ok(Json(RespData::new_data(
@@ -331,15 +331,17 @@ impl ApiService {
         ))))
     }
 
-    #[oai(path = "/prover/add", method = "post", tag = "ApiTags::Prover")]
-    pub async fn prover_add(&self, auth: ApiAuth, req: Json<ImagePullReq>) -> poem::Result<Resp> {
+    #[oai(path = "/prover/pull", method = "post", tag = "ApiTags::Prover")]
+    pub async fn prover_pull(&self, auth: ApiAuth, req: Json<ProverPullReq>) -> poem::Result<Resp> {
         let miner = {
             let address = auth.0.address;
             ControllerKey(address)
         };
 
+        let prover = Address::from_str(&req.prover).map_err(|e| anyhow!("{e:?}"))?;
+
         let uid = Uuid::new_v4().to_string();
-        log::info!("[controller/add] uid: [{uid}]");
+        log::info!("[prover/pull] uid: [{uid}], req: [{req:?}]");
 
         self.docker_manager
             .pull_image(&req.repository, &req.tag)
@@ -357,18 +359,46 @@ impl ApiService {
             ))));
         };
 
-        self.db
-            .docker_add(
-                &miner,
-                &image_id,
-                &req.name,
-                &req.repository,
-                &req.tag,
-                None,
-            )
-            .await?;
+        self.db.prover_add(
+            &miner,
+            &image_id,
+            &req.name,
+            &req.repository,
+            &prover,
+            &req.tag,
+            None,
+        )?;
 
         Ok(Resp::Ok(Json(RespData::new(&uid))))
+    }
+
+    #[oai(path = "/prover/new", method = "post", tag = "ApiTags::Prover")]
+    pub async fn prover_new(&self, auth: ApiAuth, req: Json<ProverNewReq>) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
+        let prover = Address::from_str(&req.prover).map_err(|e| anyhow!("{e:?}"))?;
+
+        let uid = Uuid::new_v4().to_string();
+        log::info!("[prover/new] uid: [{uid}], req: [{req:?}]");
+
+        let meta = self.db.prover_meta(&miner, &prover)?;
+
+        let ccf = self
+            .docker_manager
+            .new_container(&meta.repository, &meta.tag, &req.option)
+            .await?;
+
+        self.db.prover_container_add(&miner, &prover, &ccf.id)?;
+
+        Ok(Resp::Ok(Json(RespData::new_data(
+            &json!({
+                "container_id": ccf.id
+            }),
+            &uid,
+        ))))
     }
 
     #[oai(path = "/prover/list", method = "get", tag = "ApiTags::Prover")]
@@ -397,33 +427,32 @@ impl ApiService {
         log::debug!("[prover/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let data = self.db.docker_image_list(&miner, begin, take_count).await?;
+            let data = self.db.docker_image_list(&miner, begin, take_count)?;
             serde_json::to_value(&data).map_err(|e| anyhow!(e))?
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
     }
 
-    #[oai(
-        path = "/prover/:image_id/list",
-        method = "get",
-        tag = "ApiTags::Prover"
-    )]
+    #[oai(path = "/prover/:prover/list", method = "get", tag = "ApiTags::Prover")]
     pub async fn container_list(
         &self,
         auth: ApiAuth,
         page_size: Query<Option<usize>>,
         page_count: Query<Option<usize>>,
-        image_id: Path<String>,
+        prover: Path<String>,
     ) -> poem::Result<Resp> {
         let miner = {
             let address = auth.0.address;
             ControllerKey(address)
         };
+
+        let prover = Address::from_str(&prover).map_err(|e| anyhow!("{e:?}"))?;
+
         let uid = Uuid::new_v4().to_string();
         log::info!(
-            "[prover/{}/list] uid: [{uid}], page_size: [{:?}], page_count: [{:?}]",
-            image_id.0,
+            "[prover/{:?}/list] uid: [{uid}], page_size: [{:?}], page_count: [{:?}]",
+            prover,
             page_size.0,
             page_count.0
         );
@@ -435,15 +464,19 @@ impl ApiService {
         let (begin, take_count) = pagination.begin_and_take();
         log::debug!(
             "[prover/{}/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]",
-            image_id.0
+            prover
         );
 
+        let dcl = self
+            .db
+            .docker_container_list(&miner, &prover, begin, take_count)?;
+
         let data = {
-            let data = self
-                .db
-                .docker_container_list(&miner, &image_id.0, begin, take_count)
+            let info = self
+                .docker_manager
+                .prover_image_list(&dcl.meta.image_id, dcl.data)
                 .await?;
-            serde_json::to_value(&data).map_err(|e| anyhow!(e))?
+            serde_json::to_value(&info).map_err(|e| anyhow!("{e:?}"))?
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
@@ -454,7 +487,7 @@ impl ApiService {
 pub mod test {
     use crate::poem::req::{ControllerAddReq, ControllerSetReq};
     use crate::ApiService;
-    use db::{ControllerKey, ReDB};
+    use db::{ControllerKey, DockerImageList, ReDB};
     use docker::DockerManager;
     use ethers::abi::AbiEncode;
     use ethers::core::k256::ecdsa::SigningKey;
@@ -509,7 +542,7 @@ pub mod test {
             .build()
             .unwrap();
         rt.block_on(async {
-            let msg = r#"0.0.0.0:8090 wants you to sign in with your Ethereum account:
+            let msg = r#"localhost:4000 wants you to sign in with your Ethereum account:
 0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc
 
 Welcome to Zytron!
@@ -821,7 +854,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
         rt.block_on(async {
 
             let eth_cli = Provider::connect("http://127.0.0.1:8545").await;
-            let domain = Authority::from_str("0.0.0.0:8090").unwrap();
+            let domain = Authority::from_str("localhost:4000").unwrap();
             let db = {
                 let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
                 Arc::new(db)
@@ -845,16 +878,17 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
 
                 let req = client.post("http://127.0.0.1:8090/api/login")
                     .json(&json!({
-                            "domain": "0.0.0.0:8090",
-                            "address": "0xaa6321F2A813c720F0fa19f13789932d05c11e25",
+                            "domain": "localhost:4000",
+                            "address": "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc",
                             "uri": "http://0.0.0.0:8090/api/login",
                             "version": "1",
                             "chain_id": 31337,
                             "nonce": "00000000",
-                            "issued_at": "2024-07-08T11:42:18.807Z",
+                            "issued_at": "2024-07-23T11:42:18.807Z",
                             "v": 27,
-                            "r": "0x953391bcbad53d9c770728471840dfd57ce7c1622616a11e9e5385afd998f883",
-                            "s": "0x69e42b5f14e193d591b94d614fa41995b22f8ed00ca2309deea3753481f86ad0",
+                            "r": "0xa2a8e125ffb4ded5892d2ccf3535357b6089952ef046073fe26a259e0f2483ac",
+                            "s": "0x30a1b932730eb7af9c118fcf69e2c3bde4f035ea48f53d00e936852dc6966614",
+                            "statement": "Welcome to Zytron!",
                             "resources": []
                     }))
                     .build().unwrap();
@@ -865,26 +899,103 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
                 token
             };
 
-            // test image list
+            // test pull prover
             {
-                let req = client.get("http://127.0.0.1:8090/api/prover/image/list?page_size=20")
+                let req = client.post("http://127.0.0.1:8090/api/prover/pull")
+                    .json(&json!({
+                        "repository": "docker.registry.cyou/zyphernetwork/0x2e1c9adc548963273d9e767413403719019bd639",
+                        "prover": "0x2e1c9adc548963273d9e767413403719019bd639",
+                        "tag": "v1",
+                        "name": "shuffle"
+                    }))
+                    .header("X-API-Key", token.clone())
+                    .build().unwrap();
+
+                let result = client.execute(req).await.unwrap();
+                if result.status() == StatusCode::OK {
+                    let body = result.json::<Value>().await.unwrap();
+                    let str = serde_json::to_string_pretty(&body).unwrap();
+                    println!("add prover success result: {str}");
+                } else {
+                    let str = result.bytes().await.unwrap();
+                    println!("add prover fail: {str:?}");
+                }
+            }
+
+            // test new container to prover
+            {
+                let req = client.post("http://127.0.0.1:8090/api/prover/new")
+                    .json(&json!({
+                        "option": {
+                            "env": [
+                                "INPUT=/data/0x2e1c9adc548963273d9e767413403719019bd639.input",
+                                "OUTPUT=/data/0x2e1c9adc548963273d9e767413403719019bd639.publics",
+                                "PROOF=/data/0x2e1c9adc548963273d9e767413403719019bd639.proof"
+                            ],
+                            "volumes": [
+                                {
+                                    "src_volumes": "/data",
+                                    "host_volumes": "/home/cloud/zypher/pozk-shuffle/prover/examples"
+                                }
+                            ]
+                        },
+                        "prover": "0x2e1c9adc548963273d9e767413403719019bd639",
+                        "tag": "v1"
+                    }))
+                    .header("X-API-Key", token.clone())
+                    .build().unwrap();
+
+                let result = client.execute(req).await.unwrap();
+                if result.status() == StatusCode::OK {
+                    let body = result.json::<Value>().await.unwrap();
+                    let str = serde_json::to_string_pretty(&body).unwrap();
+                    println!("new prover success result: {str}");
+                } else {
+                    let str = result.bytes().await.unwrap();
+                    println!("new prover fail: {str:?}");
+                }
+            }
+
+            // test image list
+            let mut images = None;
+            {
+                let req = client.get("http://127.0.0.1:8090/api/prover/list")
                     .header("X-API-Key", token.clone())
                     .build().unwrap();
                 let result = client.execute(req).await.unwrap();
-                println!("result: {result:?}");
-                let body = result.json::<Value>().await.unwrap();
-                let str = serde_json::to_string_pretty(&body).unwrap();
-                println!("prover/image/list: {str}");
+                if result.status() == StatusCode::OK {
+                    let body = result.json::<Value>().await.unwrap();
+                    let data = body["data"].clone();
+                    let dil = serde_json::from_value::<DockerImageList>(data).unwrap();
+                    images.replace(dil);
+                    let str = serde_json::to_string_pretty(&body).unwrap();
+                    println!("prover list success result: {str}");
+                } else {
+                    let str = result.bytes().await.unwrap();
+                    println!("prover list fail: {str:?}");
+                }
             }
 
             // test container list
             {
-                let req = client.get("http://127.0.0.1:8090/api/prover/container/list")
-                    .header("X-API-Key", token.clone())
-                    .build().unwrap();
-                let result = client.execute(req).await.unwrap().json::<Value>().await.unwrap();
-                let str = serde_json::to_string_pretty(&result).unwrap();
-                println!("prover/container/list: {str}");
+                if images.is_some() {
+                    let dil = images.unwrap();
+                    for di in dil.data {
+                        let req = client.get(format!("http://127.0.0.1:8090/api/prover/{}/list", di.prover))
+                            .header("X-API-Key", token.clone())
+                            .build().unwrap();
+
+                        let result = client.execute(req).await.unwrap();
+                        if result.status() == StatusCode::OK {
+                            let body = result.json::<Value>().await.unwrap();
+                            let str = serde_json::to_string_pretty(&body).unwrap();
+                            println!("prover {} list success result: {str}", di.prover);
+                        } else {
+                            let str = result.bytes().await.unwrap();
+                            println!("prover {} list fail: {str:?}", di.prover);
+                        }
+                    }
+                }
             }
         });
     }

@@ -1,4 +1,5 @@
 use crate::{ControllerKey, ControllerValue};
+use ethers::types::Address;
 use redb::{TableDefinition, TypeName, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -7,18 +8,18 @@ use std::collections::BTreeMap;
 pub const DOCKER_TABLE: TableDefinition<ControllerKey, DockerValue> =
     TableDefinition::new("docker_table");
 
-/// Map<repository, Vec<container_id>>
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct DockerValue {
-    /// image_id -> container_id
-    pub containers: BTreeMap<String, Vec<String>>,
-    /// imager_id -> (repository, tag, name)
-    pub ids: BTreeMap<String, DockerImageMeta>,
+    /// prover -> Vec<container_id>
+    pub containers: BTreeMap<Address, Vec<String>>,
+    /// prover -> (repository, tag, name, image_id)
+    pub ids: BTreeMap<Address, DockerImageMeta>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct DockerImageMeta {
     pub repository: String,
+    pub image_id: String,
     pub tag: String,
     pub name: String,
 }

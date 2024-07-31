@@ -180,7 +180,21 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 
 ### resp
 ```jsonc
-TODO
+{
+  "code": 0,
+  "data": {
+    "data": [
+      {
+        "image_id": "40d7a381b0c23decd9efd2f87410568d30debab6f2ed1b9a8dba7816d093fbcc",
+        "name": "shuffle",
+        "prover": "0x2e1c9adc548963273d9e767413403719019bd639"
+      }
+    ],
+    "total": 1
+  },
+  "msg": null,
+  "uid": "0bddae4e-a03e-4050-bbde-472249e87e13"
+}
 ```
 
 
@@ -194,20 +208,40 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 
 ### resp
 ```jsonc
-TODO
+{
+  "code": 0,
+  "data": {
+    "container_list": [
+      {
+        "created": "2024-07-31T08:27:27.217254197+00:00",
+        "id": "582e98690aa872bfd6a6e08860ff50a63f3efc45574aed37af5247fa29992a7a",
+        "image": "sha256:40d7a381b0c23decd9efd2f87410568d30debab6f2ed1b9a8dba7816d093fbcc",
+        "running": false,
+        "status": "created"
+      }
+    ],
+    "created": "2024-07-26T03:33:36.846402506+00:00",
+    "id": "sha256:40d7a381b0c23decd9efd2f87410568d30debab6f2ed1b9a8dba7816d093fbcc",
+    "repository": "docker.registry.cyou/zyphernetwork/0x2e1c9adc548963273d9e767413403719019bd639",
+    "tag": "v1"
+  },
+  "msg": null,
+  "uid": "8e83bc56-2fb0-4d6b-85a1-5e0fff1a4f57"
+}
 ```
 
 
-## prover/add/
+## prover/pull/
 
 ### req
 ```jsonc
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 {
-    "repository": "zyphernetwork/0x2e1c9adc548963273d9e767413403719019bd639",
+    "repository": "docker.registry.cyou/zyphernetwork/0x2e1c9adc548963273d9e767413403719019bd639",
     "tag": "v1",
-    "name": "shuffle"
+    "name": "shuffle",
+    "prover": "0x2e1c9adc548963273d9e767413403719019bd639"
 }
 ```
 
@@ -218,5 +252,42 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
   "data": null,
   "msg": null,
   "uid": "5966b408-8ac5-4f7a-bc80-679df6100430"
+}
+```
+
+## prover/new/
+
+### req
+```jsonc
+X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
+
+{
+    "option": {
+        "env": [
+            "INPUT=/data/0x2e1c9adc548963273d9e767413403719019bd639.input",
+            "OUTPUT=/data/0x2e1c9adc548963273d9e767413403719019bd639.publics",
+            "PROOF=/data/0x2e1c9adc548963273d9e767413403719019bd639.proof"
+        ],
+        "volumes": [
+            {
+                "src_volumes": "/data",
+                "host_volumes": "/home/cloud/zypher/pozk-shuffle/prover/examples"
+            }
+        ]
+    },
+    "prover": "0x2e1c9adc548963273d9e767413403719019bd639",
+    "tag": "v1"
+}
+```
+
+### resp
+```jsonc
+{
+  "code": 0,
+  "data": {
+    "container_id": "582e98690aa872bfd6a6e08860ff50a63f3efc45574aed37af5247fa29992a7a"
+  },
+  "msg": null,
+  "uid": "c89efdbc-f4da-409f-9904-fa82a0197d73"
 }
 ```

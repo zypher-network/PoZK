@@ -1,7 +1,7 @@
 mod controller;
 mod login;
 mod prover;
-pub use prover::{ContainerNewReq, ImagePullReq, ImagesUpdateReq};
+pub use prover::{ContainerNewReq, ImagesUpdateReq, ProverNewReq, ProverPullReq};
 
 pub use controller::{ControllerAddParam, ControllerAddReq, ControllerSetReq};
 

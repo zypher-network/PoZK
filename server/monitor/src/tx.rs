@@ -24,6 +24,8 @@ use tokio::spawn;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
+pub static REPO_PREFIX: &str = "zyphernetwork";
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TxChanData {
     pub ty: FuncType,
@@ -156,7 +158,7 @@ impl TxService {
             while let Some(data) = self.tx_receiver.recv().await {
                 // - get controller & wallet cli
                 let (controller, eth_cli) = {
-                    let result = self.db.controller_set_entry(&miner_key).await;
+                    let result = self.db.controller_set_entry(&miner_key);
                     match result {
                         Ok((key, signing_key)) => {
                             let eth_cli = match self.gen_client(signing_key, key.0).await {
@@ -268,14 +270,14 @@ impl TxService {
                         };
 
                         // - get docker image
-                        let (repo, tag) = {
-                            let repo = {
+                        let (repo, tag, prover_address) = {
+                            let (repo, prover_address) = {
                                 let Some(prover) = prover.clone().into_address() else {
                                     log::warn!("prover: {prover:?} not address type");
                                     continue;
                                 };
 
-                                format!("zyphernetwork/{prover:?}")
+                                (format!("{REPO_PREFIX}/{prover:?}"), prover)
                             };
 
                             let tag = {
@@ -363,7 +365,7 @@ impl TxService {
                                 }
                             }
 
-                            (repo, tag)
+                            (repo, tag, prover_address)
                         };
 
                         // - create tx_data & to & task id
@@ -389,17 +391,16 @@ impl TxService {
                                 (id.clone(), tid)
                             };
 
-                            let tx_data = match func
-                                .encode_input(&vec![id, Token::Address(self.miner)])
-                            {
-                                Ok(v) => v,
-                                Err(e) => {
-                                    log::error!(
+                            let tx_data =
+                                match func.encode_input(&vec![id, Token::Address(self.miner)]) {
+                                    Ok(v) => v,
+                                    Err(e) => {
+                                        log::error!(
                                         "event: {data:?}, func: {func_type:?}, encode input: {e:?}"
                                     );
-                                    continue;
-                                }
-                            };
+                                        continue;
+                                    }
+                                };
 
                             (tx_data, task_market_address.clone(), tid)
                         };
@@ -447,8 +448,11 @@ impl TxService {
                                     ty: TaskType::RunTask,
                                     data: input,
                                     repo,
+                                    prover: prover_address,
                                     tag,
                                     tid,
+                                    miner: miner_key.clone(),
+                                    controller: ControllerKey(controller),
                                 };
                                 match sender.send(task_data) {
                                     Ok(_) => {
