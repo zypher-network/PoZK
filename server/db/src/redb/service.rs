@@ -1,12 +1,16 @@
-use crate::{ControllerKey, ControllerValue, CONTROLLER_SET, CONTROLLER_SET_KEY, CONTROLLER_TABLE, DOCKER_TABLE, DockerValue, DockerImageMeta};
+use crate::{
+    ControllerKey, ControllerValue, DockerImageMeta, DockerValue, CONTROLLER_SET,
+    CONTROLLER_SET_KEY, CONTROLLER_TABLE, DOCKER_TABLE,
+};
 use anyhow::{anyhow, Result};
 use ethers::core::k256::ecdsa::SigningKey;
+use ethers::types::Address;
 use redb::{Database, ReadableTable, ReadableTableMetadata};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 
 pub struct ReDB {
     db: Arc<Database>,
@@ -22,11 +26,13 @@ pub struct ControllerList {
 pub struct DockerContainerList {
     pub data: Vec<String>,
     pub total: usize,
+    pub meta: DockerImageMeta,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DockerImage {
-    pub id: String,
+    pub image_id: String,
+    pub prover: String,
     pub name: String,
 }
 
@@ -54,7 +60,7 @@ impl ReDB {
         Ok(Self { db: Arc::new(db) })
     }
 
-    pub async fn controller_add(
+    pub fn controller_add(
         &self,
         miner: &ControllerKey,
         controller: &ControllerKey,
@@ -77,11 +83,7 @@ impl ReDB {
         Ok(())
     }
 
-    pub async fn controller_set(
-        &self,
-        miner: &ControllerKey,
-        controller: &ControllerKey,
-    ) -> Result<()> {
+    pub fn controller_set(&self, miner: &ControllerKey, controller: &ControllerKey) -> Result<()> {
         let txn = self.db.begin_read()?;
         let table = txn.open_table(CONTROLLER_TABLE)?;
 
@@ -108,7 +110,7 @@ impl ReDB {
         Ok(())
     }
 
-    pub async fn query_controller_set(&self, miner: &ControllerKey) -> Result<ControllerKey> {
+    pub fn query_controller_set(&self, miner: &ControllerKey) -> Result<ControllerKey> {
         let txn = self.db.begin_read()?;
         let table = txn.open_table(CONTROLLER_SET)?;
         let Some(controller) = table.get(miner)? else {
@@ -118,7 +120,7 @@ impl ReDB {
         Ok(controller.value())
     }
 
-    pub async fn controller_list(
+    pub fn controller_list(
         &self,
         miner: &ControllerKey,
         from: usize,
@@ -143,11 +145,11 @@ impl ReDB {
         Ok(ControllerList { data: list, total })
     }
 
-    pub async fn controller_set_entry(
+    pub fn controller_set_entry(
         &self,
         miner: &ControllerKey,
     ) -> Result<(ControllerKey, SigningKey)> {
-        let controller = self.query_controller_set(miner).await?;
+        let controller = self.query_controller_set(miner)?;
         let txn = self.db.begin_read()?;
 
         let table = txn.open_table(CONTROLLER_TABLE)?;
@@ -164,7 +166,7 @@ impl ReDB {
         Ok((controller, signing_key))
     }
 
-    pub async fn controller_export(
+    pub fn controller_export(
         &self,
         miner: &ControllerKey,
         controller: &ControllerKey,
@@ -186,12 +188,13 @@ impl ReDB {
 }
 
 impl ReDB {
-    pub async fn docker_add(
+    pub fn prover_add(
         &self,
         miner: &ControllerKey,
         image_id: &str,
         image_name: &str,
         repository: &str,
+        prover: &Address,
         tag: &str,
         container_id: Option<&str>,
     ) -> Result<()> {
@@ -204,39 +207,95 @@ impl ReDB {
                 DockerValue::default()
             };
 
-
             if let Some(id) = container_id {
                 let mut exist = false;
 
-                if let Some(containers) = dv.containers.get_mut(image_id) {
+                if let Some(containers) = dv.containers.get_mut(prover) {
                     containers.push(id.to_string());
                     exist = true;
                 }
 
                 if !exist {
-                    dv.containers.insert(image_id.to_string(), vec![id.to_string()]);
+                    let mut exist = false;
+
+                    if let Some(containers) = dv.containers.get_mut(prover) {
+                        containers.push(id.to_string());
+                        exist = true;
+                    }
+
+                    if !exist {
+                        dv.containers.insert(prover.clone(), vec![id.to_string()]);
+                    }
                 }
             }
 
-            dv.ids.insert(image_id.to_string(), DockerImageMeta{
-                repository: repository.to_string(),
-                tag: tag.to_string(),
-                name: image_name.to_string(),
-            });
+            dv.ids.insert(
+                prover.clone(),
+                DockerImageMeta {
+                    repository: repository.to_string(),
+                    image_id: image_id.to_string(),
+                    tag: tag.to_string(),
+                    name: image_name.to_string(),
+                },
+            );
 
             table.insert(miner, dv)?;
         }
         txn.commit()?;
 
         Ok(())
-
     }
 
-    pub async fn docker_delete(
+    pub fn prover_container_add(
         &self,
         miner: &ControllerKey,
-        image_id: &str,
+        prover: &Address,
+        container_id: &str,
     ) -> Result<()> {
+        let txn = self.db.begin_write()?;
+        {
+            let mut table = txn.open_table(DOCKER_TABLE)?;
+            let mut dv = if let Some(dv) = table.get(miner)? {
+                dv.value()
+            } else {
+                return Err(anyhow!("miner: {miner:?} not exist repository map"));
+            };
+
+            let mut exist = false;
+
+            if let Some(containers) = dv.containers.get_mut(&prover) {
+                containers.push(container_id.to_string());
+                exist = true;
+            }
+
+            if !exist {
+                dv.containers
+                    .insert(prover.clone(), vec![container_id.to_string()]);
+            }
+
+            table.insert(miner, dv)?;
+        }
+        txn.commit()?;
+        Ok(())
+    }
+
+    pub fn prover_meta(&self, miner: &ControllerKey, prover: &Address) -> Result<DockerImageMeta> {
+        let txn = self.db.begin_read()?;
+        let mut table = txn.open_table(DOCKER_TABLE)?;
+        let mut dv = if let Some(dv) = table.get(miner)? {
+            dv.value()
+        } else {
+            return Err(anyhow!("miner: {miner:?} not exist repository map"));
+        };
+
+        return if let Some(meta) = dv.ids.get(prover) {
+            Ok(meta.clone())
+        } else {
+            Err(anyhow!("prover: {prover:?} not exist on db"))
+        };
+    }
+
+    pub fn prover_image_remove(&self, miner: &ControllerKey, prover: &Address) -> Result<()> {
         let txn = self.db.begin_write()?;
         {
             let mut table = txn.open_table(DOCKER_TABLE)?;
@@ -247,8 +306,8 @@ impl ReDB {
                 return Err(anyhow!("miner: {miner:?} not exist repository map"));
             };
 
-            dv.ids.remove(image_id);
-            dv.containers.remove(image_id);
+            dv.ids.remove(prover);
+            dv.containers.remove(prover);
 
             table.insert(miner, dv)?;
         }
@@ -257,10 +316,10 @@ impl ReDB {
         Ok(())
     }
 
-    pub async fn docker_container_list(
+    pub fn docker_container_list(
         &self,
         miner: &ControllerKey,
-        image_id: &str,
+        prover: &Address,
         from: usize,
         size: usize,
     ) -> Result<DockerContainerList> {
@@ -271,18 +330,32 @@ impl ReDB {
         } else {
             return Err(anyhow!("miner: {miner:?} not exist repository map"));
         };
-        let Some(list) = dv.containers.get(image_id) else {
-            return Err(anyhow!("repository: {image_id} not exist container"));
+
+        let Some(list) = dv.containers.get(prover) else {
+            return Err(anyhow!("prover: {prover:?} not exist container"));
+        };
+
+        let Some(meta) = dv.ids.get(prover) else {
+            return Err(anyhow!("prover: {prover:?} not exist meta"));
         };
 
         let total = list.len();
 
-        let data = list.iter().skip(from).take(size).map(|v|v.clone()).collect::<Vec<_>>();
+        let data = list
+            .iter()
+            .skip(from)
+            .take(size)
+            .map(|v| v.clone())
+            .collect::<Vec<_>>();
 
-        Ok(DockerContainerList{ data, total })
+        Ok(DockerContainerList {
+            data,
+            total,
+            meta: meta.clone(),
+        })
     }
 
-    pub async fn docker_image_list(
+    pub fn docker_image_list(
         &self,
         miner: &ControllerKey,
         from: usize,
@@ -298,12 +371,18 @@ impl ReDB {
 
         let total = dv.ids.len();
 
-        let data = dv.ids.iter().skip(from).take(size).map(|(id,meta)|DockerImage{
-            id: id.clone(),
-            name: meta.name.clone(),
-        }).collect::<Vec<_>>();
+        let data = dv
+            .ids
+            .iter()
+            .skip(from)
+            .take(size)
+            .map(|(prover, meta)| DockerImage {
+                image_id: meta.image_id.to_string(),
+                prover: format!("{prover:?}"),
+                name: meta.name.clone(),
+            })
+            .collect::<Vec<_>>();
 
-        Ok(DockerImageList{ data, total })
-
+        Ok(DockerImageList { data, total })
     }
 }

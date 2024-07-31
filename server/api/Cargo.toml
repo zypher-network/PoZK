@@ -29,3 +29,4 @@ docker = { path = "../docker" }
 [dev-dependencies]
 reqwest.workspace = true
 env_logger.workspace = true
+docker = { path = "../docker" }

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
 use futures_util::StreamExt;
 use poem_openapi::Object;
 use reqwest::{Client, StatusCode};
@@ -10,14 +11,12 @@ use shiplift::{
     ContainerOptions, Docker, Error, ImageListOptions, PullOptions, RmContainerOptions,
 };
 use std::collections::BTreeMap;
-use chrono::{DateTime, Utc};
 
 #[derive(Clone)]
 pub struct DockerManager {
     docker: Docker,
     req_client: Client,
 }
-
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
 pub struct ContainerNewOption {
@@ -93,22 +92,21 @@ impl DockerManager {
             }
         }
 
-
         Ok(())
     }
 
     pub async fn new_container(
         &self,
-        image: &str,
+        repo: &str,
         tag: &str,
         option: &ContainerNewOption,
     ) -> Result<ContainerCreateInfo> {
-        if !self.image_exist(image, tag).await? {
-            self.pull_image(image, tag).await?;
+        if !self.image_exist(repo, tag).await? {
+            self.pull_image(repo, tag).await?;
         }
 
-        let repo_tag = format!("{image}:{tag}");
-        let name = format!("minner-{}-{tag}", image.replace("/", "-"));
+        let repo_tag = format!("{repo}:{tag}");
+        let name = format!("minner-{}-{tag}", repo.replace("/", "-"));
 
         let mut container_options_builder = ContainerOptions::builder(&repo_tag);
         let mut container_options_builder_mut = container_options_builder.name(&name);
@@ -227,10 +225,7 @@ impl DockerManager {
         }
     }
 
-    pub async fn get_image_by_repository(
-        &self,
-        repository: &str,
-    ) -> Result<Option<String>> {
+    pub async fn get_image_by_repository(&self, repository: &str) -> Result<Option<String>> {
         let op = {
             let mut op = ImageListOptionsBuilder::default();
             op.all();
@@ -254,9 +249,9 @@ impl DockerManager {
             };
 
             if repo.eq(&repository) {
-                let split = image.id.split(":").collect::<Vec<_>>();;
+                let split = image.id.split(":").collect::<Vec<_>>();
                 let id = split.get(1).unwrap().to_string();
-                return Ok(Some(id))
+                return Ok(Some(id));
             }
         }
 
@@ -271,15 +266,18 @@ impl DockerManager {
         let image = self.docker.images().get(image_id);
         let image_detail = image.inspect().await?;
 
-        let s = image_detail.repo_tags
-            .unwrap_or_default().get(0)
-            .unwrap_or(&"".to_string()).clone();
+        let s = image_detail
+            .repo_tags
+            .unwrap_or_default()
+            .get(0)
+            .unwrap_or(&"".to_string())
+            .clone();
 
         let split = s.split(":").collect::<Vec<_>>();
         let repository = split.get(0).unwrap_or(&"").to_string();
         let tag = split.get(1).unwrap_or(&"").to_string();
 
-        let mut image_info = ImageInfo{
+        let mut image_info = ImageInfo {
             repository,
             created: image_detail.created.to_rfc3339(),
             id: image_detail.id,
@@ -291,7 +289,7 @@ impl DockerManager {
             let container = self.docker.containers().get(container_id);
             let container_detail = container.inspect().await?;
 
-            let container_info = ContainerInfo{
+            let container_info = ContainerInfo {
                 id: container_detail.id,
                 created: container_detail.created.to_rfc3339(),
                 status: container_detail.state.status,
@@ -349,9 +347,7 @@ mod test {
             .build()
             .unwrap();
         rt.block_on(async {
-
             let mut dm = DockerManager::new().unwrap();
-
 
             // image, tag, op
             let (image, tag, op) = {
@@ -420,11 +416,9 @@ mod test {
             .build()
             .unwrap();
         rt.block_on(async {
-
             tokio::time::sleep(Duration::from_secs(5)).await;
 
             let mut dm = DockerManager::new().unwrap();
-
 
             // image, tag, op
             let (image, tag, op) = {
@@ -506,5 +500,4 @@ mod test {
             // println!("container list: {:?}", container_list);
         });
     }
-
 }

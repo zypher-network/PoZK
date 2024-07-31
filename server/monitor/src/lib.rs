@@ -1,11 +1,13 @@
 mod config;
 mod event;
 mod service;
+mod task;
 mod tx;
 
 pub use config::MonitorConfig;
 
 pub use service::Monitor;
+pub use task::TaskService;
 pub use tx::TxService;
 
 include!(concat!(env!("OUT_DIR"), "/task_market.rs"));
