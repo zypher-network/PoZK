@@ -1,4 +1,4 @@
-use crate::tx::TxChanData;
+use crate::tx::{FuncType, TxChanData};
 use crate::TASK_MARKET_CONTRACT_ABI;
 use anyhow::Result;
 use ethers::abi::{Bytes as AbiBytes, Log as AbiLog, RawLog};
@@ -59,7 +59,7 @@ impl EventManager {
                 .map(|v| (v.name, v.value))
                 .collect::<BTreeMap<_, _>>();
             return Ok(Some(TxChanData {
-                ty: ty.clone(),
+                ty: FuncType::from(ty),
                 data: map,
             }));
         }

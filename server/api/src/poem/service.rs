@@ -341,20 +341,32 @@ impl ApiService {
         let uid = Uuid::new_v4().to_string();
         log::info!("[controller/add] uid: [{uid}]");
 
-        self.docker_manager.pull_image(&req.repository, &req.tag).await?;
+        self.docker_manager
+            .pull_image(&req.repository, &req.tag)
+            .await?;
 
-        let Some(image_id) = self.docker_manager.get_image_by_repository(&req.repository).await? else {
-            return Ok(Resp::Ok(Json(RespData::new_msg("pull image failed".to_string(), &uid, -1))));
+        let Some(image_id) = self
+            .docker_manager
+            .get_image_by_repository(&req.repository)
+            .await?
+        else {
+            return Ok(Resp::Ok(Json(RespData::new_msg(
+                "pull image failed".to_string(),
+                &uid,
+                -1,
+            ))));
         };
 
-        self.db.docker_add(
-            &miner,
-            &image_id,
-            &req.name,
-            &req.repository,
-            &req.tag,
-            None,
-        ).await?;
+        self.db
+            .docker_add(
+                &miner,
+                &image_id,
+                &req.name,
+                &req.repository,
+                &req.tag,
+                None,
+            )
+            .await?;
 
         Ok(Resp::Ok(Json(RespData::new(&uid))))
     }
@@ -385,14 +397,18 @@ impl ApiService {
         log::debug!("[prover/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         let data = {
-            let data = self.db.docker_image_list(&miner,begin,take_count).await?;
-            serde_json::to_value(&data).map_err(|e|anyhow!(e))?
+            let data = self.db.docker_image_list(&miner, begin, take_count).await?;
+            serde_json::to_value(&data).map_err(|e| anyhow!(e))?
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
     }
 
-    #[oai(path = "/prover/:image_id/list", method = "get", tag = "ApiTags::Prover")]
+    #[oai(
+        path = "/prover/:image_id/list",
+        method = "get",
+        tag = "ApiTags::Prover"
+    )]
     pub async fn container_list(
         &self,
         auth: ApiAuth,
@@ -417,17 +433,21 @@ impl ApiService {
             page_size: page_size.0.unwrap_or_default(),
         };
         let (begin, take_count) = pagination.begin_and_take();
-        log::debug!("[prover/{}/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]",image_id.0);
+        log::debug!(
+            "[prover/{}/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]",
+            image_id.0
+        );
 
         let data = {
-            let data = self.db.docker_container_list(&miner, &image_id.0, begin, take_count).await?;
-            serde_json::to_value(&data).map_err(|e|anyhow!(e))?
+            let data = self
+                .db
+                .docker_container_list(&miner, &image_id.0, begin, take_count)
+                .await?;
+            serde_json::to_value(&data).map_err(|e| anyhow!(e))?
         };
 
         Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
     }
-
-
 }
 
 #[cfg(test)]

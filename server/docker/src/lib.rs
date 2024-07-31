@@ -1,5 +1,5 @@
 mod service;
-pub use service::{ContainerInfo, ContainerNewOption, DockerManager, Expose, ImageInfo};
+pub use service::{ContainerInfo, ContainerNewOption, DockerManager, Expose, ImageInfo, Volumes};
 
 #[cfg(test)]
 mod tests {

@@ -1,12 +1,15 @@
-use crate::{ControllerKey, ControllerValue, CONTROLLER_SET, CONTROLLER_SET_KEY, CONTROLLER_TABLE, DOCKER_TABLE, DockerValue, DockerImageMeta};
+use crate::{
+    ControllerKey, ControllerValue, DockerImageMeta, DockerValue, CONTROLLER_SET,
+    CONTROLLER_SET_KEY, CONTROLLER_TABLE, DOCKER_TABLE,
+};
 use anyhow::{anyhow, Result};
 use ethers::core::k256::ecdsa::SigningKey;
 use redb::{Database, ReadableTable, ReadableTableMetadata};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
-use serde::{Deserialize, Serialize};
 
 pub struct ReDB {
     db: Arc<Database>,
@@ -204,7 +207,6 @@ impl ReDB {
                 DockerValue::default()
             };
 
-
             if let Some(id) = container_id {
                 let mut exist = false;
 
@@ -214,29 +216,28 @@ impl ReDB {
                 }
 
                 if !exist {
-                    dv.containers.insert(image_id.to_string(), vec![id.to_string()]);
+                    dv.containers
+                        .insert(image_id.to_string(), vec![id.to_string()]);
                 }
             }
 
-            dv.ids.insert(image_id.to_string(), DockerImageMeta{
-                repository: repository.to_string(),
-                tag: tag.to_string(),
-                name: image_name.to_string(),
-            });
+            dv.ids.insert(
+                image_id.to_string(),
+                DockerImageMeta {
+                    repository: repository.to_string(),
+                    tag: tag.to_string(),
+                    name: image_name.to_string(),
+                },
+            );
 
             table.insert(miner, dv)?;
         }
         txn.commit()?;
 
         Ok(())
-
     }
 
-    pub async fn docker_delete(
-        &self,
-        miner: &ControllerKey,
-        image_id: &str,
-    ) -> Result<()> {
+    pub async fn docker_delete(&self, miner: &ControllerKey, image_id: &str) -> Result<()> {
         let txn = self.db.begin_write()?;
         {
             let mut table = txn.open_table(DOCKER_TABLE)?;
@@ -277,9 +278,14 @@ impl ReDB {
 
         let total = list.len();
 
-        let data = list.iter().skip(from).take(size).map(|v|v.clone()).collect::<Vec<_>>();
+        let data = list
+            .iter()
+            .skip(from)
+            .take(size)
+            .map(|v| v.clone())
+            .collect::<Vec<_>>();
 
-        Ok(DockerContainerList{ data, total })
+        Ok(DockerContainerList { data, total })
     }
 
     pub async fn docker_image_list(
@@ -298,12 +304,17 @@ impl ReDB {
 
         let total = dv.ids.len();
 
-        let data = dv.ids.iter().skip(from).take(size).map(|(id,meta)|DockerImage{
-            id: id.clone(),
-            name: meta.name.clone(),
-        }).collect::<Vec<_>>();
+        let data = dv
+            .ids
+            .iter()
+            .skip(from)
+            .take(size)
+            .map(|(id, meta)| DockerImage {
+                id: id.clone(),
+                name: meta.name.clone(),
+            })
+            .collect::<Vec<_>>();
 
-        Ok(DockerImageList{ data, total })
-
+        Ok(DockerImageList { data, total })
     }
 }
