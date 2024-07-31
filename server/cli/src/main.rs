@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
     let eth_cli = Provider::connect(&co.endpoint).await;
 
     let db = {
-        let db_path = PathBuf::from(co.base_path);
+        let db_path = PathBuf::from(&co.base_path);
         let db = ReDB::new(&db_path, true)?;
         Arc::new(db)
     };
@@ -111,6 +111,7 @@ async fn main() -> Result<()> {
 
         // create task service
         let task_service = TaskService::new(
+            db.clone(),
             docker_manager.clone(),
             task_receiver,
             tx_sender.clone(),
