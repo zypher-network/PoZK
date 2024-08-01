@@ -58,7 +58,14 @@ impl TaskService {
         })
     }
 
-    ///
+    /// 1. create folder
+    /// 2. create file
+    /// 3. run task
+    ///     1. create container
+    ///     2. save container to db
+    ///     3. start container
+    /// 4. wait task result
+    /// 5. send data to tx chan
     pub fn run_task(
         data: TaskChanData,
         base_path: PathBuf,
@@ -70,7 +77,7 @@ impl TaskService {
             let mut base_path = base_path;
             let base_str = format!("{}:{}", data.repo, data.tag);
 
-            // - mkdir folder
+            // - create folder
             base_path.push(&base_str);
             match tokio::fs::create_dir(&base_path).await {
                 Ok(_) => {}
@@ -80,7 +87,7 @@ impl TaskService {
                 }
             }
 
-            // - mkdir file
+            // - create file
             let (input_file, input_base, publics_file, publics_path, proof_file, proof_path) = {
                 let (input_file, input_base) = {
                     let input_file = format!("{}.input", &base_str);

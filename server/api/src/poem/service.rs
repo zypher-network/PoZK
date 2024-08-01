@@ -184,16 +184,17 @@ impl ApiService {
         let (begin, take_count) = pagination.begin_and_take();
         log::debug!("[controller/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
-        let data = {
-            let res = self.db.controller_list(&miner, begin, take_count)?;
-
-            json!({
-                "data": res.data,
-                "total": res.total
-            })
-        };
-
-        Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
+        if let Some(res) = self.db.controller_list(&miner, begin, take_count)? {
+            Ok(Resp::Ok(Json(RespData::new_data(
+                &json!({
+                    "data": res.data,
+                    "total": res.total
+                }),
+                &uid,
+            ))))
+        } else {
+            Ok(Resp::Ok(Json(RespData::new(&uid))))
+        }
     }
 
     #[oai(path = "/controller/add", method = "post", tag = "ApiTags::Controller")]
@@ -426,12 +427,12 @@ impl ApiService {
         let (begin, take_count) = pagination.begin_and_take();
         log::debug!("[prover/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
-        let data = {
-            let data = self.db.docker_image_list(&miner, begin, take_count)?;
-            serde_json::to_value(&data).map_err(|e| anyhow!(e))?
-        };
-
-        Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
+        if let Some(data) = self.db.docker_image_list(&miner, begin, take_count)? {
+            let data = serde_json::to_value(&data).map_err(|e| anyhow!(e))?;
+            Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
+        } else {
+            Ok(Resp::Ok(Json(RespData::new(&uid))))
+        }
     }
 
     #[oai(path = "/prover/:prover/list", method = "get", tag = "ApiTags::Prover")]
@@ -467,19 +468,22 @@ impl ApiService {
             prover
         );
 
-        let dcl = self
+        if let Some(dcl) = self
             .db
-            .docker_container_list(&miner, &prover, begin, take_count)?;
+            .docker_container_list(&miner, &prover, begin, take_count)?
+        {
+            let data = {
+                let info = self
+                    .docker_manager
+                    .prover_image_list(&dcl.meta.image_id, dcl.data)
+                    .await?;
+                serde_json::to_value(&info).map_err(|e| anyhow!("{e:?}"))?
+            };
 
-        let data = {
-            let info = self
-                .docker_manager
-                .prover_image_list(&dcl.meta.image_id, dcl.data)
-                .await?;
-            serde_json::to_value(&info).map_err(|e| anyhow!("{e:?}"))?
-        };
-
-        Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
+            Ok(Resp::Ok(Json(RespData::new_data(&data, &uid))))
+        } else {
+            Ok(Resp::Ok(Json(RespData::new(&uid))))
+        }
     }
 }
 

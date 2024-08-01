@@ -151,6 +151,7 @@ impl TxService {
     /// 6. send tx
     /// 7. wait receipt
     /// 8. judge receipt
+    /// 9. send data to task chan
     pub fn run(mut self) {
         spawn(async move {
             let miner_key = ControllerKey(self.miner);

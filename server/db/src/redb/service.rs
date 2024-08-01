@@ -125,11 +125,12 @@ impl ReDB {
         miner: &ControllerKey,
         from: usize,
         size: usize,
-    ) -> Result<ControllerList> {
+    ) -> Result<Option<ControllerList>> {
         let txn = self.db.begin_read()?;
         let table = txn.open_table(CONTROLLER_TABLE)?;
         let Some(controllers) = table.get(miner)? else {
-            return Err(anyhow!("miner: {miner:?} not exits controllers"));
+            log::warn!("miner: {miner:?} not exits controllers");
+            return Ok(None);
         };
 
         let total = controllers.value().0.len();
@@ -142,7 +143,7 @@ impl ReDB {
             list.push(key.clone());
         }
 
-        Ok(ControllerList { data: list, total })
+        Ok(Some(ControllerList { data: list, total }))
     }
 
     pub fn controller_set_entry(
@@ -322,21 +323,24 @@ impl ReDB {
         prover: &Address,
         from: usize,
         size: usize,
-    ) -> Result<DockerContainerList> {
+    ) -> Result<Option<DockerContainerList>> {
         let txn = self.db.begin_read()?;
         let mut table = txn.open_table(DOCKER_TABLE)?;
         let mut dv = if let Some(dv) = table.get(miner)? {
             dv.value()
         } else {
-            return Err(anyhow!("miner: {miner:?} not exist repository map"));
+            log::warn!("miner: {miner:?} not exist repository map");
+            return Ok(None);
         };
 
         let Some(list) = dv.containers.get(prover) else {
-            return Err(anyhow!("prover: {prover:?} not exist container"));
+            log::warn!("prover: {prover:?} not exist container");
+            return Ok(None);
         };
 
         let Some(meta) = dv.ids.get(prover) else {
-            return Err(anyhow!("prover: {prover:?} not exist meta"));
+            log::warn!("prover: {prover:?} not exist meta");
+            return Ok(None);
         };
 
         let total = list.len();
@@ -348,11 +352,11 @@ impl ReDB {
             .map(|v| v.clone())
             .collect::<Vec<_>>();
 
-        Ok(DockerContainerList {
+        Ok(Some(DockerContainerList {
             data,
             total,
             meta: meta.clone(),
-        })
+        }))
     }
 
     pub fn docker_image_list(
@@ -360,13 +364,14 @@ impl ReDB {
         miner: &ControllerKey,
         from: usize,
         size: usize,
-    ) -> Result<DockerImageList> {
+    ) -> Result<Option<DockerImageList>> {
         let txn = self.db.begin_read()?;
         let mut table = txn.open_table(DOCKER_TABLE)?;
         let mut dv = if let Some(dv) = table.get(miner)? {
             dv.value()
         } else {
-            return Err(anyhow!("miner: {miner:?} not exist repository map"));
+            log::warn!("miner: {miner:?} not exist repository map");
+            return Ok(None);
         };
 
         let total = dv.ids.len();
@@ -383,6 +388,6 @@ impl ReDB {
             })
             .collect::<Vec<_>>();
 
-        Ok(DockerImageList { data, total })
+        Ok(Some(DockerImageList { data, total }))
     }
 }
