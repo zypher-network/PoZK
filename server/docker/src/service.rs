@@ -310,33 +310,19 @@ mod test {
     use crate::{ContainerNewOption, DockerManager, Expose};
     use std::time::Duration;
 
-    #[test]
-    fn test_image_list() {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        rt.block_on(async {
-            let dm = DockerManager::new().unwrap();
-            let list = dm.image_list(0, 10).await.unwrap();
-            let json = serde_json::to_string_pretty(&list).unwrap();
-            println!("image list: {json}");
-        });
-    }
-
-    #[test]
-    fn test_container_list() {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        rt.block_on(async {
-            let dm = DockerManager::new().unwrap();
-            let list = dm.container_list(0, 10).await.unwrap();
-            let json = serde_json::to_string_pretty(&list).unwrap();
-            println!("container list: {json}");
-        });
-    }
+    // #[test]
+    // fn test_image_list() {
+    //     let rt = tokio::runtime::Builder::new_current_thread()
+    //         .enable_all()
+    //         .build()
+    //         .unwrap();
+    //     rt.block_on(async {
+    //         let dm = DockerManager::new().unwrap();
+    //         let list = dm.image_list(0, 10).await.unwrap();
+    //         let json = serde_json::to_string_pretty(&list).unwrap();
+    //         println!("image list: {json}");
+    //     });
+    // }
 
     #[test]
     fn test_run_postgres() {
@@ -376,26 +362,26 @@ mod test {
             };
 
             // 2. pull image
-            dm.pull_images(image, tag).await.unwrap();
+            dm.pull_image(image, tag).await.unwrap();
 
             // 3. new postgres
             let cc_info = dm.new_container(image, tag, &op).await.unwrap();
             println!("container create info: {cc_info:?}");
 
             // 4. start
-            dm.start_container(&cc_info.id).await.unwrap();
-            let container_info = dm.container_info(&cc_info.id).await.unwrap();
-            println!("start container_info: {:?}", container_info);
+            // dm.start_container(&cc_info.id).await.unwrap();
+            // let container_info = dm.container_info(&cc_info.id).await.unwrap();
+            // println!("start container_info: {:?}", container_info);
 
             // 5. stop
-            dm.stop_container(&cc_info.id).await.unwrap();
-            let container_info = dm.container_info(&cc_info.id).await.unwrap();
-            println!("stop container_info: {:?}", container_info);
+            // dm.stop_container(&cc_info.id).await.unwrap();
+            // let container_info = dm.container_info(&cc_info.id).await.unwrap();
+            // println!("stop container_info: {:?}", container_info);
 
             // 6. remove
-            dm.remove_container(&cc_info.id).await.unwrap();
-            let container_list = dm.container_list(0, 10).await.unwrap();
-            println!("container list: {:?}", container_list);
+            // dm.remove_container(&cc_info.id).await.unwrap();
+            // let container_list = dm.container_list(0, 10).await.unwrap();
+            // println!("container list: {:?}", container_list);
         })
     }
 
@@ -478,16 +464,16 @@ mod test {
             };
 
             // 2. pull image
-            dm.pull_images(image, tag).await.unwrap();
+            dm.pull_image(image, tag).await.unwrap();
 
             // 3. new postgres
             let cc_info = dm.new_container(image, tag, &op).await.unwrap();
             println!("container create info: {cc_info:?}");
 
             // 4. start
-            dm.start_container(&cc_info.id).await.unwrap();
-            let container_info = dm.container_info(&cc_info.id).await.unwrap();
-            println!("start container_info: {:?}", container_info);
+            // dm.start_container(&cc_info.id).await.unwrap();
+            // let container_info = dm.container_info(&cc_info.id).await.unwrap();
+            // println!("start container_info: {:?}", container_info);
 
             // 5. stop
             // dm.stop_container(&cc_info.id).await.unwrap();

@@ -280,19 +280,59 @@ impl ReDB {
         Ok(())
     }
 
-    pub fn prover_meta(&self, miner: &ControllerKey, prover: &Address) -> Result<DockerImageMeta> {
+    pub fn prover_container_remove(
+        &self,
+        miner: &ControllerKey,
+        prover: &Address,
+        container_id: &str,
+    ) -> Result<()> {
+        let txn = self.db.begin_write()?;
+        {
+            let mut table = txn.open_table(DOCKER_TABLE)?;
+            let mut dv = if let Some(dv) = table.get(miner)? {
+                dv.value()
+            } else {
+                return Err(anyhow!("miner: {miner:?} not exist repository map"));
+            };
+
+            let mut index = None;
+            if let Some(containers) = dv.containers.get(prover) {
+
+                for (idx,id) in containers.iter().enumerate() {
+                    if id.eq(container_id) {
+                        index.replace(idx);
+                        break;
+                    }
+                }
+            }
+
+            if let Some(idx) = index {
+                let mut containers = dv.containers.get_mut(prover).unwrap(); // safe
+                containers.remove(idx);
+            }
+
+            table.insert(miner, dv)?;
+        }
+        txn.commit()?;
+        Ok(())
+
+    }
+
+    pub fn prover_meta(&self, miner: &ControllerKey, prover: &Address) -> Result<Option<DockerImageMeta>> {
         let txn = self.db.begin_read()?;
         let mut table = txn.open_table(DOCKER_TABLE)?;
         let mut dv = if let Some(dv) = table.get(miner)? {
             dv.value()
         } else {
-            return Err(anyhow!("miner: {miner:?} not exist repository map"));
+            log::warn!("miner: {miner:?} not exist repository map");
+            return Ok(None);
         };
 
         return if let Some(meta) = dv.ids.get(prover) {
-            Ok(meta.clone())
+            Ok(Some(meta.clone()))
         } else {
-            Err(anyhow!("prover: {prover:?} not exist on db"))
+            log::warn!("prover: {prover:?} not exist on db");
+            Ok(None)
         };
     }
 

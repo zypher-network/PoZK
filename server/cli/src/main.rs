@@ -75,7 +75,7 @@ async fn main() -> Result<()> {
 
     let db = {
         let db_path = PathBuf::from(&co.base_path);
-        let db = ReDB::new(&db_path, true)?;
+        let db = ReDB::new(&db_path, co.db_remove)?;
         Arc::new(db)
     };
 

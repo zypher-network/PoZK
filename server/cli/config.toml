@@ -1,15 +1,15 @@
 
-base_path = "/tmp/pozk"
-db_remove = true
-endpoint = "http://127.0.0.1:8545"
-open_monitor = false
+base_path = "/home/cloud/tmp/pozk"
+db_remove = false
+endpoint = "https://opbnb-testnet-rpc.bnbchain.org"
+open_monitor = true
 
 [monitor_config]
 task_market_address = "0x6c0B94931832dA710b08616ddC224F4248F51c55"
 prover_market_address = "0xFe9D416465EeCc6585f96469424e1d9594cadB50"
 stake_address = "0xE84Bd749AbbC2F33Dae9511DEF117CBE24472436"
-from = 34754619
-delay_sec = 60
+from = 0
+delay_sec = 0
 step = 10
 wait_time = 10
 block_number_type = "latest"

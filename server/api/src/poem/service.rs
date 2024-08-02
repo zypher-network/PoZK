@@ -385,7 +385,9 @@ impl ApiService {
         let uid = Uuid::new_v4().to_string();
         log::info!("[prover/new] uid: [{uid}], req: [{req:?}]");
 
-        let meta = self.db.prover_meta(&miner, &prover)?;
+        let Some(meta) = self.db.prover_meta(&miner, &prover)? else {
+            return Ok(Resp::Ok(Json(RespData::new_err("miner not exist".to_string(), &uid))));
+        };
 
         let ccf = self
             .docker_manager
@@ -551,11 +553,11 @@ pub mod test {
 
 Welcome to Zytron!
 
-URI: http://0.0.0.0:8090/api/login
+URI: http://0.0.0.0:9098/api/login
 Version: 1
-Chain ID: 31337
+Chain ID: 5611
 Nonce: 00000000
-Issued At: 2024-07-23T11:42:18.807Z"#;
+Issued At: 2024-08-02T10:35:18.807Z"#;
 
             let message: Message = msg.parse().unwrap();
             println!("message: {message:?}");
@@ -615,7 +617,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
             .build()
             .unwrap();
         rt.block_on(async {
-            let eth_cli = Provider::connect("http://127.0.0.1:8545").await;
+            let eth_cli = Provider::connect("https://miner.zypher.game/api/login").await;
             let domain = Authority::from_str("localhost:4000").unwrap();
             let db = {
                 let db = ReDB::new(&PathBuf::from("/tmp/pozk/"), true).unwrap();
@@ -625,7 +627,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
 
             let api = ApiService {
                 host: "0.0.0.0:8090".to_string(),
-                chain_id: 31337,
+                chain_id: 5611,
                 eth_cli,
                 domain,
                 db,
@@ -640,14 +642,14 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
                     .json(&json!({
                             "domain": "localhost:4000",
                             "address": "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc",
-                            "uri": "http://0.0.0.0:8090/api/login",
+                            "uri": "http://0.0.0.0:8098/api/login",
                             "version": "1",
-                            "chain_id": 31337,
+                            "chain_id": 5611,
                             "nonce": "00000000",
-                            "issued_at": "2024-07-23T11:42:18.807Z",
-                            "v": 27,
-                            "r": "0xf69e02fdeb811acab1d39938de4bec54931e2f0b4357f3793f6717e1f39d4665",
-                            "s": "0x126cc57b71ffad79ceabffbc3d88a39afb0a62e0132e0cff3450a9db2e06ade9",
+                            "issued_at": "2024-08-02T10:35:18.807Z",
+                            "v": 28,
+                            "r": "0x9870cecbc7a3db437951da275252b2c75e2eeb8c06f6daf6a32a6791da6e71d2",
+                            "s": "0x470c3c2d3ee7979adc138a1de327588e458f4fdbd3edcb8d950d4d3ba3155531",
                             "statement": "Welcome to Zytron!",
                             "resources": []
                     }))
@@ -657,13 +659,13 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
                     let body = result.json::<Value>().await.unwrap();
                     println!("login: {body:?}");
 
-                    let token = body["data"]["token"].clone().as_str().unwrap().to_string();
-                    let req = client.get("http://127.0.0.1:8090/api/hello")
-                        .header("X-API-Key", token)
-                        .build()
-                        .unwrap();
-                    let result = client.execute(req).await.unwrap();
-                    println!("hello: {result:?}")
+                    // let token = body["data"]["token"].clone().as_str().unwrap().to_string();
+                    // let req = client.get("http://127.0.0.1:8090/api/hello")
+                    //     .header("X-API-Key", token)
+                    //     .build()
+                    //     .unwrap();
+                    // let result = client.execute(req).await.unwrap();
+                    // println!("hello: {result:?}")
                 } else {
                     let body = result.bytes().await.unwrap();
                     let str = String::from_utf8(body.to_vec()).unwrap();
@@ -907,8 +909,8 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
             {
                 let req = client.post("http://127.0.0.1:8090/api/prover/pull")
                     .json(&json!({
-                        "repository": "docker.registry.cyou/zyphernetwork/0x2e1c9adc548963273d9e767413403719019bd639",
-                        "prover": "0x2e1c9adc548963273d9e767413403719019bd639",
+                        "repository": "docker.registry.cyou/zyphernetwork/0x48a7fb14fd5711cf057bc7392973680231e8aebb",
+                        "prover": "0x48a7fb14fd5711cf057bc7392973680231e8aebb",
                         "tag": "v1",
                         "name": "shuffle"
                     }))
@@ -932,9 +934,9 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
                     .json(&json!({
                         "option": {
                             "env": [
-                                "INPUT=/data/0x2e1c9adc548963273d9e767413403719019bd639.input",
-                                "OUTPUT=/data/0x2e1c9adc548963273d9e767413403719019bd639.publics",
-                                "PROOF=/data/0x2e1c9adc548963273d9e767413403719019bd639.proof"
+                                "INPUT=/data/0x48a7fb14fd5711cf057bc7392973680231e8aebb.input",
+                                "OUTPUT=/data/0x48a7fb14fd5711cf057bc7392973680231e8aebb.publics",
+                                "PROOF=/data/0x48a7fb14fd5711cf057bc7392973680231e8aebb.proof"
                             ],
                             "volumes": [
                                 {
@@ -943,7 +945,7 @@ Issued At: 2024-07-23T11:42:18.807Z"#;
                                 }
                             ]
                         },
-                        "prover": "0x2e1c9adc548963273d9e767413403719019bd639",
+                        "prover": "0x48a7fb14fd5711cf057bc7392973680231e8aebb",
                         "tag": "v1"
                     }))
                     .header("X-API-Key", token.clone())

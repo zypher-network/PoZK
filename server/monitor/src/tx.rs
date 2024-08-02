@@ -32,6 +32,8 @@ pub struct TxChanData {
     pub data: BTreeMap<String, Token>,
 }
 
+
+
 #[derive(Clone, Serialize, Deserialize, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum FuncType {
     AcceptTask,
@@ -136,6 +138,13 @@ impl TxService {
         })
     }
 
+    pub fn prover_version_to_tag(version: &str) -> String {
+        match version {
+            "1" => "v1".to_string(),
+            _ => "v1".to_string(),
+        }
+    }
+
     /// Procedure
     /// 1. get controller & wallet cli
     ///     The reason why it is necessary to obtain it every time is that if the user changes the controller from the front end,
@@ -157,6 +166,8 @@ impl TxService {
             let miner_key = ControllerKey(self.miner);
 
             while let Some(data) = self.tx_receiver.recv().await {
+                log::debug!("data: {data:?}");
+                let ty = data.ty.clone();
                 // - get controller & wallet cli
                 let (controller, eth_cli) = {
                     let result = self.db.controller_set_entry(&miner_key);
@@ -165,7 +176,7 @@ impl TxService {
                             let eth_cli = match self.gen_client(signing_key, key.0).await {
                                 Ok(v) => v,
                                 Err(e) => {
-                                    log::error!("event: {data:?}, create wallet cli: {e:?}");
+                                    log::error!("type: {ty:?}, create wallet cli: {e:?}");
                                     continue;
                                 }
                             };
@@ -173,7 +184,7 @@ impl TxService {
                             (key.0, eth_cli)
                         }
                         Err(e) => {
-                            panic!("event: {data:?}, tx service get controller set: {:?}", e)
+                            panic!("type: {ty:?}, tx service get controller set: {:?}", e)
                         }
                     }
                 };
@@ -184,13 +195,13 @@ impl TxService {
                         let prover = {
                             let func_type = FuncType::IsMiner;
                             let Some((stake_address, func)) = self.functions.get(&func_type) else {
-                                log::warn!("event: {data:?}, not match IsMiner function");
+                                log::warn!("type: {ty:?}, not match IsMiner function");
                                 continue;
                             };
 
                             let prover = {
                                 let Some(prover) = data.data.get("prover") else {
-                                    log::warn!("event: {data:?}, not match game");
+                                    log::warn!("type: {ty:?}, not match game");
                                     continue;
                                 };
                                 prover.clone()
@@ -202,7 +213,7 @@ impl TxService {
                                 Ok(v) => v,
                                 Err(e) => {
                                     log::error!(
-                                        "event: {data:?}, func: {func_type:?}, encode input: {e:?}"
+                                        "type: {ty:?}, func: {func_type:?}, encode input: {e:?}"
                                     );
                                     continue;
                                 }
@@ -220,7 +231,7 @@ impl TxService {
                                 Ok(v) => v,
                                 Err(e) => {
                                     log::error!(
-                                        "event: {data:?}, func: {func_type:?}, gen tx: {e:?}"
+                                        "type: {ty:?}, func: {func_type:?}, gen tx: {e:?}"
                                     );
                                     continue;
                                 }
@@ -233,7 +244,7 @@ impl TxService {
                             {
                                 Ok(v) => v,
                                 Err(e) => {
-                                    log::error!("event: {data:?}, IsMiner call: {e:?}");
+                                    log::error!("type: {ty:?}, IsMiner call: {e:?}");
                                     continue;
                                 }
                             };
@@ -241,27 +252,27 @@ impl TxService {
                             match func.decode_output(res.as_ref()) {
                                 Ok(v) => {
                                     let Some(t) = v.get(0) else {
-                                        log::warn!("event: {data:?}, IsMiner result decode list not index 0: {v:?}");
+                                        log::warn!("type: {ty:?}, IsMiner result decode list not index 0: {v:?}");
                                         continue;
                                     };
 
                                     let Some(is_miner) = t.clone().into_bool() else {
                                         log::warn!(
-                                            "event: {data:?}, IsMiner result not match bool"
+                                            "type: {ty:?}, IsMiner result not match bool"
                                         );
                                         continue;
                                     };
 
                                     if !is_miner {
                                         log::warn!(
-                                            "event: {data:?}, controller: {controller:?} not miner"
+                                            "type: {ty:?}, controller: {controller:?} not miner"
                                         );
                                         continue;
                                     }
                                 }
                                 Err(e) => {
                                     log::error!(
-                                        "event: {data:?}, decode IsMiner call result: {e:?}"
+                                        "type: {ty:?}, decode IsMiner call result: {e:?}"
                                     );
                                     continue;
                                 }
@@ -271,14 +282,15 @@ impl TxService {
                         };
 
                         // - get docker image
-                        let (repo, tag, prover_address) = {
-                            let (repo, prover_address) = {
+                        let (tag, prover_address) = {
+
+                            let prover_address = {
                                 let Some(prover) = prover.clone().into_address() else {
-                                    log::warn!("prover: {prover:?} not address type");
+                                    log::warn!("type: {ty:?}, prover: {prover:?} not address type");
                                     continue;
                                 };
 
-                                (format!("{REPO_PREFIX}/{prover:?}"), prover)
+                                prover
                             };
 
                             let tag = {
@@ -286,7 +298,7 @@ impl TxService {
                                 let Some((game_market_address, func)) =
                                     self.functions.get(&func_type)
                                 else {
-                                    log::warn!("event: {data:?}, func type: {func_type:?} not match in self.functions");
+                                    log::warn!("type: {ty:?},  func type: {func_type:?} not match in self.functions");
                                     continue;
                                 };
 
@@ -295,7 +307,7 @@ impl TxService {
                                 let tx_data = match func.encode_input(&vec![prover.clone()]) {
                                     Ok(v) => v,
                                     Err(e) => {
-                                        log::error!("event: {data:?}, func: {func_type:?}, encode input: {e:?}");
+                                        log::error!("type: {ty:?}, func: {func_type:?}, encode input: {e:?}");
                                         continue;
                                     }
                                 };
@@ -311,7 +323,7 @@ impl TxService {
                                 {
                                     Ok(v) => v,
                                     Err(e) => {
-                                        log::error!("func: {:?}, gen tx: {:?}", func_type, e);
+                                        log::error!("type: {ty:?}, func: {:?}, gen tx: {:?}", func_type, e);
                                         continue;
                                     }
                                 };
@@ -323,50 +335,50 @@ impl TxService {
                                 {
                                     Ok(v) => v,
                                     Err(e) => {
-                                        log::error!("IsMiner call: {e:?}");
+                                        log::error!("type: {ty:?}, IsMiner call: {e:?}");
                                         continue;
                                     }
                                 };
 
-                                let tag = match func.decode_output(res.as_ref()) {
+                                let version = match func.decode_output(res.as_ref()) {
                                     Ok(v) => {
                                         let Some(t) = v.get(0) else {
                                             log::warn!(
-                                                "IsMiner result decode list not index 0: {v:?}"
+                                                "type: {ty:?}, IsMiner result decode list not index 0: {v:?}"
                                             );
                                             continue;
                                         };
 
                                         let Some(version) = t.clone().into_uint() else {
-                                            log::warn!("version result not match uint");
+                                            log::warn!("type: {ty:?}, version result not match uint");
                                             continue;
                                         };
 
                                         version.to_string()
                                     }
                                     Err(e) => {
-                                        log::error!("get game version : {prover:?} {e:?}");
+                                        log::error!("type: {ty:?}, get game version : {prover:?} {e:?}");
                                         continue;
                                     }
                                 };
 
-                                tag
+                                Self::prover_version_to_tag(&version)
                             };
 
-                            match self.docker_manager.image_exist(&repo, &tag).await {
+                            match self.db.prover_meta(&miner_key, &prover_address) {
                                 Ok(v) => {
-                                    if !v {
-                                        log::warn!("repo: {repo}, tag: {tag} local not install");
+                                    let Some(v) = v else {
+                                        log::warn!("type: {ty:?}, query prover: {prover_address:?}, tag: {tag}");
                                         continue;
-                                    }
+                                    };
                                 }
                                 Err(e) => {
-                                    log::error!("query repo: {repo}, tag: {tag} err: {e:?}");
+                                    log::error!("type: {ty:?}, query prover: {prover_address:?}, tag: {tag} err: {e:?}");
                                     continue;
                                 }
-                            }
+                            };
 
-                            (repo, tag, prover_address)
+                            (tag, prover_address)
                         };
 
                         // - create tx_data & to & task id
@@ -374,18 +386,18 @@ impl TxService {
                             let func_type = FuncType::AcceptTask;
                             let Some((task_market_address, func)) = self.functions.get(&func_type)
                             else {
-                                log::warn!("event: {data:?}, not match in self.functions");
+                                log::warn!("type: {ty:?}, not match in self.functions");
                                 continue;
                             };
 
                             let (id, tid) = {
                                 let Some(id) = data.data.get("id") else {
-                                    log::warn!("event: {data:?}, not match id");
+                                    log::warn!("type: {ty:?}, not match id");
                                     continue;
                                 };
 
                                 let Some(tid) = id.clone().into_uint() else {
-                                    log::warn!("event: {data:?}, id to uint nil");
+                                    log::warn!("type: {ty:?}, id to uint nil");
                                     continue;
                                 };
 
@@ -397,7 +409,7 @@ impl TxService {
                                     Ok(v) => v,
                                     Err(e) => {
                                         log::error!(
-                                        "event: {data:?}, func: {func_type:?}, encode input: {e:?}"
+                                        "type: {ty:?}, func: {func_type:?}, encode input: {e:?}"
                                     );
                                         continue;
                                     }
@@ -409,7 +421,7 @@ impl TxService {
                         let receipt = match self.send_tx(&eth_cli, tx_data, to, controller).await {
                             Ok(v) => v,
                             Err(e) => {
-                                log::error!("event: {data:?}, send tx: {e:?}");
+                                log::error!("type: {ty:?}, send tx: {e:?}");
                                 continue;
                             }
                         };
@@ -418,13 +430,13 @@ impl TxService {
                             // - judge receipt
                             let code = if let Some(code) = receipt.status {
                                 log::info!(
-                                    "event: {data:?}, send tx, receipt status: [{}]",
+                                    "type: {ty:?}, send tx, receipt status: [{}]",
                                     code.as_u64()
                                 );
 
                                 code.as_u64()
                             } else {
-                                log::warn!("event: {data:?}, send tx, receipt status is nil");
+                                log::warn!("type: {ty:?}, send tx, receipt status is nil");
                                 0
                             };
 
@@ -432,12 +444,12 @@ impl TxService {
                             if code == 1 {
                                 let input = {
                                     let Some(input) = data.data.get("data") else {
-                                        log::warn!("event: {data:?}, not match data");
+                                        log::warn!("type: {ty:?}, not match data");
                                         continue;
                                     };
 
                                     let Some(input) = input.clone().into_bytes() else {
-                                        log::warn!("event: {data:?}, input to bytes nil");
+                                        log::warn!("type: {ty:?}, input to bytes nil");
                                         continue;
                                     };
 
@@ -448,7 +460,7 @@ impl TxService {
                                 let task_data = TaskChanData {
                                     ty: TaskType::RunTask,
                                     data: input,
-                                    repo,
+                                    // repo,
                                     prover: prover_address,
                                     tag,
                                     tid,
@@ -457,15 +469,15 @@ impl TxService {
                                 };
                                 match sender.send(task_data) {
                                     Ok(_) => {
-                                        log::info!("event: {data:?}, send task success");
+                                        log::info!("type: {ty:?}, send task success");
                                     }
                                     Err(e) => {
-                                        log::error!("event: {data:?}, send task err: {e:?}");
+                                        log::error!("type: {ty:?}, send task err: {e:?}");
                                     }
                                 }
                             }
                         } else {
-                            log::warn!("event: {data:?}, receipt is nil");
+                            log::warn!("type: {ty:?}, receipt is nil");
                         };
                     }
                     FuncType::Submit => {
@@ -474,22 +486,22 @@ impl TxService {
                             let func_type = FuncType::Submit;
                             let Some((task_market_address, func)) = self.functions.get(&func_type)
                             else {
-                                log::warn!("event: {data:?}, not match in self.functions");
+                                log::warn!("type: {ty:?}, not match in self.functions");
                                 continue;
                             };
 
                             let Some(id) = data.data.get("id") else {
-                                log::warn!("event: {data:?}, not match id");
+                                log::warn!("type: {ty:?}, not match id");
                                 continue;
                             };
 
                             let Some(publics) = data.data.get("publics") else {
-                                log::warn!("event: {data:?}, not match publics");
+                                log::warn!("type: {ty:?}, not match publics");
                                 continue;
                             };
 
                             let Some(proof) = data.data.get("proof") else {
-                                log::warn!("event: {data:?}, not match proof");
+                                log::warn!("type: {ty:?}, not match proof");
                                 continue;
                             };
 
@@ -501,7 +513,7 @@ impl TxService {
                                 Ok(v) => v,
                                 Err(e) => {
                                     log::error!(
-                                        "event: {data:?}, func: {func_type:?}, encode input: {e:?}"
+                                        "type: {ty:?}, func: {func_type:?}, encode input: {e:?}"
                                     );
                                     continue;
                                 }
@@ -513,7 +525,7 @@ impl TxService {
                         let receipt = match self.send_tx(&eth_cli, tx_data, to, controller).await {
                             Ok(v) => v,
                             Err(e) => {
-                                log::error!("event: {data:?}, send tx: {e:?}");
+                                log::error!("type: {ty:?}, send tx: {e:?}");
                                 continue;
                             }
                         };
@@ -521,14 +533,14 @@ impl TxService {
                         if let Some(receipt) = receipt {
                             if let Some(code) = receipt.status {
                                 log::info!(
-                                    "event: {data:?}, send tx, receipt status: [{}]",
+                                    "type: {ty:?}, send tx, receipt status: [{}]",
                                     code.as_u64()
                                 );
                             } else {
-                                log::warn!("event: {data:?}, send tx, receipt status is nil");
+                                log::warn!("type: {ty:?}, send tx, receipt status is nil");
                             }
                         } else {
-                            log::warn!("event: {data:?}, receipt is nil");
+                            log::warn!("type: {ty:?}, receipt is nil");
                         };
                     }
                     _ => {}
@@ -613,7 +625,7 @@ impl TxService {
 #[cfg(test)]
 mod test {
     use crate::event::EventType;
-    use crate::tx::{TxChanData, TxService};
+    use crate::tx::{FuncType, TxChanData, TxService};
     use db::ReDB;
     use docker::DockerManager;
     use ethers::prelude::{Provider, ProviderExt};
@@ -625,57 +637,75 @@ mod test {
     use std::time::Duration;
     use tokio::spawn;
     use tokio::sync::mpsc::unbounded_channel;
+    use crate::{Monitor, MonitorConfig};
 
-    // #[test]
-    // fn test_tx_service() {
-    //     env_logger::init();
-    //     let rt = tokio::runtime::Builder::new_current_thread()
-    //         .enable_all()
-    //         .build()
-    //         .unwrap();
-    //     rt.block_on(async {
-    //         let db = {
-    //             let db_path = PathBuf::from("/tmp/pozk");
-    //             let db = ReDB::new(&db_path, true).unwrap();
-    //             Arc::new(db)
-    //         };
-    //
-    //         let (sender, receiver) = unbounded_channel();
-    //
-    //         let task_market_address = Address::from_str("0x").unwrap();
-    //         let stake_address = Address::from_str("0x").unwrap();
-    //         let game_market_address = Address::from_str("0x").unwrap();
-    //
-    //         let miner = Address::from_str("0x").unwrap();
-    //
-    //         let docker_manager = DockerManager::new().unwrap();
-    //
-    //         let opbnb_testnet_cli = Provider::connect("http://127.0.0.1:8545").await;
-    //
-    //         let tx_service = TxService::new(
-    //             db,
-    //             receiver,
-    //             opbnb_testnet_cli,
-    //             task_market_address,
-    //             stake_address,
-    //             game_market_address,
-    //             docker_manager,
-    //             miner,
-    //         )
-    //         .unwrap();
-    //
-    //         tx_service.run();
-    //
-    //         tokio::time::sleep(Duration::from_secs(5)).await;
-    //
-    //         sender
-    //             .send(TxChanData {
-    //                 ty: EventType::CreateTask,
-    //                 data: BTreeMap::new(),
-    //             })
-    //             .unwrap();
-    //
-    //         tokio::signal::ctrl_c().await.unwrap();
-    //     });
-    // }
+    #[test]
+    fn test_tx_service() {
+        env_logger::init();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            let db = {
+                let db_path = PathBuf::from("/tmp/pozk");
+                let db = ReDB::new(&db_path, true).unwrap();
+                Arc::new(db)
+            };
+
+            let task_market = "0x6c0B94931832dA710b08616ddC224F4248F51c55";
+            let stake = "0xE84Bd749AbbC2F33Dae9511DEF117CBE24472436";
+            let prover_market = "0xFe9D416465EeCc6585f96469424e1d9594cadB50";
+            let miner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+
+            let task_market_address = Address::from_str(task_market).unwrap();
+            let stake_address = Address::from_str(stake).unwrap();
+            let prover_market_address = Address::from_str(prover_market).unwrap();
+
+            let miner_address = Address::from_str(miner).unwrap();
+
+            let docker_manager = DockerManager::new().unwrap();
+
+            let opbnb_testnet_cli = Provider::connect("https://opbnb-testnet-rpc.bnbchain.org").await;
+
+            let (tx_sender, tx_receiver) = unbounded_channel();
+            let (task_sender, task_receiver) = unbounded_channel();
+
+
+            let tx_service = TxService::new(
+                db,
+                tx_receiver,
+                task_sender,
+                opbnb_testnet_cli.clone(),
+                task_market_address,
+                stake_address,
+                prover_market_address,
+                docker_manager,
+                miner_address,
+            )
+            .unwrap();
+
+            let monitor = Monitor::new(
+                &MonitorConfig{
+                    task_market_address: task_market.to_string(),
+                    prover_market_address: prover_market.to_string(),
+                    stake_address: stake.to_string(),
+                    from: 35603635,
+                    delay_sec: 0,
+                    step: 10,
+                    wait_time: 5,
+                    block_number_type: "latest".to_string(),
+                    miner: miner.to_string(),
+                },
+                opbnb_testnet_cli.clone(),
+                tx_sender.clone()
+            ).await.unwrap();
+
+
+            tx_service.run();
+            monitor.run();
+
+            tokio::signal::ctrl_c().await.unwrap();
+        });
+    }
 }
