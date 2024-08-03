@@ -76,7 +76,7 @@ impl TaskService {
         spawn(async move {
             let ty = data.ty.clone();
             let mut base_path = base_path;
-            let base_str = format!("{:?}-{}", data.prover, data.tag);
+            let base_str = format!("{:?}-{}-{}", data.prover, data.tag, data.tid.to_string());
 
             // - create folder
             base_path.push(&base_str);
@@ -280,6 +280,7 @@ impl TaskService {
 
                 map.insert("proof".to_string(), proof);
                 map.insert("publics".to_string(), publics);
+                map.insert("id".to_string(), Token::Uint(data.tid));
 
                 let tx_chan_data = TxChanData {
                     ty: FuncType::Submit,
