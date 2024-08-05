@@ -79,7 +79,7 @@ Emit when the prover start upgrading and waiting reviewing, before approve, it w
 ### ApproveProver
 
 ```solidity
-event ApproveProver(address prover, uint256 work, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved)
+event ApproveProver(address prover, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved)
 ```
 
 Emit when the prover is approved or reject

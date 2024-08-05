@@ -49,6 +49,12 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "total",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "epoch",
         "type": "uint256"
       },

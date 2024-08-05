@@ -55,13 +55,13 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     mapping(address => Staking) private unstakings;
 
     /// @notice Emit when prover staking change
-    event ProverStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 total);
+    event ProverStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 staking, uint256 total);
 
     /// @notice Emit when miner staking change
-    event MinerStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 total);
+    event MinerStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 staking, uint256 total);
 
     /// @notice Emit when player staking change
-    event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 total);
+    event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 staking, uint256 total);
 
     /// @notice Emit when account add unstaking/reward
     event AddUnstaking(uint256 epoch, address account, uint256 amount);
@@ -147,7 +147,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
         st.newValue += amount;
 
-        emit ProverStakeChange(st.newEpoch, prover, msg.sender, int256(amount), st.newValue);
+        emit ProverStakeChange(st.newEpoch, prover, msg.sender, int256(amount), sp.newValue, st.newValue);
     }
 
     /// @notice Unstake by prover self(others)
@@ -177,7 +177,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
         st.newValue -= amount;
 
-        emit ProverStakeChange(st.newEpoch, prover, msg.sender, -int256(amount), st.newValue);
+        emit ProverStakeChange(st.newEpoch, prover, msg.sender, -int256(amount), sp.newValue, st.newValue);
     }
 
     /// --------------- Miner --------------- ///
@@ -252,7 +252,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
         st.newValue += amount;
 
-        emit MinerStakeChange(st.newEpoch, prover, msg.sender, int256(amount), st.newValue);
+        emit MinerStakeChange(st.newEpoch, prover, msg.sender, int256(amount), sm.newValue, st.newValue);
     }
 
     /// @notice Unstake by miner
@@ -286,7 +286,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
         st.newValue -= amount;
 
-        emit MinerStakeChange(st.newEpoch, prover, msg.sender, -int256(amount), st.newValue);
+        emit MinerStakeChange(st.newEpoch, prover, msg.sender, -int256(amount), sm.newValue, st.newValue);
     }
 
     /// --------------- Player --------------- ///
@@ -342,7 +342,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
         st.newValue += amount;
 
-        emit PlayerStakeChange(st.newEpoch, msg.sender, int256(amount), st.newValue);
+        emit PlayerStakeChange(st.newEpoch, msg.sender, int256(amount), sp.newValue, st.newValue);
     }
 
     /// @notice Unstake by player
@@ -373,7 +373,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
         st.newValue -= amount;
 
-        emit PlayerStakeChange(st.newEpoch, msg.sender, -int256(amount), st.newValue);
+        emit PlayerStakeChange(st.newEpoch, msg.sender, -int256(amount), sp.newValue, st.newValue);
     }
 
     /// --------------- Unstaking --------------- ///

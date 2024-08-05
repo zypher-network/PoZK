@@ -49,7 +49,7 @@ Miner minStakeAmount
 ### ProverStakeChange
 
 ```solidity
-event ProverStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 total)
+event ProverStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 staking, uint256 total)
 ```
 
 Emit when prover staking change
@@ -57,7 +57,7 @@ Emit when prover staking change
 ### MinerStakeChange
 
 ```solidity
-event MinerStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 total)
+event MinerStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 staking, uint256 total)
 ```
 
 Emit when miner staking change
@@ -65,7 +65,7 @@ Emit when miner staking change
 ### PlayerStakeChange
 
 ```solidity
-event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 total)
+event PlayerStakeChange(uint256 epoch, address account, int256 changed, uint256 staking, uint256 total)
 ```
 
 Emit when player staking change

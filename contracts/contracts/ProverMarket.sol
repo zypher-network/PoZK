@@ -72,7 +72,7 @@ contract ProverMarket is Initializable, OwnableUpgradeable, IProverMarket {
     event UpgradeProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier);
 
     /// @notice Emit when the prover is approved or reject
-    event ApproveProver(address prover, uint256 work, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved);
+    event ApproveProver(address prover, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved);
 
     /// @notice Emit when the prover is stopped
     event StopProver(address prover);
@@ -230,7 +230,7 @@ contract ProverMarket is Initializable, OwnableUpgradeable, IProverMarket {
             g.verifier.newValue = g.verifier.value;
         }
 
-        emit ApproveProver(prover, g.work.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, minable, approved);
+        emit ApproveProver(prover, g.work.newValue, proversTotalWork.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, minable, approved);
     }
 
     /// @notice DAO can stop a prover
