@@ -36,6 +36,7 @@ pub struct ImageInfo {
     pub id: String,
     pub tag: String,
     pub container_list: Vec<ContainerInfo>,
+    pub total: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
@@ -283,6 +284,7 @@ impl DockerManager {
             id: image_detail.id,
             tag,
             container_list: vec![],
+            total: 0,
         };
 
         for container_id in container_ids {

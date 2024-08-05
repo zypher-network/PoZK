@@ -494,10 +494,11 @@ impl ApiService {
             .docker_container_list(&miner, &prover, begin, take_count)?
         {
             let data = {
-                let info = self
+                let mut info = self
                     .docker_manager
                     .prover_image_list(&dcl.meta.image_id, dcl.data)
                     .await?;
+                info.total = dcl.total;
                 serde_json::to_value(&info).map_err(|e| anyhow!("{e:?}"))?
             };
 
