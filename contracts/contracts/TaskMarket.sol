@@ -54,7 +54,7 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
     event AcceptTask(uint256 id, address miner, uint256 overtime);
 
     /// @notice Emit when miner submit a proof for a task
-    event SubmitTask(uint256 id, uint256 fee);
+    event SubmitTask(uint256 id, bytes publics, bytes proof);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -133,7 +133,7 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         if (task.fee > 0) {
             IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(task.miner, task.fee);
         }
-        emit SubmitTask(tid, task.fee);
+        emit SubmitTask(tid, publics, proof);
 
         // PoZK to reward
         IReward(IAddresses(addresses).get(Contracts.Reward)).work(task.prover, task.player, task.miner);

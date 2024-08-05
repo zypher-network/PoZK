@@ -57,7 +57,7 @@ Emit when miner accepted a task
 ### SubmitTask
 
 ```solidity
-event SubmitTask(uint256 id, uint256 fee)
+event SubmitTask(uint256 id, bytes publics, bytes proof)
 ```
 
 Emit when miner submit a proof for a task

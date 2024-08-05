@@ -49,6 +49,12 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "epoch",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "version",
         "type": "uint256"
       },

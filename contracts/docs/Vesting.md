@@ -4,6 +4,18 @@
 
 Token lock status and unlock period
 
+### MineReward
+
+Unit struct about mine reward
+
+```solidity
+struct MineReward {
+  uint256 value;
+  uint256 newValue;
+  uint256 newEpoch;
+}
+```
+
 ### addresses
 
 ```solidity
@@ -12,10 +24,10 @@ address addresses
 
 Common Addresses contract
 
-### rewardPerEpoch
+### mineReward
 
 ```solidity
-uint256 rewardPerEpoch
+struct Vesting.MineReward mineReward
 ```
 
 Rewards of every epoch will be released for mine & play
@@ -28,10 +40,18 @@ mapping(address => uint256) miners
 
 Store all miners vesting
 
+### NewMineReward
+
+```solidity
+event NewMineReward(uint256 epoch, uint256 amount)
+```
+
+Emit when controller changed, isAdd if true is add, if false is remove
+
 ### initialize
 
 ```solidity
-function initialize(address _addresses, uint256 _rewardPerEpoch) public
+function initialize(address _addresses) public
 ```
 
 Initialize
@@ -41,7 +61,6 @@ Initialize
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _addresses | address | the Addresses contract |
-| _rewardPerEpoch | uint256 | the reward amount of every epoch |
 
 ### setAddresses
 
@@ -56,6 +75,20 @@ Set the Addresses contract
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _addresses | address | the Addresses contract |
+
+### setMineReward
+
+```solidity
+function setMineReward(uint256 amount) external
+```
+
+Set the mine amount pre epoch
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| amount | uint256 | new amount |
 
 ### mine
 

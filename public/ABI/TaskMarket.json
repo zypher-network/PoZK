@@ -136,9 +136,15 @@
       },
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "fee",
-        "type": "uint256"
+        "internalType": "bytes",
+        "name": "publics",
+        "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "proof",
+        "type": "bytes"
       }
     ],
     "name": "SubmitTask",

@@ -48,6 +48,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "epoch",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "NewMineReward",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "previousOwner",
@@ -69,11 +88,6 @@
         "internalType": "address",
         "name": "_addresses",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_rewardPerEpoch",
-        "type": "uint256"
       }
     ],
     "name": "initialize",
@@ -161,6 +175,19 @@
       }
     ],
     "name": "setAddresses",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMineReward",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
