@@ -75,13 +75,13 @@
       {
         "indexed": false,
         "internalType": "int256",
-        "name": "betaNumerator",
+        "name": "gammaNumerator",
         "type": "int256"
       },
       {
         "indexed": false,
         "internalType": "int256",
-        "name": "betaDenominator",
+        "name": "gammaDenominator",
         "type": "int256"
       }
     ],

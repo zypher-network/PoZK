@@ -104,7 +104,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     event Beta(int256 betaNumerator, int256 betaDenominator);
 
     /// @notice Emitted when update the alpha for cobb-douglas function
-    event Gamma(int256 betaNumerator, int256 betaDenominator);
+    event Gamma(int256 gammaNumerator, int256 gammaDenominator);
 
     /// @notice Emitted when update the percent of miner and player
     event MinerPlayerPer(uint256 minerMaxPer, uint256 minerMinPer, uint256 playerMaxNum);

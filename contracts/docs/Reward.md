@@ -161,7 +161,7 @@ Emitted when update the alpha for cobb-douglas function
 ### Gamma
 
 ```solidity
-event Gamma(int256 betaNumerator, int256 betaDenominator)
+event Gamma(int256 gammaNumerator, int256 gammaDenominator)
 ```
 
 Emitted when update the alpha for cobb-douglas function
