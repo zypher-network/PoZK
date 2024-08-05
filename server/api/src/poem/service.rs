@@ -404,6 +404,25 @@ impl ApiService {
         ))))
     }
 
+    #[oai(path = "/prover/:container/start", method = "post", tag = "ApiTags::Prover")]
+    pub async fn container_start(
+        &self,
+        auth: ApiAuth,
+        container: Path<String>,
+    ) -> poem::Result<Resp> {
+        let _miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
+        let uid = Uuid::new_v4().to_string();
+        log::info!("[container/start] uid: [{uid}], container: [{}]",container.0);
+
+        self.docker_manager.start_container(&container.0).await?;
+
+        Ok(Resp::Ok(Json(RespData::new(&uid))))
+    }
+
     #[oai(path = "/prover/list", method = "get", tag = "ApiTags::Prover")]
     pub async fn prover_list(
         &self,

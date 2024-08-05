@@ -231,7 +231,7 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ```
 
 
-## prover/pull/
+## post: prover/pull/
 
 ### req
 ```jsonc
@@ -255,7 +255,25 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 }
 ```
 
-## prover/new/
+## post: prover/{container_id}/start
+
+### req
+```jsonc
+X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
+
+```
+
+### resp
+```jsonc
+{
+  "code": 0,
+  "data": null,
+  "msg": null,
+  "uid": "5966b408-8ac5-4f7a-bc80-679df6100430"
+}
+```
+
+## post: prover/new/
 
 ### req
 ```jsonc
