@@ -106,7 +106,7 @@ impl DockerManager {
         }
 
         let repo_tag = format!("{repo}:{tag}");
-        let name = format!("minner-{}-{tag}", repo.replace("/", "-"));
+        let name = format!("minner-{}-{tag}-{}", repo.replace("/", "-"), Utc::now().timestamp());
 
         let mut container_options_builder = ContainerOptions::builder(&repo_tag);
         let mut container_options_builder_mut = container_options_builder.name(&name);
