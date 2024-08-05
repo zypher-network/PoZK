@@ -71,9 +71,11 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
-    function initialize(address _addresses) public initializer {
+    /// @param _minStakeAmount the minimum value of miner staking
+    function initialize(address _addresses, uint256 _minStakeAmount) public initializer {
         __Ownable_init(msg.sender);
         addresses = _addresses;
+        minStakeAmount = _minStakeAmount;
     }
 
     /// @notice Set the Addresses contract

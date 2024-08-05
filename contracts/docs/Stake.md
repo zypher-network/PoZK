@@ -89,7 +89,7 @@ Emit when account claimed the unstaking
 ### initialize
 
 ```solidity
-function initialize(address _addresses) public
+function initialize(address _addresses, uint256 _minStakeAmount) public
 ```
 
 Initialize
@@ -99,6 +99,7 @@ Initialize
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _addresses | address | the Addresses contract |
+| _minStakeAmount | uint256 | the minimum value of miner staking |
 
 ### setAddresses
 

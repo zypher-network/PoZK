@@ -209,7 +209,7 @@ Emitted when collect reward (stake) from pool
 ### initialize
 
 ```solidity
-function initialize(address _addresses) public
+function initialize(address _addresses, int256 _alphaNumerator, int256 _alphaDenominator, int256 _betaNumerator, int256 _betaDenominator, int256 _gammaNumerator, int256 _gammaDenominator, uint256 _minerMaxPer, uint256 _minerMinPer, uint256 _playerMaxNum) public
 ```
 
 Initialize
@@ -219,6 +219,15 @@ Initialize
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _addresses | address | the Addresses contract |
+| _alphaNumerator | int256 | the numerator of the alpha |
+| _alphaDenominator | int256 | the denominator of the alpha |
+| _betaNumerator | int256 | the numerator of the beta |
+| _betaDenominator | int256 | the denominator of the beta |
+| _gammaNumerator | int256 | the numerator of the gamma |
+| _gammaDenominator | int256 | the denominator of the gamma |
+| _minerMaxPer | uint256 | The miner max percent of reward |
+| _minerMinPer | uint256 | The miner min percent of reward |
+| _playerMaxNum | uint256 | The player max games number when reach minerMaxPer |
 
 ### setAddresses
 

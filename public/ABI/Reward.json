@@ -353,6 +353,51 @@
         "internalType": "address",
         "name": "_addresses",
         "type": "address"
+      },
+      {
+        "internalType": "int256",
+        "name": "_alphaNumerator",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "_alphaDenominator",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "_betaNumerator",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "_betaDenominator",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "_gammaNumerator",
+        "type": "int256"
+      },
+      {
+        "internalType": "int256",
+        "name": "_gammaDenominator",
+        "type": "int256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_minerMaxPer",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_minerMinPer",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_playerMaxNum",
+        "type": "uint256"
       }
     ],
     "name": "initialize",

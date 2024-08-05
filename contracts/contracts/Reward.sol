@@ -123,9 +123,46 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
-    function initialize(address _addresses) public initializer {
+    /// @param _alphaNumerator the numerator of the alpha
+    /// @param _alphaDenominator the denominator of the alpha
+    /// @param _betaNumerator the numerator of the beta
+    /// @param _betaDenominator the denominator of the beta
+    /// @param _gammaNumerator the numerator of the gamma
+    /// @param _gammaDenominator the denominator of the gamma
+    /// @param _minerMaxPer The miner max percent of reward
+    /// @param _minerMinPer The miner min percent of reward
+    /// @param _playerMaxNum The player max games number when reach minerMaxPer
+    function initialize(
+        address _addresses,
+        int256 _alphaNumerator,
+        int256 _alphaDenominator,
+        int256 _betaNumerator,
+        int256 _betaDenominator,
+        int256 _gammaNumerator,
+        int256 _gammaDenominator,
+        uint256 _minerMaxPer,
+        uint256 _minerMinPer,
+        uint256 _playerMaxNum
+    ) public initializer {
         __Ownable_init(msg.sender);
         addresses = _addresses;
+
+        alphaNumerator = _alphaNumerator;
+        alphaDenominator = _alphaDenominator;
+        emit Alpha(alphaNumerator, alphaDenominator);
+
+        betaNumerator = _betaNumerator;
+        betaDenominator = _betaDenominator;
+        emit Beta(betaNumerator, betaDenominator);
+
+        gammaNumerator = _gammaNumerator;
+        gammaDenominator = _gammaDenominator;
+        emit Gamma(gammaNumerator, gammaDenominator);
+
+        minerMaxPer = _minerMaxPer;
+        minerMinPer = _minerMinPer;
+        playerMaxNum = _playerMaxNum;
+        emit MinerPlayerPer(minerMaxPer, minerMinPer, playerMaxNum);
     }
 
     /// @notice Set the Addresses contract

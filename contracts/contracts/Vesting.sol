@@ -34,9 +34,15 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
-    function initialize(address _addresses) public initializer {
+    /// @param _amount the mine reward for per epoch
+    function initialize(address _addresses, uint256 _amount) public initializer {
         __Ownable_init(msg.sender);
         addresses = _addresses;
+
+        mineReward.value = _amount;
+        mineReward.newValue = _amount;
+        mineReward.newEpoch = 0;
+        emit NewMineReward(0, _amount);
     }
 
     /// @notice Set the Addresses contract

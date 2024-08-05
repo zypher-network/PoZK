@@ -40,13 +40,15 @@ async function deployNew() {
 }
 
 async function deploy() {
-  const token = await deployContract("Token", [1000000000n * ONE_TOKEN]); // 1,000,000,000 TOEKN
+  // const token = await deployContract("Token", [1000000000n * ONE_TOKEN]); // 1,000,000,000 TOEKN
+  const tokenContract = await attachContract("Token");
+  const token = await tokenContract.getAddress();
 
   const addresses = await deployContractWithProxy("Addresses", []);
-  const vesting = await deployContractWithProxy("Vesting", [addresses]);
+  const vesting = await deployContractWithProxy("Vesting", [addresses, 10000n * ONE_TOKEN]);
   const epoch = await deployContractWithProxy("Epoch", [addresses, 100]);
-  const stake = await deployContractWithProxy("Stake", [addresses]);
-  const reward = await deployContractWithProxy("Reward", [addresses]);
+  const stake = await deployContractWithProxy("Stake", [addresses, 100n * ONE_TOKEN]);
+  const reward = await deployContractWithProxy("Reward", [addresses, 1, 4, 1, 4, 1, 4, 10, 90, 10000]);
   const proverMarket = await deployContractWithProxy("ProverMarket", [addresses]);
   const taskMarket = await deployContractWithProxy("TaskMarket", [addresses]);
   const controller = await deployContractWithProxy("Controller", [addresses]);

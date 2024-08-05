@@ -51,7 +51,7 @@ Emit when controller changed, isAdd if true is add, if false is remove
 ### initialize
 
 ```solidity
-function initialize(address _addresses) public
+function initialize(address _addresses, uint256 _amount) public
 ```
 
 Initialize
@@ -61,6 +61,7 @@ Initialize
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _addresses | address | the Addresses contract |
+| _amount | uint256 | the mine reward for per epoch |
 
 ### setAddresses
 
