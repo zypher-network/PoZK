@@ -34,9 +34,9 @@ async function deployNew() {
   const addresses = await attachContract("Addresses");
   let addr = await addresses.getAddress();
 
-  const vesting = await deployContractWithProxy("Vesting", [addr]);
+  const vesting = await deployContractWithProxy("Stake", [addr]);
 
-  await addresses.set(1, vesting);
+  await addresses.set(3, vesting);
 }
 
 async function deploy() {
@@ -101,8 +101,8 @@ async function deploy() {
 }
 
 async function main() {
-  // await deploy();
-  await deployNew();
+  await deploy();
+  // await deployNew();
 }
 
 // We recommend this pattern to be able to use async/await everywhere

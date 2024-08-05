@@ -29,7 +29,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         /// @notice Prover self total staking
         Staking proverTotal;
         /// @notice Prover self staking list
-        mapping(address => uint256) provers;
+        mapping(address => Staking) provers;
         /// @notice Miner total staking
         Staking minerTotal;
         /// @notice Miner staking list
@@ -110,7 +110,14 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param account the staking account
     /// @return the staking amount of this account
     function proverStaking(address prover, address account) external view returns (uint256) {
-        return proversStaking[prover].provers[account];
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
+        Staking storage st = proversStaking[prover].provers[account];
+
+        if (currentEpoch >= st.newEpoch) {
+            return st.newValue;
+        } else {
+            return st.value;
+        }
     }
 
     /// @notice Stake by prover self(others)
@@ -120,12 +127,17 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-
         IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), amount);
 
-        // add to prover stakers
         ProverStaking storage gs = proversStaking[prover];
-        gs.provers[msg.sender] += amount;
+
+        // add to staking
+        Staking storage sp = gs.provers[msg.sender];
+        if (currentEpoch >= sp.newEpoch) {
+            sp.value = sp.newValue;
+            sp.newEpoch = currentEpoch + 1;
+        }
+        sp.newValue += amount;
 
         // add to total staking
         Staking storage st = gs.proverTotal;
@@ -142,14 +154,20 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param prover the prover address
     /// @param amount the unstaking amount
     function proverUnstake(address prover, uint256 amount) external {
-        ProverStaking storage gs = proversStaking[prover];
-        require(gs.provers[msg.sender] >= amount, "S01");
-
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
-        gs.provers[msg.sender] -= amount;
 
-        // transfer to account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(msg.sender, amount);
+        ProverStaking storage gs = proversStaking[prover];
+        Staking storage sp = gs.provers[msg.sender];
+
+        // update new staking
+        if (currentEpoch >= sp.newEpoch) {
+            sp.value = sp.newValue;
+            sp.newEpoch = currentEpoch + 1;
+        }
+        require(sp.newValue >= amount, "S01");
+
+        // append to unstaking
+        addUnstaking(msg.sender, amount);
 
         // remove from total staking
         Staking storage st = gs.proverTotal;

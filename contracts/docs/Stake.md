@@ -24,7 +24,7 @@ Unit struct about staking in a prover
 ```solidity
 struct ProverStaking {
   struct Stake.Staking proverTotal;
-  mapping(address => uint256) provers;
+  mapping(address => struct Stake.Staking) provers;
   struct Stake.Staking minerTotal;
   mapping(address => struct Stake.Staking) miners;
 }
