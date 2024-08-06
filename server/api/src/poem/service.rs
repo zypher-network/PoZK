@@ -348,7 +348,7 @@ impl ApiService {
             .pull_image(&req.repository, &req.tag)
             .await?;
 
-        let Some(image_id) = self
+        let Some(image) = self
             .docker_manager
             .get_image_by_repository(&req.repository)
             .await?
@@ -362,10 +362,11 @@ impl ApiService {
 
         self.db.prover_add(
             &miner,
-            &image_id,
+            &image.id,
             &req.name,
             &req.repository,
             &prover,
+            &image.created,
             &req.tag,
             None,
         )?;

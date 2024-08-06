@@ -34,6 +34,7 @@ pub struct DockerImage {
     pub image_id: String,
     pub prover: String,
     pub name: String,
+    pub created: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -196,6 +197,7 @@ impl ReDB {
         image_name: &str,
         repository: &str,
         prover: &Address,
+        image_created: &str,
         tag: &str,
         container_id: Option<&str>,
     ) -> Result<()> {
@@ -425,6 +427,7 @@ impl ReDB {
                 image_id: meta.image_id.to_string(),
                 prover: format!("{prover:?}"),
                 name: meta.name.clone(),
+                created: "".to_string(),
             })
             .collect::<Vec<_>>();
 

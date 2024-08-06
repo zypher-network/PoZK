@@ -226,7 +226,7 @@ impl DockerManager {
         }
     }
 
-    pub async fn get_image_by_repository(&self, repository: &str) -> Result<Option<String>> {
+    pub async fn get_image_by_repository(&self, repository: &str) -> Result<Option<ImageInfo>> {
         let op = {
             let mut op = ImageListOptionsBuilder::default();
             op.all();
@@ -236,7 +236,7 @@ impl DockerManager {
         let images = self.docker.images().list(&op.build()).await?;
 
         for image in images {
-            let Some(repo_tags) = image.repo_tags else {
+            let Some(repo_tags) = &image.repo_tags else {
                 continue;
             };
 
@@ -244,15 +244,27 @@ impl DockerManager {
                 continue;
             };
 
-            let split = repo_tag.split(":").collect::<Vec<_>>();
-            let Some(repo) = split.get(0) else {
+            let repo_tag_split = repo_tag.split(":").collect::<Vec<_>>();
+
+            let Some(repo) = repo_tag_split.get(0) else {
+                continue;
+            };
+
+            let Some(tag) = repo_tag_split.get(1) else {
                 continue;
             };
 
             if repo.eq(&repository) {
                 let split = image.id.split(":").collect::<Vec<_>>();
                 let id = split.get(1).unwrap().to_string();
-                return Ok(Some(id));
+                return Ok(Some(ImageInfo{
+                    repository: repo.to_string(),
+                    created: image.created.to_rfc3339(),
+                    id,
+                    tag: tag.to_string(),
+                    container_list: vec![],
+                    total: 0,
+                }));
             }
         }
 
