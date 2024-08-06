@@ -181,7 +181,7 @@ impl Monitor {
 
 #[cfg(test)]
 mod test {
-    use crate::service::Monitor;
+    use crate::monitor::Monitor;
     use crate::MonitorConfig;
     use ethers::prelude::{Provider, ProviderExt};
 

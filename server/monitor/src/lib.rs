@@ -1,12 +1,12 @@
 mod config;
 mod event;
-mod service;
+mod monitor;
 mod task;
 mod tx;
 
 pub use config::MonitorConfig;
 
-pub use service::Monitor;
+pub use monitor::Monitor;
 pub use task::TaskService;
 pub use tx::TxService;
 

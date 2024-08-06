@@ -373,7 +373,7 @@ impl ApiService {
         Ok(Resp::Ok(Json(RespData::new(&uid))))
     }
 
-    #[oai(path = "/prover/new", method = "post", tag = "ApiTags::Prover")]
+    // #[oai(path = "/prover/new", method = "post", tag = "ApiTags::Prover")]
     pub async fn prover_new(&self, auth: ApiAuth, req: Json<ProverNewReq>) -> poem::Result<Resp> {
         let miner = {
             let address = auth.0.address;
@@ -404,7 +404,7 @@ impl ApiService {
         ))))
     }
 
-    #[oai(path = "/prover/:container/start", method = "post", tag = "ApiTags::Prover")]
+    // #[oai(path = "/prover/:container/start", method = "post", tag = "ApiTags::Prover")]
     pub async fn container_start(
         &self,
         auth: ApiAuth,
