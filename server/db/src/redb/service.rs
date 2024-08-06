@@ -239,6 +239,7 @@ impl ReDB {
                     image_id: image_id.to_string(),
                     tag: tag.to_string(),
                     name: image_name.to_string(),
+                    created: image_created.to_string(),
                 },
             );
 
@@ -427,7 +428,7 @@ impl ReDB {
                 image_id: meta.image_id.to_string(),
                 prover: format!("{prover:?}"),
                 name: meta.name.clone(),
-                created: "".to_string(),
+                created: meta.created.clone(),
             })
             .collect::<Vec<_>>();
 

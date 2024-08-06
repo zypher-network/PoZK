@@ -22,6 +22,7 @@ pub struct DockerImageMeta {
     pub image_id: String,
     pub tag: String,
     pub name: String,
+    pub created: String,
 }
 
 impl Value for DockerValue {
