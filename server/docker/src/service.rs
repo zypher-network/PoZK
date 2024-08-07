@@ -136,7 +136,6 @@ impl DockerManager {
         }
 
         if let Some(volumes) = &option.volumes {
-            println!("volumes: {volumes:?}");
 
             let volumes = volumes
                 .into_iter()
