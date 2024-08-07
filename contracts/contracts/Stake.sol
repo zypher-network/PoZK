@@ -169,7 +169,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         require(sp.newValue >= amount, "S01");
 
         // append to unstaking
-        addUnstaking(msg.sender, amount);
+        this.addUnstaking(msg.sender, amount);
 
         // remove from total staking
         Staking storage st = gs.proverTotal;
@@ -260,7 +260,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @notice Unstake by miner
     /// @param prover the prover address
     /// @param amount the unstaking amount
-    function minerUnStake(address prover, uint256 amount) external {
+    function minerUnstake(address prover, uint256 amount) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         ProverStaking storage gs = proversStaking[prover];
@@ -278,7 +278,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         require(sm.newValue == 0 || sm.newValue >= minStakeAmount, "S04");
 
         // append to unstaking
-        addUnstaking(msg.sender, amount);
+        this.addUnstaking(msg.sender, amount);
 
         // remove from total staking
         Staking storage st = gs.minerTotal;
@@ -349,7 +349,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// @notice Unstake by player
     /// @param amount the unstaking amount
-    function playerUnStake(uint256 amount) external {
+    function playerUnstake(uint256 amount) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         Staking storage sp = playersStaking[msg.sender];
@@ -365,7 +365,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         sp.newValue -= amount;
 
         // append to unstaking
-        addUnstaking(msg.sender, amount);
+        this.addUnstaking(msg.sender, amount);
 
         // remove from total staking
         Staking storage st = playerTotal;
@@ -383,7 +383,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @notice Add new unstaking to next epoch, only this contract and reward contract.
     /// @param account the unstaking account
     /// @param amount the unstaking amount
-    function addUnstaking(address account, uint256 amount) public {
+    function addUnstaking(address account, uint256 amount) external {
         require(msg.sender == address(this) || msg.sender == IAddresses(addresses).get(Contracts.Reward), "S05");
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 

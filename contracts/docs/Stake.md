@@ -277,10 +277,10 @@ Stake by miner
 | prover | address | the prover address |
 | amount | uint256 | the new staking amount |
 
-### minerUnStake
+### minerUnstake
 
 ```solidity
-function minerUnStake(address prover, uint256 amount) external
+function minerUnstake(address prover, uint256 amount) external
 ```
 
 Unstake by miner
@@ -340,10 +340,10 @@ Stake by player
 | ---- | ---- | ----------- |
 | amount | uint256 | the new staking amount of player |
 
-### playerUnStake
+### playerUnstake
 
 ```solidity
-function playerUnStake(uint256 amount) external
+function playerUnstake(uint256 amount) external
 ```
 
 Unstake by player
@@ -357,7 +357,7 @@ Unstake by player
 ### addUnstaking
 
 ```solidity
-function addUnstaking(address account, uint256 amount) public
+function addUnstaking(address account, uint256 amount) external
 ```
 
 Add new unstaking to next epoch, only this contract and reward contract.
