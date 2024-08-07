@@ -52,7 +52,7 @@ impl Monitor {
             let block_number = match BlockNumber::from_str(&self.cfg.block_number_type) {
                 Ok(v) => v,
                 Err(e) => {
-                    log::error!("decode BlockNumber err: {e:?}");
+                    log::error!("[monitor] decode BlockNumber: {e:?}");
                     return;
                 }
             };
@@ -60,7 +60,7 @@ impl Monitor {
                 let start_param = match self.pares_from_and_to().await {
                     Ok(v) => v,
                     Err(e) => {
-                        log::error!("monitor run err: {e:?}");
+                        log::error!("[monitor] pares from and to: {e:?}");
                         return;
                     }
                 };
@@ -71,11 +71,11 @@ impl Monitor {
 
             'out: loop {
                 let Some(Some(block)) = self.eth_cli.get_block(block_number).await.ok() else {
-                    log::warn!("get block is nil, type: {block_number:?}");
+                    log::warn!("[monitor] get block is nil, type: {block_number:?}");
                     continue;
                 };
                 let Some(finalized) = block.number else {
-                    log::warn!("get block number is nil");
+                    log::warn!("[monitor] get block number is nil");
                     continue;
                 };
                 let finalized = finalized.as_u64();
@@ -87,7 +87,7 @@ impl Monitor {
                 // ensuring that the number of blocks of step is pulled each time
                 // ps. If you pulled historical data before,
                 // once you enter here, it proves that you have reached the latest height
-                log::debug!("from: {from}, to: {to}, finalized: {finalized}");
+                log::debug!("[monitor] from: {from}, to: {to}, finalized: {finalized}");
                 while to + step >= finalized {
                     tokio::time::sleep(Duration::from_secs(self.cfg.wait_time)).await;
                     continue 'out;
@@ -104,12 +104,12 @@ impl Monitor {
                 let logs = match self.eth_cli.get_logs(&filter).await {
                     Ok(v) => v,
                     Err(e) => {
-                        log::error!("monitor run: get logs err: {e:?}");
+                        log::error!("[monitor] get logs: {e:?}");
                         continue;
                     }
                 };
 
-                log::debug!("los: {logs:?}");
+                log::debug!("[monitor] logs: {logs:?}");
 
                 for log in logs {
                     match self.event_manager.parse_log(&log) {
@@ -118,12 +118,12 @@ impl Monitor {
                                 let sender = self.tx_sender.clone();
 
                                 if let Err(e) = sender.send(data) {
-                                    log::error!("send data err: {e:?}");
+                                    log::error!("[monitor] send data: {e:?}");
                                 }
                             }
                         }
                         Err(e) => {
-                            log::error!("parse log err: {e:?}");
+                            log::error!("[monitor] parse log: {e:?}");
                             continue;
                         }
                     }
