@@ -227,7 +227,7 @@ impl TxService {
                             let tx = match self
                                 .gen_tx(
                                     Some(Bytes::from(tx_data)),
-                                    Some(controller),
+                                    Some(self.miner),
                                     stake_address.clone(),
                                     None,
                                 )
