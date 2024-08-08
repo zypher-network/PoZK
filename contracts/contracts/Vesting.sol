@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -10,6 +12,8 @@ import "./interface/IVesting.sol";
 
 /// @notice Token lock status and unlock period
 contract Vesting is Initializable, OwnableUpgradeable, IVesting {
+    using SafeERC20 for IERC20;
+
     /// @notice Unit struct about mine reward
     struct MineReward {
         uint256 value;
@@ -63,6 +67,13 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
         mineReward.newValue = amount;
 
         emit NewMineReward(currentEpoch + 1, amount);
+    }
+
+    /// @notice Approve enough token for reward
+    /// @param amount new amount
+    function approveForReward(uint256 amount) external onlyOwner {
+        address reward = IAddresses(addresses).get(Contracts.Reward);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).approve(reward, amount);
     }
 
     /// @notice Get the mine amount of every epoch

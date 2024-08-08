@@ -17,6 +17,7 @@ async function upgradeContractWithProxy(name) {
 }
 
 async function upgrade() {
+  await upgradeContractWithProxy("Vesting");
   await upgradeContractWithProxy("Reward");
 }
 

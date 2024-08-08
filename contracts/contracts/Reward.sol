@@ -275,8 +275,8 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             rgp.index[prover] = rgp.unclaim;
         }
 
-        emit MinerLabor(currentEpoch, prover, miner, gp.minerLabor[miner].working);
-        emit PlayerLabor(currentEpoch, prover, player, gp.playerLabor[player].working);
+        emit MinerLabor(currentEpoch, prover, miner, 1);
+        emit PlayerLabor(currentEpoch, prover, player, 1);
     }
 
     /// @notice Miner collect reward in epoch and prover, collect reward to unstaking list
@@ -461,7 +461,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             uint256 x = gp.totalWorking / 2;
             uint256 y = minerMaxPer;
             if (x < playerMaxNum) {
-                y = x * (minerMaxPer - minerMinPer) / playerMaxNum + minerMinPer;
+                y = x * 100 * (minerMaxPer - minerMinPer) / playerMaxNum + minerMinPer;
             }
             gp.totalMinerReward = amount * y / 100;
             gp.totalPlayerReward = amount - gp.totalMinerReward;
