@@ -9,7 +9,7 @@ use poem_openapi::auth::ApiKey;
 use poem_openapi::SecurityScheme;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
-use time::{Duration, OffsetDateTime};
+use time::OffsetDateTime;
 
 type ServerKey = Hmac<Sha256>;
 pub static SERVER_KEY: Lazy<ServerKey> = Lazy::new(|| {

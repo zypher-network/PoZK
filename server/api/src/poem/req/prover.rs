@@ -1,7 +1,6 @@
 use docker::ContainerNewOption;
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
 pub struct ImagesUpdateReq {

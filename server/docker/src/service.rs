@@ -1,21 +1,17 @@
 use anyhow::{anyhow, Result};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use futures_util::StreamExt;
 use poem_openapi::Object;
-use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use shiplift::builder::{ContainerListOptionsBuilder, ImageListOptionsBuilder};
-use shiplift::rep::{Container, ContainerCreateInfo, ContainerDetails, Image, ImageDetails};
+use shiplift::builder::ImageListOptionsBuilder;
+use shiplift::rep::ContainerCreateInfo;
 use shiplift::{
     ContainerOptions, Docker, Error, ImageListOptions, PullOptions, RmContainerOptions,
 };
-use std::collections::BTreeMap;
 
 #[derive(Clone)]
 pub struct DockerManager {
     docker: Docker,
-    req_client: Client,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
@@ -70,11 +66,7 @@ fn convert_to_vec_of_strs<'a>(vec: &'a Vec<String>) -> Vec<&'a str> {
 impl DockerManager {
     pub fn new() -> Result<Self> {
         let docker = Docker::new();
-        let client = Client::new();
-        Ok(Self {
-            docker,
-            req_client: client,
-        })
+        Ok(Self { docker })
     }
 
     pub async fn pull_image(&self, repository: &str, tag: &str) -> Result<()> {
@@ -107,7 +99,11 @@ impl DockerManager {
         }
 
         let repo_tag = format!("{repo}:{tag}");
-        let name = format!("minner-{}-{tag}-{}", repo.replace("/", "-"), Utc::now().timestamp());
+        let name = format!(
+            "minner-{}-{tag}-{}",
+            repo.replace("/", "-"),
+            Utc::now().timestamp()
+        );
 
         let mut container_options_builder = ContainerOptions::builder(&repo_tag);
         let mut container_options_builder_mut = container_options_builder.name(&name);
@@ -136,7 +132,6 @@ impl DockerManager {
         }
 
         if let Some(volumes) = &option.volumes {
-
             let volumes = volumes
                 .into_iter()
                 .map(|v| format!("{}:{}", v.host_volumes, v.src_volumes))
@@ -256,7 +251,7 @@ impl DockerManager {
             if repo.eq(&repository) {
                 let split = image.id.split(":").collect::<Vec<_>>();
                 let id = split.get(1).unwrap().to_string();
-                return Ok(Some(ImageInfo{
+                return Ok(Some(ImageInfo {
                     repository: repo.to_string(),
                     created: image.created.to_rfc3339(),
                     id,

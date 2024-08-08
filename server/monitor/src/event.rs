@@ -1,7 +1,7 @@
 use crate::tx::{FuncType, TxChanData};
 use crate::TASK_MARKET_CONTRACT_ABI;
 use anyhow::Result;
-use ethers::abi::{Bytes as AbiBytes, Log as AbiLog, RawLog};
+use ethers::abi::{Bytes as AbiBytes, RawLog};
 use ethers::abi::{Contract, Event};
 use ethers::prelude::ValueOrArray;
 use ethers::types::{Address, Filter, Log, H256};
@@ -48,6 +48,8 @@ impl EventManager {
     pub fn parse_log(&self, log: &Log) -> Result<Option<TxChanData>> {
         let topic = &log.topics[0];
         if let Some((event, ty)) = self.topic_event.get(topic) {
+            log::debug!("topic: {topic:?}, event_type: {ty:?}");
+
             let raw_log = RawLog {
                 topics: log.topics.clone(),
                 data: AbiBytes::from(log.data.to_vec()),

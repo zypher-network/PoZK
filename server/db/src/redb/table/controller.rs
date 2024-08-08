@@ -5,7 +5,7 @@ use redb::{Key, TableDefinition, TypeName, Value};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 
 /// miner -> map<controller, signing_key>
 pub const CONTROLLER_TABLE: TableDefinition<ControllerKey, ControllerValue> =

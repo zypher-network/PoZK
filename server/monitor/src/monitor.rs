@@ -2,14 +2,12 @@ use crate::event::EventManager;
 use crate::tx::TxChanData;
 use crate::MonitorConfig;
 use anyhow::{anyhow, Result};
-use db::ReDB;
-use ethers::prelude::{Http, Middleware, Provider, ProviderExt};
+use ethers::prelude::{Http, Middleware, Provider};
 use ethers::types::{BlockNumber, Filter, U64};
 use std::str::FromStr;
-use std::sync::Arc;
 use std::time::Duration;
 use tokio::spawn;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::UnboundedSender;
 
 /// The CreateTask event on the listener chain is sent to the channel when the specified event is listened.
 /// The event is processed by TxService.
@@ -109,7 +107,7 @@ impl Monitor {
                     }
                 };
 
-                log::debug!("[monitor] logs: {logs:?}");
+                log::debug!("[monitor] logs size: {:?}", logs.len());
 
                 for log in logs {
                     match self.event_manager.parse_log(&log) {

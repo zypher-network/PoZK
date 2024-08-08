@@ -1,4 +1,4 @@
-use crate::{ControllerKey, ControllerValue};
+use crate::ControllerKey;
 use ethers::types::Address;
 use redb::{TableDefinition, TypeName, Value};
 use serde::{Deserialize, Serialize};

@@ -105,7 +105,6 @@ async fn main() -> Result<()> {
             task_market_address,
             stake_address,
             prover_market_address,
-            docker_manager.clone(),
             miner,
         )?;
 

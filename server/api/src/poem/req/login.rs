@@ -1,11 +1,8 @@
 use anyhow::{anyhow, Result};
-use ethers::prelude::transaction::eip712::Eip712;
 use ethers::types::U256;
 use ethers::types::{Address, Signature};
-use ethers::utils::hex;
 use iri_string::types::UriString;
 use poem::http::uri::Authority;
-use poem_openapi::types::{ToJSON, Type};
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use siwe::{Message, TimeStamp, Version};
@@ -107,7 +104,7 @@ impl LoginReq {
 }
 
 impl LoginReqParam {
-    pub fn check(&self, block_num: u64, chain_id: u64, domain: &Authority) -> Result<()> {
+    pub fn check(&self, _block_num: u64, chain_id: u64, domain: &Authority) -> Result<()> {
         // check
 
         // check nonce(block_number)

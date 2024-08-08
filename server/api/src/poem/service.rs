@@ -1,37 +1,26 @@
-use crate::poem::req::{
-    ContainerNewReq, ControllerAddReq, ImagesUpdateReq, ProverNewReq, ProverPullReq,
-};
-use crate::poem::service::ApiTags::Controller;
+use crate::poem::req::{ControllerAddReq, ProverNewReq, ProverPullReq};
 use crate::poem::{ApiAuth, LoginReq, Pagination, User, SERVER_KEY};
 use crate::{ApiConfig, Resp, RespData};
 use anyhow::{anyhow, Result};
-use db::{ControllerKey, ControllerValue, ReDB};
-use docker::{ContainerNewOption, DockerManager};
+use db::{ControllerKey, ReDB};
+use docker::DockerManager;
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::core::rand::thread_rng;
-use ethers::prelude::{Http, LocalWallet, Middleware, Provider, ProviderExt, Wallet};
+use ethers::prelude::{Http, Middleware, Provider};
 use ethers::types::Address;
 use ethers::utils::hex;
 use jwt::SignWithKey;
-use once_cell::sync::OnceCell;
-use poem::error::InternalServerError;
 use poem::http::uri::Authority;
 use poem::{listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use poem_openapi::param::{Path, Query};
 use poem_openapi::payload::Json;
 use poem_openapi::{OpenApi, OpenApiService, Tags};
 use serde_json::json;
-use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
-use time::format_description::parse;
-use time::format_description::well_known::Rfc3339;
-use time::parsing::Parsed;
 use tokio::spawn;
 use uuid::Uuid;
-
-pub static EIP712_DOMAIN_NAME: &str = "Zytron-Miner";
 
 #[derive(Tags)]
 enum ApiTags {
@@ -387,7 +376,10 @@ impl ApiService {
         log::info!("[prover/new] uid: [{uid}], req: [{req:?}]");
 
         let Some(meta) = self.db.prover_meta(&miner, &prover)? else {
-            return Ok(Resp::Ok(Json(RespData::new_err("miner not exist".to_string(), &uid))));
+            return Ok(Resp::Ok(Json(RespData::new_err(
+                "miner not exist".to_string(),
+                &uid,
+            ))));
         };
 
         let ccf = self
@@ -417,7 +409,10 @@ impl ApiService {
         };
 
         let uid = Uuid::new_v4().to_string();
-        log::info!("[container/start] uid: [{uid}], container: [{}]",container.0);
+        log::info!(
+            "[container/start] uid: [{uid}], container: [{}]",
+            container.0
+        );
 
         self.docker_manager.start_container(&container.0).await?;
 

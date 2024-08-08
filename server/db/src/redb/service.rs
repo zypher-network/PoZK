@@ -1,11 +1,11 @@
 use crate::{
-    ControllerKey, ControllerValue, DockerImageMeta, DockerValue, CONTROLLER_SET,
-    CONTROLLER_SET_KEY, CONTROLLER_TABLE, DOCKER_TABLE,
+    ControllerKey, ControllerValue, DockerImageMeta, DockerValue, CONTROLLER_SET, CONTROLLER_TABLE,
+    DOCKER_TABLE,
 };
 use anyhow::{anyhow, Result};
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::types::Address;
-use redb::{Database, ReadableTable, ReadableTableMetadata};
+use redb::{Database, ReadableTable};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
@@ -300,8 +300,7 @@ impl ReDB {
 
             let mut index = None;
             if let Some(containers) = dv.containers.get(prover) {
-
-                for (idx,id) in containers.iter().enumerate() {
+                for (idx, id) in containers.iter().enumerate() {
                     if id.eq(container_id) {
                         index.replace(idx);
                         break;
@@ -310,7 +309,7 @@ impl ReDB {
             }
 
             if let Some(idx) = index {
-                let mut containers = dv.containers.get_mut(prover).unwrap(); // safe
+                let containers = dv.containers.get_mut(prover).unwrap(); // safe
                 containers.remove(idx);
             }
 
@@ -318,13 +317,16 @@ impl ReDB {
         }
         txn.commit()?;
         Ok(())
-
     }
 
-    pub fn prover_meta(&self, miner: &ControllerKey, prover: &Address) -> Result<Option<DockerImageMeta>> {
+    pub fn prover_meta(
+        &self,
+        miner: &ControllerKey,
+        prover: &Address,
+    ) -> Result<Option<DockerImageMeta>> {
         let txn = self.db.begin_read()?;
-        let mut table = txn.open_table(DOCKER_TABLE)?;
-        let mut dv = if let Some(dv) = table.get(miner)? {
+        let table = txn.open_table(DOCKER_TABLE)?;
+        let dv = if let Some(dv) = table.get(miner)? {
             dv.value()
         } else {
             log::warn!("miner: {miner:?} not exist repository map");
@@ -368,8 +370,8 @@ impl ReDB {
         size: usize,
     ) -> Result<Option<DockerContainerList>> {
         let txn = self.db.begin_read()?;
-        let mut table = txn.open_table(DOCKER_TABLE)?;
-        let mut dv = if let Some(dv) = table.get(miner)? {
+        let table = txn.open_table(DOCKER_TABLE)?;
+        let dv = if let Some(dv) = table.get(miner)? {
             dv.value()
         } else {
             log::warn!("miner: {miner:?} not exist repository map");
@@ -409,8 +411,8 @@ impl ReDB {
         size: usize,
     ) -> Result<Option<DockerImageList>> {
         let txn = self.db.begin_read()?;
-        let mut table = txn.open_table(DOCKER_TABLE)?;
-        let mut dv = if let Some(dv) = table.get(miner)? {
+        let table = txn.open_table(DOCKER_TABLE)?;
+        let dv = if let Some(dv) = table.get(miner)? {
             dv.value()
         } else {
             log::warn!("miner: {miner:?} not exist repository map");

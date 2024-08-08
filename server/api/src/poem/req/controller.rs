@@ -1,10 +1,8 @@
 use anyhow::Result;
 use ethers::core::k256::ecdsa::SigningKey;
-use ethers::types::Address;
 use ethers::utils::hex::decode;
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
 pub struct ControllerAddReq {
