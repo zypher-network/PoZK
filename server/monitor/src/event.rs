@@ -48,8 +48,6 @@ impl EventManager {
     pub fn parse_log(&self, log: &Log) -> Result<Option<TxChanData>> {
         let topic = &log.topics[0];
         if let Some((event, ty)) = self.topic_event.get(topic) {
-            log::debug!("topic: {topic:?}, event_type: {ty:?}");
-
             let raw_log = RawLog {
                 topics: log.topics.clone(),
                 data: AbiBytes::from(log.data.to_vec()),
@@ -60,8 +58,15 @@ impl EventManager {
                 .into_iter()
                 .map(|v| (v.name, v.value))
                 .collect::<BTreeMap<_, _>>();
+
+            log::debug!(
+                "topic: {topic:?}, tx_hash: {:?}, event_type: {ty:?}",
+                log.transaction_hash
+            );
+
             return Ok(Some(TxChanData {
                 ty: FuncType::from(ty),
+                tx_hash: log.transaction_hash,
                 data: map,
             }));
         }

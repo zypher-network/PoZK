@@ -2,6 +2,7 @@ use crate::event::EventManager;
 use crate::tx::TxChanData;
 use crate::MonitorConfig;
 use anyhow::{anyhow, Result};
+use chrono::Utc;
 use ethers::prelude::{Http, Middleware, Provider};
 use ethers::types::{BlockNumber, Filter, U64};
 use std::str::FromStr;
@@ -47,7 +48,7 @@ impl Monitor {
 
     pub fn run(self) {
         spawn(async move {
-            let block_number = match BlockNumber::from_str(&self.cfg.block_number_type) {
+            let block_number_type = match BlockNumber::from_str(&self.cfg.block_number_type) {
                 Ok(v) => v,
                 Err(e) => {
                     log::error!("[monitor] decode BlockNumber: {e:?}");
@@ -67,16 +68,19 @@ impl Monitor {
 
             let mut filter = self.filter.clone();
 
+            // Record the interval time and start time between each pull event
+            let mut start_time = Utc::now().timestamp();
+
             'out: loop {
-                let Some(Some(block)) = self.eth_cli.get_block(block_number).await.ok() else {
-                    log::warn!("[monitor] get block is nil, type: {block_number:?}");
+                let Some(Some(block)) = self.eth_cli.get_block(block_number_type).await.ok() else {
+                    log::warn!("[monitor] get block is nil, type: {block_number_type:?}");
                     continue;
                 };
-                let Some(finalized) = block.number else {
+                let Some(over_block_number) = block.number else {
                     log::warn!("[monitor] get block number is nil");
                     continue;
                 };
-                let finalized = finalized.as_u64();
+                let over_block_number = over_block_number.as_u64();
 
                 let step = self.cfg.step;
 
@@ -85,8 +89,7 @@ impl Monitor {
                 // ensuring that the number of blocks of step is pulled each time
                 // ps. If you pulled historical data before,
                 // once you enter here, it proves that you have reached the latest height
-                log::debug!("[monitor] from: {from}, to: {to}, finalized: {finalized}");
-                while to + step >= finalized {
+                while to + step >= over_block_number {
                     tokio::time::sleep(Duration::from_secs(self.cfg.wait_time)).await;
                     continue 'out;
                 }
@@ -99,6 +102,10 @@ impl Monitor {
                     .set_from_block(BlockNumber::Number(U64::from(from)))
                     .set_to_block(BlockNumber::Number(U64::from(to)));
 
+                log::debug!(
+                    "[monitor] from: {from}, to: {to}, {block_number_type:?}: {over_block_number}"
+                );
+
                 let logs = match self.eth_cli.get_logs(&filter).await {
                     Ok(v) => v,
                     Err(e) => {
@@ -107,6 +114,13 @@ impl Monitor {
                     }
                 };
 
+                //Record the interval time and end time between each pull event
+                let end_time = Utc::now().timestamp();
+
+                log::debug!(
+                    "[monitor] step: {step}, Duration: [{}]sec",
+                    end_time - start_time
+                );
                 log::debug!("[monitor] logs size: {:?}", logs.len());
 
                 for log in logs {
@@ -126,6 +140,9 @@ impl Monitor {
                         }
                     }
                 }
+
+                // Whenever re-polling, the end time serves as the start time
+                start_time = end_time;
             }
         });
     }

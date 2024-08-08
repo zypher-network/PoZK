@@ -14,6 +14,7 @@ log.worspace = true
 ethers.workspace = true
 clap.workspace = true
 docker = { path = "../docker" }
+chrono.workspace = true
 
 [dev-dependencies]
 env_logger.workspace = true

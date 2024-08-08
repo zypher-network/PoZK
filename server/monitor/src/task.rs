@@ -83,7 +83,7 @@ impl TaskService {
             match tokio::fs::create_dir(&base_path).await {
                 Ok(_) => {}
                 Err(e) => {
-                    log::error!("[task] type: {ty:?}, create dir: {e:?}");
+                    log::error!("[task] handle: {ty:?}, create dir: {e:?}");
                     return;
                 }
             }
@@ -98,7 +98,7 @@ impl TaskService {
                     match tokio::fs::write(base_path.as_path(), input_data).await {
                         Ok(_) => {}
                         Err(e) => {
-                            log::error!("[task] type: {ty:?}, create input file: {e:?}");
+                            log::error!("[task] handle: {ty:?}, create input file: {e:?}");
                             return;
                         }
                     }
@@ -112,7 +112,7 @@ impl TaskService {
                     match tokio::fs::write(base_path.as_path(), b"").await {
                         Ok(_) => {}
                         Err(e) => {
-                            log::error!("[task] type: {ty:?}, create publics file: {e:?}");
+                            log::error!("[task] handle: {ty:?}, create publics file: {e:?}");
                             return;
                         }
                     }
@@ -126,7 +126,7 @@ impl TaskService {
                     match tokio::fs::write(base_path.as_path(), b"").await {
                         Ok(_) => {}
                         Err(e) => {
-                            log::error!("[task] type: {ty:?}, create proof file: {e:?}");
+                            log::error!("[task] handle: {ty:?}, create proof file: {e:?}");
                             return;
                         }
                     }
@@ -165,13 +165,13 @@ impl TaskService {
                 let meta = match db.prover_meta(&data.miner, &data.prover) {
                     Ok(v) => {
                         let Some(meta) = v else {
-                            log::warn!("[task] type: {ty:?}, get prover meta nil");
+                            log::warn!("[task] handle: {ty:?}, get prover meta nil");
                             return;
                         };
                         meta
                     }
                     Err(e) => {
-                        log::error!("[task] type: {ty:?}, get prover meta: {e:?}");
+                        log::error!("[task] handle: {ty:?}, get prover meta: {e:?}");
                         return;
                     }
                 };
@@ -182,7 +182,7 @@ impl TaskService {
                 {
                     Ok(v) => v,
                     Err(e) => {
-                        log::error!("[task] type: {ty:?}, new container: {e:?}");
+                        log::error!("[task] handle: {ty:?}, new container: {e:?}");
                         return;
                     }
                 };
@@ -191,14 +191,14 @@ impl TaskService {
                 match db.prover_container_add(&data.miner, &data.prover, &ccf.id) {
                     Ok(_) => {}
                     Err(e) => {
-                        log::error!("[task] type: {ty:?}, add container to db fail: {e:?}");
+                        log::error!("[task] handle: {ty:?}, add container to db fail: {e:?}");
                     }
                 }
 
                 match docker_manager.start_container(&ccf.id).await {
                     Ok(_) => {}
                     Err(e) => {
-                        log::error!("[task] type: {ty:?}, start container: {e:?}");
+                        log::error!("[task] handle: {ty:?}, start container: {e:?}");
                     }
                 }
 
@@ -225,7 +225,7 @@ impl TaskService {
                     match fs::read_to_string(&publics_path).await {
                         Ok(v) => publics_res.replace(v),
                         Err(e) => {
-                            log::error!("[task] type: {ty:?}, read publics: {e:?}");
+                            log::error!("[task] handle: {ty:?}, read publics: {e:?}");
                             return;
                         }
                     };
@@ -233,14 +233,14 @@ impl TaskService {
                     match fs::read_to_string(&proof_path).await {
                         Ok(v) => proof_res.replace(v),
                         Err(e) => {
-                            log::error!("[task] type: {ty:?}, read proof: {e:?}");
+                            log::error!("[task] handle: {ty:?}, read proof: {e:?}");
                             return;
                         }
                     };
                 }
 
                 if publics_res.is_none() || proof_res.is_none() {
-                    log::warn!("[task] type: {ty:?}, get prover result is nil, retry: {count}");
+                    log::warn!("[task] handle: {ty:?}, get prover result is nil, retry: {count}");
                     return;
                 }
 
@@ -251,21 +251,23 @@ impl TaskService {
             {
                 match db.prover_container_remove(&data.miner, &data.prover, &ccf.id) {
                     Ok(_) => {
-                        log::debug!("[task] type: {ty:?}, db remove container: {ccf:?}, success");
+                        log::debug!("[task] handle: {ty:?}, db remove container: {ccf:?}, success");
                     }
                     Err(e) => {
-                        log::error!("[task] type: {ty:?}, remove container: {ccf:?}: {e:?}");
+                        log::error!("[task] handle: {ty:?}, remove container: {ccf:?}: {e:?}");
                         return;
                     }
                 }
                 match docker_manager.remove_container(&ccf.id).await {
                     Ok(_) => {
                         log::debug!(
-                            "[task] type: {ty:?}, docker remove container: {ccf:?}, success"
+                            "[task] handle: {ty:?}, docker remove container: {ccf:?}, success"
                         );
                     }
                     Err(e) => {
-                        log::error!("[task] type: {ty:?}, docker remove container: {ccf:?}: {e:?}");
+                        log::error!(
+                            "[task] handle: {ty:?}, docker remove container: {ccf:?}: {e:?}"
+                        );
                     }
                 }
             }
@@ -282,15 +284,16 @@ impl TaskService {
 
                 let tx_chan_data = TxChanData {
                     ty: FuncType::Submit,
+                    tx_hash: None,
                     data: map,
                 };
 
                 match tx_sender.send(tx_chan_data) {
                     Ok(_) => {
-                        log::info!("[task] type: {ty:?}, send to tx chan success")
+                        log::debug!("[task] handle: {ty:?}, send to tx chan success")
                     }
                     Err(e) => {
-                        log::error!("[task] type: {ty:?}, send to tx chan: {e:?}")
+                        log::error!("[task] handle: {ty:?}, send to tx chan: {e:?}")
                     }
                 }
             }
