@@ -14,17 +14,16 @@ ENV RUST_LOG=debug
 ENV RUST_BACKTRACE=1
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -y
-RUN apt-get install -y apt-utils
-RUN apt-get install -y libssl-dev
-RUN apt-get install -y openssl
+RUN apt-get update &&  \
+    apt-get install -y --no-install-recommends apt-utils && \
+    apt-get install -y --no-install-recommends libssl-dev && \
+    apt-get install -y --no-install-recommends openssl
+
 
 WORKDIR /app
 COPY --from=builder /build/server/target/release/pozk-miner .
 
 RUN chmod +x pozk-miner
-
-EXPOSE 9098
 
 ENTRYPOINT ["./pozk-miner", "file", "--path"]
 
