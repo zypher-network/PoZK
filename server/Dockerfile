@@ -1,4 +1,4 @@
-FROM rust:1.76.0-buster AS builder
+FROM rust:1.76.0-ubuntu:22.04 AS builder
 
 WORKDIR /build
 ADD server server
