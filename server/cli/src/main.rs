@@ -13,7 +13,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc::unbounded_channel;
 
 #[derive(Parser)]
-#[command(version, about, long_about, long_version = env!("BUILD_INFO_VERSION_LONG"))]
+#[command(version, about, long_about)]
 pub struct Command {
     #[command(subcommand)]
     pub sub: SubCmd,

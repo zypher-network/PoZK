@@ -18,7 +18,6 @@ db = { path = "../db" }
 monitor = { path = "../monitor" }
 
 [build-dependencies]
-git2.workspace = true
 time = { features = [
     "local-offset",
     "formatting",
