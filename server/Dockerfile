@@ -1,4 +1,4 @@
-FROM rust:1.76.0-ubuntu:22.04 AS builder
+FROM rust:1.76.0-buster AS builder
 
 WORKDIR /build
 ADD server server
@@ -8,7 +8,7 @@ WORKDIR /build/server
 RUN cargo build --release
 
 
-FROM ubuntu:22.04
+FROM debian:buster
 
 ENV RUST_LOG=debug
 ENV RUST_BACKTRACE=1
