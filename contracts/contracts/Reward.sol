@@ -309,7 +309,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
         // Add amount to unstaking list
         if (amount > 0) {
-            IStake(IAddresses(addresses).get(Contracts.Stake)).addUnstaking(miner, amount);
+            address stake = IAddresses(addresses).get(Contracts.Stake);
+            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(stake, amount);
+            IStake(stake).addUnstaking(miner, amount);
         }
 
         // clear unclaim prover
@@ -365,7 +367,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
         // Add amount to unstaking list
         if (amount > 0) {
-            IStake(IAddresses(addresses).get(Contracts.Stake)).addUnstaking(player, amount);
+            address stake = IAddresses(addresses).get(Contracts.Stake);
+            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(stake, amount);
+            IStake(stake).addUnstaking(player, amount);
         }
 
         // clear unclaim prover
