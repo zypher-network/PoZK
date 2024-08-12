@@ -461,7 +461,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             uint256 x = gp.totalWorking / 2;
             uint256 y = minerMaxPer;
             if (x < playerMaxNum) {
-                y = x * 100 * (minerMaxPer - minerMinPer) / playerMaxNum + minerMinPer;
+                y = x * (minerMaxPer - minerMinPer) / playerMaxNum + minerMinPer;
             }
             gp.totalMinerReward = amount * y / 100;
             gp.totalPlayerReward = amount - gp.totalMinerReward;
