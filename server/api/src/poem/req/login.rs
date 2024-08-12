@@ -104,14 +104,23 @@ impl LoginReq {
 }
 
 impl LoginReqParam {
-    pub fn check(&self, _block_num: u64, chain_id: u64, domain: &Authority) -> Result<()> {
+    pub fn check(&self, block_num: u64, chain_id: u64, domain: &Authority) -> Result<()> {
         // check
 
         // check nonce(block_number)
-        // TODO: Is some different authentication strategy needed?
         {
             if self.msg.nonce.is_empty() {
                 return Err(anyhow!("eip4361 msg nonce is nil"));
+            }
+
+            let nonce: u64 = self
+                .msg
+                .nonce
+                .parse()
+                .map_err(|e| anyhow!("nonce: {}, to u64: {e:?}", self.msg.nonce))?;
+
+            if block_num < nonce - 10 && block_num > nonce {
+                return Err(anyhow!("incorrect nonce range"));
             }
         }
 
@@ -130,6 +139,15 @@ impl LoginReqParam {
         }
 
         // check issued-at
+        {
+            let now = OffsetDateTime::now_utc().unix_timestamp();
+            let create = OffsetDateTime::parse(&self.msg.issued_at.to_string(), &Rfc3339)?;
+            let create_timestamp = create.unix_timestamp();
+
+            if create_timestamp < now - (60 * 5) && create_timestamp > now {
+                return Err(anyhow!("issue at The scope is incorrect"));
+            }
+        }
 
         // check address
         {
