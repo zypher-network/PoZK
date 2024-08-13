@@ -4,7 +4,7 @@ use futures_util::StreamExt;
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
 use shiplift::builder::ImageListOptionsBuilder;
-use shiplift::rep::ContainerCreateInfo;
+use shiplift::rep::{ContainerCreateInfo, State};
 use shiplift::{
     ContainerOptions, Docker, Error, ImageListOptions, PullOptions, RmContainerOptions,
 };
@@ -165,6 +165,12 @@ impl DockerManager {
             })?;
 
         Ok(container)
+    }
+
+    pub async fn query_container_status(&self, id: &str) -> Result<State> {
+        let container = self.docker.containers().get(id);
+        let state = container.inspect().await?;
+        Ok(state.state)
     }
 
     pub async fn remove_container(&self, id: &str) -> Result<()> {

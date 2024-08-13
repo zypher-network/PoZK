@@ -247,8 +247,43 @@ impl TaskService {
                 (publics_res.unwrap(), proof_res.unwrap())
             };
 
+            // query container status util to not running
+            let can_delete = {
+                let mut count = 0;
+                let max_count = 20;
+
+                let mut flag = false;
+
+                while !flag {
+                    count += 1;
+
+                    if count >= max_count {
+                        break;
+                    }
+
+                    match docker_manager.query_container_status(&ccf.id).await {
+                        Ok(state) => {
+                            if state.running {
+                                tokio::time::sleep(Duration::from_secs(2)).await;
+                                continue;
+                            } else {
+                                flag = true;
+                            }
+                        }
+                        Err(e) => {
+                            log::error!(
+                                "[task] handle: {ty:?}, query container status: {ccf:?}, err: {e:?}"
+                            )
+                        }
+                    }
+                }
+
+                log::debug!("[task] handle: {ty:?}, query container status: {ccf:?}, count: {count}, running: {flag}");
+                flag
+            };
+
             // remove container
-            {
+            if can_delete {
                 match db.prover_container_remove(&data.miner, &data.prover, &ccf.id) {
                     Ok(_) => {
                         log::debug!("[task] handle: {ty:?}, db remove container: {ccf:?}, success");
