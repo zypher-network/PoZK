@@ -3,8 +3,8 @@ FROM rust:buster AS builder
 RUN update-ca-certificates
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
-curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
-apt-get install -y git-lfs
+RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+RUN apt-get install -y git-lfs
 
 WORKDIR /prover
 
