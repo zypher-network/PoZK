@@ -205,65 +205,14 @@ impl TaskService {
                 ccf
             };
 
-            // query container status util to not running
-            let can_delete = {
-                let mut count = 0;
-                let max_count = 20;
-
-                let mut flag = false;
-
-                while !flag {
-                    count += 1;
-
-                    if count >= max_count {
-                        break;
-                    }
-
-                    match docker_manager.query_container_status(&ccf.id).await {
-                        Ok(state) => {
-                            if state.running {
-                                tokio::time::sleep(Duration::from_secs(2)).await;
-                                continue;
-                            } else {
-                                flag = true;
-                            }
-                        }
-                        Err(e) => {
-                            log::error!(
-                                "[task] handle: {ty:?}, query container status: {ccf:?}, err: {e:?}"
-                            )
-                        }
-                    }
-                }
-
-                log::debug!("[task] handle: {ty:?}, query container status: {ccf:?}, count: {count}, running: {flag}");
-                flag
-            };
-
-            // remove container
-            if can_delete {
-                match db.prover_container_remove(&data.miner, &data.prover, &ccf.id) {
-                    Ok(_) => {
-                        log::debug!("[task] handle: {ty:?}, db remove container: {ccf:?}, success");
-                    }
-                    Err(e) => {
-                        log::error!("[task] handle: {ty:?}, remove container: {ccf:?}: {e:?}");
-                        return;
-                    }
-                }
-                match docker_manager.remove_container(&ccf.id).await {
-                    Ok(_) => {
-                        log::debug!(
-                            "[task] handle: {ty:?}, docker remove container: {ccf:?}, success"
-                        );
-                    }
-                    Err(e) => {
-                        log::error!(
-                            "[task] handle: {ty:?}, docker remove container: {ccf:?}: {e:?}"
-                        );
-                    }
-                }
-            }
+            // delete container
+            Self::delete_container(
+                docker_manager.clone(),
+                db.clone(),
+                ccf.id.clone(),
+                data.clone(),
+                ty.clone(),
+            );
 
             // - query output file
             let (publics, proof) = {
@@ -295,6 +244,8 @@ impl TaskService {
                             return;
                         }
                     };
+
+                    tokio::time::sleep(Duration::from_secs(2)).await;
                 }
 
                 if publics_res.is_none() || proof_res.is_none() {
@@ -348,6 +299,76 @@ impl TaskService {
                             self.docker_manager.clone(),
                             self.tx_sender.clone(),
                             self.db.clone(),
+                        );
+                    }
+                }
+            }
+        });
+    }
+
+    pub fn delete_container(
+        docker_manager: DockerManager,
+        db: Arc<ReDB>,
+        id: String,
+        data: TaskChanData,
+        ty: TaskType,
+    ) {
+        spawn(async move {
+            // query container status util to not running
+            let can_delete = {
+                let mut count = 0;
+                let max_count = 20;
+
+                let mut flag = false;
+
+                while !flag {
+                    count += 1;
+
+                    if count >= max_count {
+                        break;
+                    }
+
+                    match docker_manager.query_container_status(&id).await {
+                        Ok(state) => {
+                            if state.running {
+                                tokio::time::sleep(Duration::from_secs(2)).await;
+                                continue;
+                            } else {
+                                flag = true;
+                            }
+                        }
+                        Err(e) => {
+                            log::error!(
+                                "[task] handle: {ty:?}, query container status: {id}, err: {e:?}"
+                            )
+                        }
+                    }
+                }
+
+                log::debug!("[task] handle: {ty:?}, query container status: {id}, count: {count}, running: {flag}");
+                flag
+            };
+
+            // remove container
+            if can_delete {
+                match db.prover_container_remove(&data.miner, &data.prover, &id) {
+                    Ok(_) => {
+                        log::debug!("[task] handle: {ty:?}, db remove container: {id}, success");
+                    }
+                    Err(e) => {
+                        log::error!("[task] handle: {ty:?}, remove container: {id}: {e:?}");
+                        return;
+                    }
+                }
+                match docker_manager.remove_container(&id).await {
+                    Ok(_) => {
+                        log::debug!(
+                            "[task] handle: {ty:?}, docker remove container: {id}, success"
+                        );
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "[task] handle: {ty:?}, docker remove container: {id}: {e:?}"
                         );
                     }
                 }
