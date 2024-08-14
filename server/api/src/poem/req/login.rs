@@ -119,7 +119,7 @@ impl LoginReqParam {
                 .parse()
                 .map_err(|e| anyhow!("nonce: {}, to u64: {e:?}", self.msg.nonce))?;
 
-            if block_num < nonce - 10 || block_num > nonce {
+            if nonce < block_num - 100 || nonce > block_num {
                 return Err(anyhow!("incorrect nonce range"));
             }
         }
@@ -141,10 +141,10 @@ impl LoginReqParam {
         // check issued-at
         {
             let now = OffsetDateTime::now_utc().unix_timestamp();
-            let create = OffsetDateTime::parse(&self.msg.issued_at.to_string(), &Rfc3339)?;
-            let create_timestamp = create.unix_timestamp();
+            let issued_at = OffsetDateTime::parse(&self.msg.issued_at.to_string(), &Rfc3339)?;
+            let issued_at_timestamp = issued_at.unix_timestamp();
 
-            if create_timestamp < now - (60 * 5) || create_timestamp > now {
+            if issued_at_timestamp < now - (60 * 5) || issued_at_timestamp > now {
                 return Err(anyhow!("issue at The scope is incorrect"));
             }
         }

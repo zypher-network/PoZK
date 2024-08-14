@@ -345,7 +345,7 @@ impl TaskService {
                     }
                 }
 
-                log::debug!("[task] handle: {ty:?}, query container status: {id}, count: {count}, running: {flag}");
+                log::debug!("[task] handle: {ty:?}, query container status: {id}, count: {count}, can delete: {flag}");
                 flag
             };
 
