@@ -205,48 +205,6 @@ impl TaskService {
                 ccf
             };
 
-            tokio::time::sleep(Duration::from_secs(5)).await;
-
-            // - query output file
-            let (publics, proof) = {
-                let mut count = 0;
-                let max_count = 20;
-
-                let mut publics_res = None;
-                let mut proof_res = None;
-
-                while publics_res.is_none() || proof_res.is_none() {
-                    count += 1;
-
-                    if count >= max_count {
-                        break;
-                    }
-
-                    match fs::read_to_string(&publics_path).await {
-                        Ok(v) => publics_res.replace(v),
-                        Err(e) => {
-                            log::error!("[task] handle: {ty:?}, read publics: {e:?}");
-                            return;
-                        }
-                    };
-
-                    match fs::read_to_string(&proof_path).await {
-                        Ok(v) => proof_res.replace(v),
-                        Err(e) => {
-                            log::error!("[task] handle: {ty:?}, read proof: {e:?}");
-                            return;
-                        }
-                    };
-                }
-
-                if publics_res.is_none() || proof_res.is_none() {
-                    log::warn!("[task] handle: {ty:?}, get prover result is nil, retry: {count}");
-                    return;
-                }
-
-                (publics_res.unwrap(), proof_res.unwrap())
-            };
-
             // query container status util to not running
             let can_delete = {
                 let mut count = 0;
@@ -306,6 +264,46 @@ impl TaskService {
                     }
                 }
             }
+
+            // - query output file
+            let (publics, proof) = {
+                let mut count = 0;
+                let max_count = 20;
+
+                let mut publics_res = None;
+                let mut proof_res = None;
+
+                while publics_res.is_none() || proof_res.is_none() {
+                    count += 1;
+
+                    if count >= max_count {
+                        break;
+                    }
+
+                    match fs::read_to_string(&publics_path).await {
+                        Ok(v) => publics_res.replace(v),
+                        Err(e) => {
+                            log::error!("[task] handle: {ty:?}, read publics: {e:?}");
+                            return;
+                        }
+                    };
+
+                    match fs::read_to_string(&proof_path).await {
+                        Ok(v) => proof_res.replace(v),
+                        Err(e) => {
+                            log::error!("[task] handle: {ty:?}, read proof: {e:?}");
+                            return;
+                        }
+                    };
+                }
+
+                if publics_res.is_none() || proof_res.is_none() {
+                    log::warn!("[task] handle: {ty:?}, get prover result is nil, retry: {count}");
+                    return;
+                }
+
+                (publics_res.unwrap(), proof_res.unwrap())
+            };
 
             // - send tx
             {
