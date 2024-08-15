@@ -162,7 +162,7 @@ impl TaskService {
                     }]),
                 };
 
-                let meta = match db.prover_meta(&data.miner, &data.prover) {
+                let meta = match db.prover_meta(&data.miner, &data.prover, &data.tag) {
                     Ok(v) => {
                         let Some(meta) = v else {
                             log::warn!("[task] handle: {ty:?}, get prover meta nil");
@@ -188,7 +188,7 @@ impl TaskService {
                 };
 
                 // insert container_id to db
-                match db.prover_container_add(&data.miner, &data.prover, &ccf.id) {
+                match db.prover_container_add(&data.miner, &data.prover, &data.tag, &ccf.id) {
                     Ok(_) => {}
                     Err(e) => {
                         log::error!("[task] handle: {ty:?}, add container to db fail: {e:?}");
@@ -351,7 +351,7 @@ impl TaskService {
 
             // remove container
             if can_delete {
-                match db.prover_container_remove(&data.miner, &data.prover, &id) {
+                match db.prover_container_remove(&data.miner, &data.prover, &data.tag, &id) {
                     Ok(_) => {
                         log::debug!("[task] handle: {ty:?}, db remove container: {id}, success");
                     }

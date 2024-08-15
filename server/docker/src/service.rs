@@ -88,6 +88,16 @@ impl DockerManager {
         Ok(())
     }
 
+    pub async fn remove_image(&self, image_id: &str) -> Result<()> {
+        let image = self.docker.images().get(image_id);
+
+        let delete_list = image.delete().await?;
+
+        log::debug!("delete image: {delete_list:?}");
+
+        Ok(())
+    }
+
     pub async fn new_container(
         &self,
         repo: &str,

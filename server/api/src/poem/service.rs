@@ -2,7 +2,7 @@ use crate::poem::req::{ControllerAddReq, ProverNewReq, ProverPullReq};
 use crate::poem::{ApiAuth, LoginReq, Pagination, User, SERVER_KEY};
 use crate::{ApiConfig, Resp, RespData};
 use anyhow::{anyhow, Result};
-use db::{ControllerKey, ReDB};
+use db::{ControllerKey, DockerImageMeta, ReDB};
 use docker::DockerManager;
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::core::rand::thread_rng;
@@ -363,6 +363,34 @@ impl ApiService {
         Ok(Resp::Ok(Json(RespData::new(&uid))))
     }
 
+    #[oai(path = "/prover/remove/:prover/:tag", method = "post", tag = "ApiTags::Prover")]
+    pub async fn prover_remove(&self, auth: ApiAuth, prover: Path<String>, tag: Path<String>) -> poem::Result<Resp> {
+        let miner = {
+            let address = auth.0.address;
+            ControllerKey(address)
+        };
+
+        let prover = Address::from_str(&prover.0).map_err(|e| anyhow!("{e:?}"))?;
+
+        let uid = Uuid::new_v4().to_string();
+        log::info!("[prover/delete] uid: [{uid}], prover: [{prover:?}], tag: [{}]", tag.0);
+
+        let op = self.db.prover_image_remove(&miner, &prover, &tag.0)?;
+
+        if let Some(containers) = op.1 {
+            for id in containers {
+                self.docker_manager.remove_container(&id).await?;
+            }
+        }
+
+        if let Some(meta) = op.0 {
+            self.docker_manager.remove_image(&meta.image_id).await?;
+        }
+
+        Ok(Resp::Ok(Json(RespData::new(&uid))))
+    }
+
+
     // #[oai(path = "/prover/new", method = "post", tag = "ApiTags::Prover")]
     pub async fn prover_new(&self, auth: ApiAuth, req: Json<ProverNewReq>) -> poem::Result<Resp> {
         let miner = {
@@ -375,7 +403,7 @@ impl ApiService {
         let uid = Uuid::new_v4().to_string();
         log::info!("[prover/new] uid: [{uid}], req: [{req:?}]");
 
-        let Some(meta) = self.db.prover_meta(&miner, &prover)? else {
+        let Some(meta) = self.db.prover_meta(&miner, &prover, &req.tag)? else {
             return Ok(Resp::Ok(Json(RespData::new_err(
                 "miner not exist".to_string(),
                 &uid,
@@ -387,7 +415,7 @@ impl ApiService {
             .new_container(&meta.repository, &meta.tag, &req.option)
             .await?;
 
-        self.db.prover_container_add(&miner, &prover, &ccf.id)?;
+        self.db.prover_container_add(&miner, &prover, &req.tag, &ccf.id)?;
 
         Ok(Resp::Ok(Json(RespData::new_data(
             &json!({
@@ -459,6 +487,7 @@ impl ApiService {
         page_size: Query<Option<usize>>,
         page_count: Query<Option<usize>>,
         prover: Path<String>,
+        tag: Path<String>,
     ) -> poem::Result<Resp> {
         let miner = {
             let address = auth.0.address;
@@ -487,7 +516,7 @@ impl ApiService {
 
         if let Some(dcl) = self
             .db
-            .docker_container_list(&miner, &prover, begin, take_count)?
+            .docker_container_list(&miner, &prover, &tag.0, begin, take_count)?
         {
             let data = {
                 let mut info = self

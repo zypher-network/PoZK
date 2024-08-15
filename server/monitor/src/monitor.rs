@@ -46,6 +46,7 @@ impl Monitor {
         })
     }
 
+    #[allow(unused_assignments)]
     pub fn run(self) {
         spawn(async move {
             let block_number_type = match BlockNumber::from_str(&self.cfg.block_number_type) {

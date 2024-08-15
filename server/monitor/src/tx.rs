@@ -389,7 +389,7 @@ impl TxService {
                                 Self::prover_version_to_tag(&version)
                             };
 
-                            match self.db.prover_meta(&miner_key, &prover_address) {
+                            match self.db.prover_meta(&miner_key, &prover_address, &tag) {
                                 Ok(v) => {
                                     let Some(_v) = v else {
                                         log::warn!("[tx_service] handle: {ty:?}, query prover: {prover_address:?}, tag: {tag}");
@@ -737,7 +737,6 @@ mod test {
                 task_market_address,
                 stake_address,
                 prover_market_address,
-                docker_manager,
                 miner_address,
             )
             .unwrap();
