@@ -199,6 +199,7 @@ impl ReDB {
         prover: &Address,
         image_created: &str,
         tag: &str,
+        overtime: u64,
         container_id: Option<&str>,
     ) -> Result<()> {
         let txn = self.db.begin_write()?;
@@ -210,7 +211,6 @@ impl ReDB {
             } else {
                 DockerValue::default()
             };
-
 
             if let Some(id) = container_id {
                 let mut exist = false;
@@ -243,6 +243,7 @@ impl ReDB {
                     tag: tag.to_string(),
                     name: image_name.to_string(),
                     created: image_created.to_string(),
+                    overtime,
                 },
             );
 
@@ -351,7 +352,12 @@ impl ReDB {
     }
 
     #[allow(unused_assignments)]
-    pub fn prover_image_remove(&self, miner: &ControllerKey, prover: &Address, tag: &str) -> Result<(Option<DockerImageMeta>, Option<Vec<String>>)> {
+    pub fn prover_image_remove(
+        &self,
+        miner: &ControllerKey,
+        prover: &Address,
+        tag: &str,
+    ) -> Result<(Option<DockerImageMeta>, Option<Vec<String>>)> {
         let txn = self.db.begin_write()?;
         let key = format!("{prover:?}-{tag}");
         let mut meta = None;
@@ -443,7 +449,7 @@ impl ReDB {
             .take(size)
             .map(|(prover, meta)| DockerImage {
                 image_id: meta.image_id.to_string(),
-                prover: format!("{prover:?}"),
+                prover: prover.to_string(),
                 name: meta.name.clone(),
                 created: meta.created.clone(),
             })

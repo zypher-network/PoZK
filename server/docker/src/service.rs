@@ -236,7 +236,11 @@ impl DockerManager {
         }
     }
 
-    pub async fn get_image_by_repository(&self, repository: &str) -> Result<Option<ImageInfo>> {
+    pub async fn get_image_by_repository(
+        &self,
+        repository: &str,
+        version: &str,
+    ) -> Result<Option<ImageInfo>> {
         let op = {
             let mut op = ImageListOptionsBuilder::default();
             op.all();
@@ -264,7 +268,7 @@ impl DockerManager {
                 continue;
             };
 
-            if repo.eq(&repository) {
+            if repo.eq(&repository) && tag.eq(&version) {
                 let split = image.id.split(":").collect::<Vec<_>>();
                 let id = split.get(1).unwrap().to_string();
                 return Ok(Some(ImageInfo {

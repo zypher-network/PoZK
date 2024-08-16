@@ -2,7 +2,7 @@ use crate::poem::req::{ControllerAddReq, ProverNewReq, ProverPullReq};
 use crate::poem::{ApiAuth, LoginReq, Pagination, User, SERVER_KEY};
 use crate::{ApiConfig, Resp, RespData};
 use anyhow::{anyhow, Result};
-use db::{ControllerKey, DockerImageMeta, ReDB};
+use db::{ControllerKey, ReDB};
 use docker::DockerManager;
 use ethers::core::k256::ecdsa::SigningKey;
 use ethers::core::rand::thread_rng;
@@ -339,7 +339,7 @@ impl ApiService {
 
         let Some(image) = self
             .docker_manager
-            .get_image_by_repository(&req.repository)
+            .get_image_by_repository(&req.repository, &req.tag)
             .await?
         else {
             return Ok(Resp::Ok(Json(RespData::new_msg(
@@ -357,14 +357,24 @@ impl ApiService {
             &prover,
             &image.created,
             &req.tag,
+            req.overtime,
             None,
         )?;
 
         Ok(Resp::Ok(Json(RespData::new(&uid))))
     }
 
-    #[oai(path = "/prover/remove/:prover/:tag", method = "post", tag = "ApiTags::Prover")]
-    pub async fn prover_remove(&self, auth: ApiAuth, prover: Path<String>, tag: Path<String>) -> poem::Result<Resp> {
+    #[oai(
+        path = "/prover/remove/:prover/:tag",
+        method = "post",
+        tag = "ApiTags::Prover"
+    )]
+    pub async fn prover_remove(
+        &self,
+        auth: ApiAuth,
+        prover: Path<String>,
+        tag: Path<String>,
+    ) -> poem::Result<Resp> {
         let miner = {
             let address = auth.0.address;
             ControllerKey(address)
@@ -373,7 +383,10 @@ impl ApiService {
         let prover = Address::from_str(&prover.0).map_err(|e| anyhow!("{e:?}"))?;
 
         let uid = Uuid::new_v4().to_string();
-        log::info!("[prover/delete] uid: [{uid}], prover: [{prover:?}], tag: [{}]", tag.0);
+        log::info!(
+            "[prover/delete] uid: [{uid}], prover: [{prover:?}], tag: [{}]",
+            tag.0
+        );
 
         let op = self.db.prover_image_remove(&miner, &prover, &tag.0)?;
 
@@ -389,7 +402,6 @@ impl ApiService {
 
         Ok(Resp::Ok(Json(RespData::new(&uid))))
     }
-
 
     // #[oai(path = "/prover/new", method = "post", tag = "ApiTags::Prover")]
     pub async fn prover_new(&self, auth: ApiAuth, req: Json<ProverNewReq>) -> poem::Result<Resp> {
@@ -415,7 +427,8 @@ impl ApiService {
             .new_container(&meta.repository, &meta.tag, &req.option)
             .await?;
 
-        self.db.prover_container_add(&miner, &prover, &req.tag, &ccf.id)?;
+        self.db
+            .prover_container_add(&miner, &prover, &req.tag, &ccf.id)?;
 
         Ok(Resp::Ok(Json(RespData::new_data(
             &json!({

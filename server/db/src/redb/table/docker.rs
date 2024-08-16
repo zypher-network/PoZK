@@ -16,7 +16,6 @@ pub struct DockerValue {
     pub ids: BTreeMap<String, DockerImageMeta>,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct DockerImageMeta {
     pub prover: Address,
@@ -25,6 +24,7 @@ pub struct DockerImageMeta {
     pub tag: String,
     pub name: String,
     pub created: String,
+    pub overtime: u64,
 }
 
 impl Value for DockerValue {

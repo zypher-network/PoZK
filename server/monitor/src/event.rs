@@ -1,4 +1,5 @@
-use crate::tx::{FuncType, TxChanData};
+use crate::monitor::MonitorChanData;
+use crate::PROVER_MARKET_CONTRACT_ABI;
 use crate::TASK_MARKET_CONTRACT_ABI;
 use anyhow::Result;
 use ethers::abi::{Bytes as AbiBytes, RawLog};
@@ -12,6 +13,7 @@ use std::str::FromStr;
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EventType {
     CreateTask,
+    ApproveProver,
 }
 
 /// Event management module, events that need to be processed are stored and classified here.
@@ -24,11 +26,11 @@ pub struct EventManager {
 }
 
 impl EventManager {
-    pub fn new(task_market_address: &str) -> Result<Self> {
+    pub fn new(task_market_address: &str, prover_market_address: &str) -> Result<Self> {
         let mut topic_event = BTreeMap::new();
         let mut address_contracts = BTreeMap::new();
 
-        let _insert_create_task = {
+        let _insert_task = {
             let task_market = serde_json::from_str::<Contract>(TASK_MARKET_CONTRACT_ABI)?;
             let event = task_market.event("CreateTask")?;
             let topic = event.signature();
@@ -39,13 +41,24 @@ impl EventManager {
             address_contracts.insert(address, task_market);
         };
 
+        let _insert_prover = {
+            let prover_market = serde_json::from_str::<Contract>(PROVER_MARKET_CONTRACT_ABI)?;
+            let event = prover_market.event("ApproveProver")?;
+            let topic = event.signature();
+
+            topic_event.insert(topic, (event.clone(), EventType::ApproveProver));
+
+            let address = Address::from_str(prover_market_address)?;
+            address_contracts.insert(address, prover_market);
+        };
+
         Ok(Self {
             topic_event,
             address_contracts,
         })
     }
 
-    pub fn parse_log(&self, log: &Log) -> Result<Option<TxChanData>> {
+    pub fn parse_log(&self, log: &Log) -> Result<Option<MonitorChanData>> {
         let topic = &log.topics[0];
         if let Some((event, ty)) = self.topic_event.get(topic) {
             let raw_log = RawLog {
@@ -64,9 +77,9 @@ impl EventManager {
                 log.transaction_hash
             );
 
-            return Ok(Some(TxChanData {
-                ty: FuncType::from(ty),
-                tx_hash: log.transaction_hash,
+            return Ok(Some(MonitorChanData {
+                event_type: ty.clone(),
+                hash: log.transaction_hash,
                 data: map,
             }));
         }
