@@ -88,6 +88,16 @@ impl DockerManager {
         Ok(())
     }
 
+    pub async fn remove_image(&self, image_id: &str) -> Result<()> {
+        let image = self.docker.images().get(image_id);
+
+        let delete_list = image.delete().await?;
+
+        log::debug!("delete image: {delete_list:?}");
+
+        Ok(())
+    }
+
     pub async fn new_container(
         &self,
         repo: &str,
@@ -226,7 +236,11 @@ impl DockerManager {
         }
     }
 
-    pub async fn get_image_by_repository(&self, repository: &str) -> Result<Option<ImageInfo>> {
+    pub async fn get_image_by_repository(
+        &self,
+        repository: &str,
+        version: &str,
+    ) -> Result<Option<ImageInfo>> {
         let op = {
             let mut op = ImageListOptionsBuilder::default();
             op.all();
@@ -254,7 +268,7 @@ impl DockerManager {
                 continue;
             };
 
-            if repo.eq(&repository) {
+            if repo.eq(&repository) && tag.eq(&version) {
                 let split = image.id.split(":").collect::<Vec<_>>();
                 let id = split.get(1).unwrap().to_string();
                 return Ok(Some(ImageInfo {

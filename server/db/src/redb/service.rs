@@ -199,9 +199,11 @@ impl ReDB {
         prover: &Address,
         image_created: &str,
         tag: &str,
+        overtime: u64,
         container_id: Option<&str>,
     ) -> Result<()> {
         let txn = self.db.begin_write()?;
+        let key = format!("{prover:?}-{tag}");
         {
             let mut table = txn.open_table(DOCKER_TABLE)?;
             let mut dv = if let Some(map) = table.get(miner)? {
@@ -213,7 +215,7 @@ impl ReDB {
             if let Some(id) = container_id {
                 let mut exist = false;
 
-                if let Some(containers) = dv.containers.get_mut(prover) {
+                if let Some(containers) = dv.containers.get_mut(&key) {
                     containers.push(id.to_string());
                     exist = true;
                 }
@@ -221,25 +223,27 @@ impl ReDB {
                 if !exist {
                     let mut exist = false;
 
-                    if let Some(containers) = dv.containers.get_mut(prover) {
+                    if let Some(containers) = dv.containers.get_mut(&key) {
                         containers.push(id.to_string());
                         exist = true;
                     }
 
                     if !exist {
-                        dv.containers.insert(prover.clone(), vec![id.to_string()]);
+                        dv.containers.insert(key.clone(), vec![id.to_string()]);
                     }
                 }
             }
 
             dv.ids.insert(
-                prover.clone(),
+                key.clone(),
                 DockerImageMeta {
+                    prover: prover.clone(),
                     repository: repository.to_string(),
                     image_id: image_id.to_string(),
                     tag: tag.to_string(),
                     name: image_name.to_string(),
                     created: image_created.to_string(),
+                    overtime,
                 },
             );
 
@@ -254,9 +258,11 @@ impl ReDB {
         &self,
         miner: &ControllerKey,
         prover: &Address,
+        tag: &str,
         container_id: &str,
     ) -> Result<()> {
         let txn = self.db.begin_write()?;
+        let key = format!("{prover:?}-{tag}");
         {
             let mut table = txn.open_table(DOCKER_TABLE)?;
             let mut dv = if let Some(dv) = table.get(miner)? {
@@ -267,14 +273,14 @@ impl ReDB {
 
             let mut exist = false;
 
-            if let Some(containers) = dv.containers.get_mut(&prover) {
+            if let Some(containers) = dv.containers.get_mut(&key) {
                 containers.push(container_id.to_string());
                 exist = true;
             }
 
             if !exist {
                 dv.containers
-                    .insert(prover.clone(), vec![container_id.to_string()]);
+                    .insert(key.clone(), vec![container_id.to_string()]);
             }
 
             table.insert(miner, dv)?;
@@ -287,9 +293,11 @@ impl ReDB {
         &self,
         miner: &ControllerKey,
         prover: &Address,
+        tag: &str,
         container_id: &str,
     ) -> Result<()> {
         let txn = self.db.begin_write()?;
+        let key = format!("{prover:?}-{tag}");
         {
             let mut table = txn.open_table(DOCKER_TABLE)?;
             let mut dv = if let Some(dv) = table.get(miner)? {
@@ -299,7 +307,7 @@ impl ReDB {
             };
 
             let mut index = None;
-            if let Some(containers) = dv.containers.get(prover) {
+            if let Some(containers) = dv.containers.get(&key) {
                 for (idx, id) in containers.iter().enumerate() {
                     if id.eq(container_id) {
                         index.replace(idx);
@@ -309,7 +317,7 @@ impl ReDB {
             }
 
             if let Some(idx) = index {
-                let containers = dv.containers.get_mut(prover).unwrap(); // safe
+                let containers = dv.containers.get_mut(&key).unwrap(); // safe
                 containers.remove(idx);
             }
 
@@ -323,8 +331,10 @@ impl ReDB {
         &self,
         miner: &ControllerKey,
         prover: &Address,
+        tag: &str,
     ) -> Result<Option<DockerImageMeta>> {
         let txn = self.db.begin_read()?;
+        let key = format!("{prover:?}-{tag}");
         let table = txn.open_table(DOCKER_TABLE)?;
         let dv = if let Some(dv) = table.get(miner)? {
             dv.value()
@@ -333,7 +343,7 @@ impl ReDB {
             return Ok(None);
         };
 
-        return if let Some(meta) = dv.ids.get(prover) {
+        return if let Some(meta) = dv.ids.get(&key) {
             Ok(Some(meta.clone()))
         } else {
             log::warn!("prover: {prover:?} not exist on db");
@@ -341,8 +351,17 @@ impl ReDB {
         };
     }
 
-    pub fn prover_image_remove(&self, miner: &ControllerKey, prover: &Address) -> Result<()> {
+    #[allow(unused_assignments)]
+    pub fn prover_image_remove(
+        &self,
+        miner: &ControllerKey,
+        prover: &Address,
+        tag: &str,
+    ) -> Result<(Option<DockerImageMeta>, Option<Vec<String>>)> {
         let txn = self.db.begin_write()?;
+        let key = format!("{prover:?}-{tag}");
+        let mut meta = None;
+        let mut containers = None;
         {
             let mut table = txn.open_table(DOCKER_TABLE)?;
 
@@ -352,24 +371,26 @@ impl ReDB {
                 return Err(anyhow!("miner: {miner:?} not exist repository map"));
             };
 
-            dv.ids.remove(prover);
-            dv.containers.remove(prover);
+            meta = dv.ids.remove(&key);
+            containers = dv.containers.remove(&key);
 
             table.insert(miner, dv)?;
         }
         txn.commit()?;
 
-        Ok(())
+        Ok((meta, containers))
     }
 
     pub fn docker_container_list(
         &self,
         miner: &ControllerKey,
         prover: &Address,
+        tag: &str,
         from: usize,
         size: usize,
     ) -> Result<Option<DockerContainerList>> {
         let txn = self.db.begin_read()?;
+        let key = format!("{prover:?}-{tag}");
         let table = txn.open_table(DOCKER_TABLE)?;
         let dv = if let Some(dv) = table.get(miner)? {
             dv.value()
@@ -378,12 +399,12 @@ impl ReDB {
             return Ok(None);
         };
 
-        let Some(list) = dv.containers.get(prover) else {
+        let Some(list) = dv.containers.get(&key) else {
             log::warn!("prover: {prover:?} not exist container");
             return Ok(None);
         };
 
-        let Some(meta) = dv.ids.get(prover) else {
+        let Some(meta) = dv.ids.get(&key) else {
             log::warn!("prover: {prover:?} not exist meta");
             return Ok(None);
         };
@@ -428,7 +449,7 @@ impl ReDB {
             .take(size)
             .map(|(prover, meta)| DockerImage {
                 image_id: meta.image_id.to_string(),
-                prover: format!("{prover:?}"),
+                prover: prover.to_string(),
                 name: meta.name.clone(),
                 created: meta.created.clone(),
             })

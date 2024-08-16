@@ -11,12 +11,11 @@ futures-util.workspace = true
 db = { path = "../db" }
 reqwest.workspace = true
 serde_json.workspace = true
-log.worspace = true
 poem-openapi.workespace = true
 serde.workspace = true
 chrono.workspace = true
+log.worspace = true
 
 [dev-dependencies]
 poem = { workspace = true, features = ["anyhow"] }
-poem-openapi = { workespace = true }
 env_logger.workspace = true

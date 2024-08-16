@@ -2,15 +2,14 @@ use anyhow::Result;
 use api::{ApiConfig, ApiService};
 use clap::{Args, Parser, Subcommand};
 use db::ReDB;
-use ethers::prelude::{Provider, ProviderExt};
+use ethers::prelude::{Middleware, Provider, ProviderExt};
 use ethers::types::Address;
-use monitor::{Monitor, MonitorConfig, TaskService, TxService};
+use monitor::{init_functions, Monitor, MonitorConfig, ProverService, TaskService, TxService};
 use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use tokio::sync::mpsc::unbounded_channel;
 
 #[derive(Parser)]
 #[command(version, about, long_about)]
@@ -72,6 +71,7 @@ async fn main() -> Result<()> {
     };
 
     let eth_cli = Provider::connect(&co.endpoint).await;
+    let chain_id = eth_cli.get_chainid().await?;
 
     let db = {
         let db_path = PathBuf::from(&co.base_path);
@@ -85,41 +85,44 @@ async fn main() -> Result<()> {
     };
 
     if co.open_monitor {
-        let (tx_sender, tx_receiver) = unbounded_channel();
-        let (task_sender, task_receiver) = unbounded_channel();
-
         let task_market_address = Address::from_str(&co.monitor_config.task_market_address)?;
         let prover_market_address = Address::from_str(&co.monitor_config.prover_market_address)?;
         let stake_address = Address::from_str(&co.monitor_config.stake_address)?;
+
         let miner = Address::from_str(&co.monitor_config.miner)?;
 
-        // create monitor
-        let monitor = Monitor::new(&co.monitor_config, eth_cli.clone(), tx_sender.clone()).await?;
+        let mut monitor = Monitor::new(&co.monitor_config, eth_cli.clone()).await?;
 
-        // create tx service
-        let tx_service = TxService::new(
-            db.clone(),
-            tx_receiver,
-            task_sender,
+        let tx_service = TxService::new(eth_cli.clone(), db.clone(), miner, chain_id)?;
+
+        let task_service = TaskService::new(
             eth_cli.clone(),
-            task_market_address,
-            stake_address,
-            prover_market_address,
+            db.clone(),
+            docker_manager.clone(),
+            monitor.register(),
+            tx_service.sender(),
+            &co.base_path,
+            chain_id,
             miner,
         )?;
 
-        // create task service
-        let task_service = TaskService::new(
+        let prover_service = ProverService::new(
+            eth_cli.clone(),
             db.clone(),
             docker_manager.clone(),
-            task_receiver,
-            tx_sender.clone(),
-            &co.base_path,
+            monitor.register(),
+            miner,
+            co.monitor_config.docker_proxy_prefix,
+            chain_id,
         )?;
 
-        monitor.run();
+        init_functions(task_market_address, stake_address, prover_market_address)?;
+
         tx_service.run();
         task_service.run();
+        prover_service.run();
+
+        monitor.run();
     }
 
     let _api = {

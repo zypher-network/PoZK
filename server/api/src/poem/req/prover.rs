@@ -20,6 +20,7 @@ pub struct ProverPullReq {
     pub prover: String,
     pub tag: String,
     pub name: String,
+    pub overtime: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]

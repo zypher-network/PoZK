@@ -42,4 +42,10 @@ pub struct MonitorConfig {
         help = "`monitor`: owner, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
     )]
     pub miner: String,
+
+    #[clap(
+        long,
+        help = "`monitor`: Download docker image proxy, eg. docker.registry.cyou"
+    )]
+    pub docker_proxy_prefix: Option<String>,
 }

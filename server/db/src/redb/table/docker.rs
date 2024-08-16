@@ -10,19 +10,21 @@ pub const DOCKER_TABLE: TableDefinition<ControllerKey, DockerValue> =
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct DockerValue {
-    /// prover -> Vec<container_id>
-    pub containers: BTreeMap<Address, Vec<String>>,
-    /// prover -> (repository, tag, name, image_id)
-    pub ids: BTreeMap<Address, DockerImageMeta>,
+    /// prover-tag -> Vec<container_id>
+    pub containers: BTreeMap<String, Vec<String>>,
+    /// prover-tag -> (repository, tag, name, image_id)
+    pub ids: BTreeMap<String, DockerImageMeta>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct DockerImageMeta {
+    pub prover: Address,
     pub repository: String,
     pub image_id: String,
     pub tag: String,
     pub name: String,
     pub created: String,
+    pub overtime: u64,
 }
 
 impl Value for DockerValue {
