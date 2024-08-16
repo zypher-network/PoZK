@@ -14,6 +14,7 @@ step = 10
 wait_time = 10
 block_number_type = "latest"
 miner = "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc"
+docker_proxy_prefix = "docker.registry.cyou"
 
 [api_config]
 host = "0.0.0.0"
