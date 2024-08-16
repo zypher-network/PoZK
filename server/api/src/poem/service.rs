@@ -614,8 +614,8 @@ Welcome to Zytron!
 URI: http://0.0.0.0:9098/api/login
 Version: 1
 Chain ID: 5611
-Nonce: 36728340
-Issued At: 2024-08-14T03:40:18.807Z"#;
+Nonce: 36922173
+Issued At: 2024-08-16T09:31:18.807Z"#;
 
             let message: Message = msg.parse().unwrap();
             println!("message: {message:?}");
