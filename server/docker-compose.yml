@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  pozk-miner:
+    image: docker.registry.cyou/zyphernetwork/pozk-miner:0.0.4
+    container_name: pozk-miner
+    ports:
+      - "9098:9098"
+    volumes:
+      - /home/cloud/tmp/config-dir:/data
+    command: /data/config.toml
+
+  giambi-pozk-frontend:
+    image: docker.registry.cyou/nash9328/giambi-pozk-frontend:latest
+    ports:
+      - "4000:4000"
+    environment:
+      - API_BASE_URL=http://localhost:3125
