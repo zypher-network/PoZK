@@ -62,8 +62,8 @@ pub async fn gen_tx(
     Ok(TypedTransaction::Legacy(tx))
 }
 
-pub fn gen_prover_name_data(prover: Address) -> Result<(Bytes, Function)> {
-    let tx_data = PROVER_NAME_ABI.encode_input(&vec![Token::Address(prover)])?;
+pub fn gen_prover_name_data() -> Result<(Bytes, Function)> {
+    let tx_data = PROVER_NAME_ABI.encode_input(&vec![])?;
 
     Ok((Bytes::from(tx_data), PROVER_NAME_ABI.clone()))
 }

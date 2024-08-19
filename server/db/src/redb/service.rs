@@ -35,6 +35,7 @@ pub struct DockerImage {
     pub prover: String,
     pub name: String,
     pub created: String,
+    pub overtime: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -452,6 +453,7 @@ impl ReDB {
                 prover: prover.to_string(),
                 name: meta.name.clone(),
                 created: meta.created.clone(),
+                overtime: meta.overtime,
             })
             .collect::<Vec<_>>();
 
