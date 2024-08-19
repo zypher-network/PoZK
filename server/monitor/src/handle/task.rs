@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
+use chrono::Utc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::{fs, spawn};
 
@@ -72,6 +73,8 @@ impl TaskService {
         chain_id: U256,
     ) {
         spawn(async move {
+            let start_time = Utc::now().timestamp();
+
             let mut base_path = base_path;
             let base_str = format!("{:?}-{}-{}", data.prover, data.tag, data.tid.to_string());
 
@@ -295,6 +298,13 @@ impl TaskService {
                         log::error!("[run_task] send to tx chan: {e:?}")
                     }
                 }
+
+                let end_time = Utc::now().timestamp();
+
+                log::debug!(
+                    "[run_task] Duration: [{}]sec",
+                    end_time - start_time
+                );
             }
         });
     }
