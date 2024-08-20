@@ -36,11 +36,12 @@ pub async fn gen_tx(
     to: Address,
     nonce: Option<U256>,
     chain_id: U256,
+    gas: Option<U256>,
 ) -> Result<TypedTransaction> {
     let mut tx = TransactionRequest {
         from,
         to: Some(NameOrAddress::Address(to)),
-        gas: None,
+        gas,
         gas_price: None,
         value: None,
         data,
@@ -49,14 +50,16 @@ pub async fn gen_tx(
     };
 
     if from.is_some() {
+        if gas.is_none() {
+            let gas_limit = eth_cli
+                .estimate_gas(&TypedTransaction::Legacy(tx.clone()), None)
+                .await?;
+
+            tx.gas = Some(gas_limit);
+        }
+
         let gas_price = eth_cli.get_gas_price().await?;
         tx.gas_price = Some(gas_price);
-
-        let gas_limit = eth_cli
-            .estimate_gas(&TypedTransaction::Legacy(tx.clone()), None)
-            .await?;
-
-        tx.gas = Some(gas_limit);
     }
 
     Ok(TypedTransaction::Legacy(tx))

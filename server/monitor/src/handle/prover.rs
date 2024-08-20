@@ -90,19 +90,16 @@ impl ProverService {
                             overtime.as_u64()
                         };
 
-
                         // query is miner
                         {
-                            let (stake_address, tx_data, func) = match utils::gen_is_miner_data(
-                                &prover_token,
-                                self.miner,
-                            ) {
-                                Ok(v) => v,
-                                Err(e) => {
-                                    log::error!("[prover_service] gen is miner ts data: {e:?}");
-                                    continue;
-                                }
-                            };
+                            let (stake_address, tx_data, func) =
+                                match utils::gen_is_miner_data(&prover_token, self.miner) {
+                                    Ok(v) => v,
+                                    Err(e) => {
+                                        log::error!("[prover_service] gen is miner ts data: {e:?}");
+                                        continue;
+                                    }
+                                };
 
                             let tx = match utils::gen_tx(
                                 &self.eth_cli,
@@ -111,8 +108,9 @@ impl ProverService {
                                 stake_address,
                                 None,
                                 self.chain_id,
+                                None,
                             )
-                                .await
+                            .await
                             {
                                 Ok(v) => v,
                                 Err(e) => {
@@ -124,9 +122,7 @@ impl ProverService {
                             let res = match self.eth_cli.call(&tx, None).await {
                                 Ok(v) => v,
                                 Err(e) => {
-                                    log::error!(
-                                        "[prover_service] IsMiner call: {e:?}"
-                                    );
+                                    log::error!("[prover_service] IsMiner call: {e:?}");
                                     continue;
                                 }
                             };
@@ -169,8 +165,7 @@ impl ProverService {
 
                         // get name
                         let name = {
-                            let (tx_data, func) = match utils::gen_prover_name_data()
-                            {
+                            let (tx_data, func) = match utils::gen_prover_name_data() {
                                 Ok(v) => v,
                                 Err(e) => {
                                     log::error!("[prover_service] gen prover name tx data: {e:?}");
@@ -185,6 +180,7 @@ impl ProverService {
                                 prover_address,
                                 None,
                                 self.chain_id,
+                                None,
                             )
                             .await
                             {
@@ -231,7 +227,6 @@ impl ProverService {
                         } else {
                             format!("{DOCKER_HUB_REPO}/{prover_address:?}")
                         };
-
 
                         // pull images
                         if let Err(e) = self.docker_manager.pull_image(&repository, &version).await
@@ -283,22 +278,24 @@ impl ProverService {
 
 #[cfg(test)]
 mod test {
+    use crate::{utils, Monitor, MonitorConfig, ProverService};
+    use db::ReDB;
+    use docker::DockerManager;
+    use ethers::prelude::{Middleware, Provider, ProviderExt};
+    use ethers::types::Address;
     use std::path::PathBuf;
     use std::str::FromStr;
     use std::sync::Arc;
-    use ethers::prelude::{Middleware, Provider, ProviderExt};
-    use ethers::types::Address;
-    use db::ReDB;
-    use docker::DockerManager;
-    use crate::{Monitor, MonitorConfig, ProverService, utils};
 
     #[test]
     fn test_prover_service() {
         env_logger::init();
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
 
-        rt.block_on(async{
-
+        rt.block_on(async {
             let config = MonitorConfig {
                 task_market_address: "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793".to_string(),
                 prover_market_address: "0x1c23e9F06b10f491e86b506c025080C96513C9f5".to_string(),
@@ -312,9 +309,12 @@ mod test {
                 docker_proxy_prefix: Some("docker.registry.cyou".to_string()),
             };
 
-            let task_market_address = Address::from_str("0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793").unwrap();
-            let prover_market_address = Address::from_str("0x1c23e9F06b10f491e86b506c025080C96513C9f5").unwrap();
-            let stake_address = Address::from_str("0x003C1F8F552EE2463e517FDD464B929F8C0bFF06").unwrap();
+            let task_market_address =
+                Address::from_str("0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793").unwrap();
+            let prover_market_address =
+                Address::from_str("0x1c23e9F06b10f491e86b506c025080C96513C9f5").unwrap();
+            let stake_address =
+                Address::from_str("0x003C1F8F552EE2463e517FDD464B929F8C0bFF06").unwrap();
 
             let miner = Address::from_str("0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc").unwrap();
 
@@ -326,11 +326,8 @@ mod test {
             let eth_cli = Provider::connect("https://opbnb-testnet-rpc.bnbchain.org").await;
             let chain_id = eth_cli.get_chainid().await.unwrap();
 
-            utils::init_functions(
-                task_market_address,
-                stake_address,
-                prover_market_address,
-            ).unwrap();
+            utils::init_functions(task_market_address, stake_address, prover_market_address)
+                .unwrap();
 
             let mut monitor = Monitor::new(&config, eth_cli.clone()).await.unwrap();
 
@@ -342,7 +339,8 @@ mod test {
                 miner,
                 Some("docker.registry.cyou".to_string()),
                 chain_id,
-            ).unwrap();
+            )
+            .unwrap();
 
             prover_service.run();
             monitor.run();
@@ -350,5 +348,4 @@ mod test {
             tokio::signal::ctrl_c().await.unwrap();
         });
     }
-
 }
