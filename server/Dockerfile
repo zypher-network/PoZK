@@ -17,7 +17,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update &&  \
     apt-get install -y --no-install-recommends apt-utils && \
     apt-get install -y --no-install-recommends libssl-dev && \
-    apt-get install -y --no-install-recommends openssl &&
+    apt-get install -y --no-install-recommends openssl
 
 
 WORKDIR /app
