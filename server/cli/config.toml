@@ -1,5 +1,5 @@
 
-base_path = "/home/cloud/tmp/pozk"
+base_path = "/home/ubuntu/pozk"
 db_remove = false
 endpoint = "https://opbnb-testnet-rpc.bnbchain.org"
 open_monitor = true

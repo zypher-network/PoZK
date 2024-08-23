@@ -2,13 +2,13 @@ version: '3'
 
 services:
   pozk-miner:
-    image: docker.registry.cyou/zyphernetwork/pozk-miner:0.0.4
+    image: docker.registry.cyou/zyphernetwork/pozk-miner:0.0.5
     container_name: pozk-miner
     ports:
       - "9098:9098"
     volumes:
-      - /home/cloud/tmp/config-dir:/data
-    command: /data/config.toml
+      - /home/cloud/tmp/pozk:/home/ubuntu/pozk
+    command: /home/ubuntu/pozk/config.toml
 
   giambi-pozk-frontend:
     image: docker.registry.cyou/nash9328/giambi-pozk-frontend:latest
