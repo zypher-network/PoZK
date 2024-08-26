@@ -11,6 +11,7 @@ RUN echo Building nextjs image with corepack
 WORKDIR /app
 
 COPY frontend/package.json frontend/yarn.lock ./
+RUN yarn config set network-timeout 300000
 RUN yarn install --frozen-lockfile
 
 # --- Builder ---
