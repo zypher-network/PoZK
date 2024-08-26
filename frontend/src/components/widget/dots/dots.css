@@ -1,0 +1,21 @@
+@keyframes ellipsis {
+  0% {
+    content: '.';
+  }
+
+  33% {
+    content: '..';
+  }
+
+  66% {
+    content: '...';
+  }
+}
+
+.animate-ellipsis::after {
+  display: inline-block;
+  animation: ellipsis 1.25s infinite;
+  content: '.';
+  width: 1em;
+  text-align: left;
+}

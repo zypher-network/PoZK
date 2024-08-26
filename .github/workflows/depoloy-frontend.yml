@@ -1,0 +1,49 @@
+name: "Deploy-frontend"
+on:
+  push:
+    tags:
+      - 'frontend-v*.*.*'
+
+jobs:
+  build-push-frontend:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/frontend-v')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: extract_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/frontend-v}" >> $GITHUB_ENV
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./frontend/Dockerfile
+          platforms: amd64,arm64
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/pozk-frontend:${{ env.VERSION }}
+          push: true
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
