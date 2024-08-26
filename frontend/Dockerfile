@@ -10,7 +10,7 @@ RUN echo Building nextjs image with corepack
 
 WORKDIR /app
 
-COPY package.json yarn.lock ./
+COPY frontend/package.json frontend/yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 # --- Builder ---
@@ -21,7 +21,7 @@ WORKDIR /app
 ARG API_BASE_URL=BAKED_API_BASE_URL
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY frontend .
 RUN yarn build
 
 # --- Production runner ---
