@@ -5,7 +5,7 @@ ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 WORKDIR /prover
 
-RUN git clone https://github.com/zypher-game/pozk-shuffle.git && cd pozk-shuffle/prover && cargo update && cargo build --release && mv /prover/pozk-shuffle/prover/target/release/prover /prover/
+RUN git clone https://github.com/zypher-network/pozk-shuffle.git && cd pozk-shuffle/prover && cargo update && cargo build --release && mv /prover/pozk-shuffle/prover/target/release/prover /prover/
 
 # Final image
 FROM debian:buster-slim
