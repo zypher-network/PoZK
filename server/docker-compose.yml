@@ -12,7 +12,7 @@ services:
     command: /home/ubuntu/pozk/config.toml
 
   pozk-frontend:
-    image: docker.registry.cyou/zyphernetwork/pozk-frontend:0.0.4
+    image: docker.registry.cyou/zyphernetwork/pozk-frontend:0.0.5
     container_name: pozk-frontend
     ports:
       - "4000:4000"
