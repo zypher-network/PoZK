@@ -71,7 +71,7 @@ impl DockerManager {
 
     pub async fn pull_image(&self, repository: &str, tag: &str) -> Result<()> {
         let repo_tag = format!("{repository}:{tag}");
-        let pull_options = PullOptions::builder().image(&repo_tag).build();
+        let pull_options = PullOptions::builder().image(&repo_tag).tag(tag).build();
         let mut pull_stream = self.docker.images().pull(&pull_options);
         while let Some(pull_result) = pull_stream.next().await {
             match pull_result {
@@ -247,7 +247,13 @@ impl DockerManager {
             op
         };
 
-        let images = self.docker.images().list(&op.build()).await?;
+        let images = self.docker.images().list(&op.build()).await;
+
+        if let Err(e) = &images {
+            log::error!("docker.images(): {e:?}");
+        }
+
+        let images = images.unwrap();
 
         for image in images {
             let Some(repo_tags) = &image.repo_tags else {
