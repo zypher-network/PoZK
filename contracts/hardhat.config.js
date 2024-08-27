@@ -42,6 +42,10 @@ module.exports = {
       url: 'https://opbnb-testnet-rpc.bnbchain.org',
       accounts: [SECRET_KEY]
     },
+    zytrontestnet: {
+      url: 'https://linea-testnet-zytron.zypher.game',
+      accounts: [SECRET_KEY]
+    },
   },
   solidity: {
     version: "0.8.20",
