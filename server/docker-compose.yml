@@ -13,6 +13,7 @@ services:
 
   pozk-frontend:
     image: docker.registry.cyou/zyphernetwork/pozk-frontend:0.0.4
+    container_name: pozk-frontend
     ports:
       - "4000:4000"
     environment:

@@ -64,6 +64,7 @@ const ControllerForm = ({ action }: { action?: IAction }) => {
       // if (Action === "Edit") {
       //   await setController(data.Controller);
       // }
+      form.reset();
       console.log({ data, Action });
     },
     [Action, addController]

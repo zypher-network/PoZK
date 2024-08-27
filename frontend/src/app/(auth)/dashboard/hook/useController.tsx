@@ -118,7 +118,7 @@ export const usePostController = () => {
             title: "Add New Secret Key Success",
             variant: "success",
           });
-          getData();
+          refetch(1);
         } else {
           throw Error(res ?? "Controller add Error");
         }
