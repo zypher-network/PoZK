@@ -11,8 +11,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: /home/ubuntu/pozk/config.toml
 
-  giambi-pozk-frontend:
-    image: docker.registry.cyou/nash9328/giambi-pozk-frontend:latest
+  pozk-frontend:
+    image: docker.registry.cyou/zyphernetwork/pozk-frontend:0.0.4
     ports:
       - "4000:4000"
     environment:
