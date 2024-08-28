@@ -27,6 +27,7 @@ pub struct TaskService {
     monitor_receiver: UnboundedReceiver<MonitorChanData>,
     tx_sender: UnboundedSender<TxChanData>,
     base_path: PathBuf,
+    prover_host_path: PathBuf,
     miner: Address,
 }
 
@@ -48,10 +49,13 @@ impl TaskService {
         monitor_receiver: UnboundedReceiver<MonitorChanData>,
         tx_sender: UnboundedSender<TxChanData>,
         base_path: &str,
+        prover_host_path: &str,
         chain_id: U256,
         miner: Address,
     ) -> Result<Self> {
         let base_path = PathBuf::from(base_path);
+        let prover_host_path = PathBuf::from(prover_host_path);
+
         Ok(Self {
             db,
             docker_manager,
@@ -60,6 +64,7 @@ impl TaskService {
             monitor_receiver,
             tx_sender,
             base_path,
+            prover_host_path,
             miner,
         })
     }
@@ -68,6 +73,7 @@ impl TaskService {
         eth_cli: Provider<Http>,
         data: RunTaskData,
         base_path: PathBuf,
+        prover_host_path: PathBuf,
         docker_manager: DockerManager,
         tx_sender: UnboundedSender<TxChanData>,
         db: Arc<ReDB>,
@@ -145,7 +151,7 @@ impl TaskService {
             };
 
             // - run task
-            let ccf = {
+            let container_id = {
                 let op = ContainerNewOption {
                     cpu_shares: None,
                     cpus: None,
@@ -178,7 +184,7 @@ impl TaskService {
                 };
 
                 let ccf = match docker_manager
-                    .new_container(&meta.repository, &data.tag, &op)
+                    .new_container(&meta.repository, &data.tag, data.tid.as_u64(), &op)
                     .await
                 {
                     Ok(v) => v,
@@ -188,29 +194,34 @@ impl TaskService {
                     }
                 };
 
+                let Some(container_id) = ccf.id else {
+                    log::warn!("[run_task] container_id is nil");
+                    return;
+                };
+
                 // insert container_id to db
-                match db.prover_container_add(&data.miner, &data.prover, &data.tag, &ccf.id) {
+                match db.prover_container_add(&data.miner, &data.prover, &data.tag, &container_id) {
                     Ok(_) => {}
                     Err(e) => {
                         log::error!("[run_task] add container to db fail: {e:?}");
                     }
                 }
 
-                match docker_manager.start_container(&ccf.id).await {
+                match docker_manager.start_container(&container_id).await {
                     Ok(_) => {}
                     Err(e) => {
                         log::error!("[run_task] start container: {e:?}");
                     }
                 }
 
-                ccf
+                container_id
             };
 
             // delete container
             Self::delete_container(
                 docker_manager.clone(),
                 db.clone(),
-                ccf.id.clone(),
+                container_id.clone(),
                 data.clone(),
             );
 
@@ -352,7 +363,12 @@ impl TaskService {
 
                     match docker_manager.query_container_status(&id).await {
                         Ok(state) => {
-                            if state.running {
+                            let Some(cstate) = state else {
+                                log::warn!("[delete_container] state is nil");
+                                return;
+                            };
+
+                            if cstate.running.unwrap_or(false) {
                                 tokio::time::sleep(Duration::from_secs(2)).await;
                                 continue;
                             } else {
@@ -360,13 +376,13 @@ impl TaskService {
                             }
                         }
                         Err(e) => {
-                            log::error!("[run_task] query container status: {id}, err: {e:?}")
+                            log::error!("[delete_container] query container status: {id}, err: {e:?}")
                         }
                     }
                 }
 
                 log::debug!(
-                    "[run_task] query container status: {id}, count: {count}, can delete: {flag}"
+                    "[delete_container] query container status: {id}, count: {count}, can delete: {flag}"
                 );
                 flag
             };
@@ -375,19 +391,19 @@ impl TaskService {
             if can_delete {
                 match db.prover_container_remove(&data.miner, &data.prover, &data.tag, &id) {
                     Ok(_) => {
-                        log::debug!("[run_task] db remove container: {id}, success");
+                        log::debug!("[delete_container] db remove container: {id}, success");
                     }
                     Err(e) => {
-                        log::error!("[run_task] remove container: {id}: {e:?}");
+                        log::error!("[delete_container] remove container: {id}: {e:?}");
                         return;
                     }
                 }
                 match docker_manager.remove_container(&id).await {
                     Ok(_) => {
-                        log::debug!("[run_task] docker remove container: {id}, success");
+                        log::debug!("[delete_container] docker remove container: {id}, success");
                     }
                     Err(e) => {
-                        log::error!("[run_task] docker remove container: {id}: {e:?}");
+                        log::error!("[delete_container] docker remove container: {id}: {e:?}");
                     }
                 }
             }
@@ -677,6 +693,7 @@ impl TaskService {
                                     self.eth_cli.clone(),
                                     run_task_data,
                                     self.base_path.clone(),
+                                    self.prover_host_path.clone(),
                                     self.docker_manager.clone(),
                                     self.tx_sender.clone(),
                                     self.db.clone(),

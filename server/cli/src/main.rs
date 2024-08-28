@@ -34,8 +34,11 @@ pub struct ConfigFile {
 
 #[derive(Args, Debug, Deserialize)]
 pub struct ConfigOption {
-    #[clap(long, help = "redb and prover file path, eg. /tmp/pozk/")]
+    #[clap(long, help = "redb and prover file path, eg. /home/ubuntu/pozk/")]
     pub base_path: String,
+
+    #[clap(long, help = "prover host redb and prover file path, eg. /tmp/pozk/")]
+    pub prover_host_path: String,
 
     #[clap(long, help = "Whether to delete db")]
     pub db_remove: bool,
@@ -102,6 +105,7 @@ async fn main() -> Result<()> {
             monitor.register(),
             tx_service.sender(),
             &co.base_path,
+            &co.prover_host_path,
             chain_id,
             miner,
         )?;
