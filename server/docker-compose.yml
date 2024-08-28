@@ -2,7 +2,7 @@ version: '3'
 
 services:
   pozk-miner:
-    image: docker.registry.cyou/zyphernetwork/pozk-miner:0.0.9
+    image: docker.registry.cyou/zyphernetwork/pozk-miner:0.0.11
     container_name: pozk-miner
     ports:
       - "9098:9098"

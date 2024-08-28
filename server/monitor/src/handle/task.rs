@@ -89,7 +89,7 @@ impl TaskService {
 
             // - create folder
             base_path.push(&base_str);
-            prover_host_path.push(&base_path);
+            prover_host_path.push(&base_str);
             match tokio::fs::create_dir(&base_path).await {
                 Ok(_) => {}
                 Err(e) => {
