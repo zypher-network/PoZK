@@ -82,11 +82,14 @@ impl TaskService {
         spawn(async move {
             let start_time = Utc::now().timestamp();
 
+            let mut prover_host_path = prover_host_path;
+
             let mut base_path = base_path;
             let base_str = format!("{:?}-{}-{}", data.prover, data.tag, data.tid.to_string());
 
             // - create folder
             base_path.push(&base_str);
+            prover_host_path.push(&base_path);
             match tokio::fs::create_dir(&base_path).await {
                 Ok(_) => {}
                 Err(e) => {
@@ -165,7 +168,7 @@ impl TaskService {
                     memory: None,
                     volumes: Some(vec![Volumes {
                         src_volumes: "/data".to_string(),
-                        host_volumes: base_path.as_os_str().to_str().unwrap().to_string(), // safe
+                        host_volumes: prover_host_path.as_os_str().to_str().unwrap().to_string(), // safe
                     }]),
                 };
 

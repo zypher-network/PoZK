@@ -7,7 +7,7 @@ services:
     ports:
       - "9098:9098"
     volumes:
-      - /home/cloud/pozk:/home/ubuntu/pozk
+      - /home/cloud/tmp/pozk2:/home/ubuntu/pozk
       - /var/run/docker.sock:/var/run/docker.sock
     command: /home/ubuntu/pozk/config.toml
 

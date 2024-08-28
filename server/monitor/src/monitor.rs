@@ -142,7 +142,7 @@ impl Monitor {
                             if let Some(data) = op {
                                 for (i, s) in self.sender.iter().enumerate() {
                                     if let Err(e) = s.send(data.clone()) {
-                                        log::error!("[monitor] sender: [{i}], send data: {e:?}");
+                                        log::error!("[monitor] sender: [{i}], send data: {}", e.to_string());
                                     }
                                 }
                                 log::debug!("[monitor] sender all send success");
