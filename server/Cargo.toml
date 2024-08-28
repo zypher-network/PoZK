@@ -5,8 +5,9 @@ members = [ "api", "cli", "db", "docker", "monitor"]
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
 clap = { version = "4.5.2", features = ["derive"] }
-shiplift = { git = "https://github.com/jalaziz/shiplift", branch = "optional-image-virtual-size" }
+#shiplift = { git = "https://github.com/jalaziz/shiplift", branch = "optional-image-virtual-size" }
 #shiplift = "0.7.0"
+bollard = { version = "0.17.1", features = ["chrono"] }
 env_logger = "0.11.3"
 log = "0.4.21"
 anyhow = "1.0.80"

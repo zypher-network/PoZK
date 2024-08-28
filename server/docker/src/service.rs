@@ -1,13 +1,13 @@
+use std::collections::HashMap;
 use anyhow::{anyhow, Result};
-use chrono::Utc;
+use bollard::container::{Config, CreateContainerOptions, InspectContainerOptions, RemoveContainerOptions, StartContainerOptions, StopContainerOptions};
+use bollard::Docker;
+use bollard::image::{CreateImageOptions, ListImagesOptions};
+use bollard::models::{ContainerInspectResponse, ContainerState, HostConfig, PortBinding, PortMap};
+use chrono::{TimeZone, Utc};
 use futures_util::StreamExt;
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
-use shiplift::builder::ImageListOptionsBuilder;
-use shiplift::rep::{ContainerCreateInfo, State};
-use shiplift::{
-    ContainerOptions, Docker, Error, ImageListOptions, PullOptions, RmContainerOptions,
-};
 
 #[derive(Clone)]
 pub struct DockerManager {
@@ -16,12 +16,12 @@ pub struct DockerManager {
 
 #[derive(Clone, Debug, Deserialize, Serialize, Object)]
 pub struct ContainerNewOption {
-    pub cpu_shares: Option<u32>,
-    pub cpus: Option<u64>,
+    pub cpu_shares: Option<i64>,
+    pub cpus: Option<i64>,
     pub env: Option<Vec<String>>,
     pub cmd: Option<Vec<String>>,
     pub expose: Option<Vec<Expose>>,
-    pub memory: Option<u64>,
+    pub memory: Option<i64>,
     pub volumes: Option<Vec<Volumes>>,
 }
 
@@ -59,20 +59,19 @@ pub struct Volumes {
     pub host_volumes: String,
 }
 
-fn convert_to_vec_of_strs<'a>(vec: &'a Vec<String>) -> Vec<&'a str> {
-    vec.iter().map(|s| s.as_str()).collect()
-}
-
 impl DockerManager {
     pub fn new() -> Result<Self> {
-        let docker = Docker::new();
+        let docker = Docker::connect_with_socket_defaults()?;
         Ok(Self { docker })
     }
 
     pub async fn pull_image(&self, repository: &str, tag: &str) -> Result<()> {
         let repo_tag = format!("{repository}:{tag}");
-        let pull_options = PullOptions::builder().image(&repo_tag).tag(tag).build();
-        let mut pull_stream = self.docker.images().pull(&pull_options);
+        let pull_options = CreateImageOptions{
+            from_image: repo_tag.clone(),
+            ..Default::default()
+        };
+        let mut pull_stream = self.docker.create_image(Some(pull_options), None, None);
         while let Some(pull_result) = pull_stream.next().await {
             match pull_result {
                 Ok(v) => {
@@ -80,7 +79,7 @@ impl DockerManager {
                 }
                 Err(e) => {
                     log::error!("pull image: {e:?}");
-                    return Err(anyhow!("pull image repo_tag:{repo_tag}, err: {e:?}"));
+                    return Err(anyhow!("pull image repo_tag: {repo_tag}, err: {e:?}"));
                 }
             }
         }
@@ -89,11 +88,9 @@ impl DockerManager {
     }
 
     pub async fn remove_image(&self, image_id: &str) -> Result<()> {
-        let image = self.docker.images().get(image_id);
+        let remove_list = self.docker.remove_image(image_id, None, None).await?;
 
-        let delete_list = image.delete().await?;
-
-        log::debug!("delete image: {delete_list:?}");
+        log::debug!("remove image: {remove_list:?}");
 
         Ok(())
     }
@@ -102,8 +99,9 @@ impl DockerManager {
         &self,
         repo: &str,
         tag: &str,
+        task_id: u64,
         option: &ContainerNewOption,
-    ) -> Result<ContainerCreateInfo> {
+    ) -> Result<ContainerInspectResponse> {
         if !self.image_exist(repo, tag).await? {
             self.pull_image(repo, tag).await?;
         }
@@ -112,33 +110,49 @@ impl DockerManager {
         let name = format!(
             "minner-{}-{tag}-{}",
             repo.replace("/", "-"),
-            Utc::now().timestamp()
+            task_id
         );
 
-        let mut container_options_builder = ContainerOptions::builder(&repo_tag);
-        let mut container_options_builder_mut = container_options_builder.name(&name);
+        let create_op = CreateContainerOptions{ name, platform: None };
+        let mut op = Config::default();
+        let mut host_op = HostConfig::default();
+
+        op.image = Some(repo_tag);
 
         if let Some(memory) = option.memory {
-            container_options_builder_mut = container_options_builder_mut.memory(memory);
+            host_op.memory = Some(memory);
         };
 
         if let Some(cpu) = option.cpus {
-            container_options_builder_mut = container_options_builder_mut.cpus(cpu as f64);
+            host_op.cpu_count = Some(cpu);
         }
 
         if let Some(list) = &option.expose {
+            let mut src_port_map: HashMap<String, HashMap<(), ()>> = HashMap::new();
+            let mut host_port_map = PortMap::new();
+
             for e in list {
-                container_options_builder_mut =
-                    container_options_builder_mut.expose(e.src_port, &e.protocol, e.host_port);
+                src_port_map.insert(e.src_port.to_string(), HashMap::new());
+                host_port_map.insert(e.src_port.to_string(), Some(vec![
+                    PortBinding{
+                        host_ip: Some("127.0.0.1".to_string()),
+                        host_port: Some(e.host_port.to_string())
+                    },
+                ]));
             }
+
+            op.exposed_ports = Some(src_port_map);
+            host_op.port_bindings = Some(host_port_map);
         }
 
         if let Some(cpu_shares) = option.cpu_shares {
-            container_options_builder_mut = container_options_builder_mut.cpu_shares(cpu_shares);
+            // container_options_builder_mut = container_options_builder_mut.cpu_shares(cpu_shares);
+            host_op.cpu_shares = Some(cpu_shares);
         }
 
         if let Some(env) = &option.env {
-            container_options_builder_mut = container_options_builder_mut.env(env);
+            // container_options_builder_mut = container_options_builder_mut.env(env);
+            op.env = Some(env.clone());
         }
 
         if let Some(volumes) = &option.volumes {
@@ -146,81 +160,78 @@ impl DockerManager {
                 .into_iter()
                 .map(|v| format!("{}:{}", v.host_volumes, v.src_volumes))
                 .collect::<Vec<_>>();
-            let volumes = convert_to_vec_of_strs(&volumes);
-            container_options_builder_mut = container_options_builder_mut.volumes(volumes);
+            host_op.binds = Some(volumes);
         }
 
         if let Some(cmd) = &option.cmd {
-            let cmd = convert_to_vec_of_strs(&cmd);
-            container_options_builder_mut = container_options_builder_mut.cmd(cmd);
+            op.cmd = Some(cmd.clone());
         }
 
-        let container_options = container_options_builder_mut.build();
+        op.host_config = Some(host_op);
 
-        log::debug!("container_options: {container_options:?}");
+        let container_create_resp = self.docker.create_container(Some(create_op), op).await?;
 
-        let container = self
-            .docker
-            .containers()
-            .create(&container_options)
-            .await
-            .map_err(|e| {
-                match &e {
-                    Error::Fault { code, message } => {
-                        log::error!("create container: {code}, {message}");
-                    }
-                    _ => {}
-                }
-                e
-            })?;
+        let op = Some(InspectContainerOptions{
+            size: false,
+        });
 
-        Ok(container)
+        let container_info = self.docker.inspect_container(&container_create_resp.id, op).await?;
+
+        Ok(container_info)
     }
 
-    pub async fn query_container_status(&self, id: &str) -> Result<State> {
-        let container = self.docker.containers().get(id);
-        let state = container.inspect().await?;
-        Ok(state.state)
+    pub async fn query_container_status(&self, id: &str) -> Result<Option<ContainerState>> {
+        let op = Some(InspectContainerOptions{
+            size: false,
+        });
+
+        let container = self.docker.inspect_container(id, op).await?;
+        Ok(container.state)
     }
 
     pub async fn remove_container(&self, id: &str) -> Result<()> {
-        let container = self.docker.containers().get(id);
-        container
-            .remove(RmContainerOptions::default())
-            .await
-            .map_err(|e| anyhow!("remove container : {e:?}"))
+        let op = Some(RemoveContainerOptions{
+            force: true,
+            ..Default::default()
+        });
+
+        self.docker.remove_container(id, op).await?;
+        Ok(())
     }
 
     pub async fn start_container(&self, id: &str) -> Result<()> {
-        let container = self.docker.containers().get(id);
-        container
-            .start()
-            .await
-            .map_err(|e| anyhow!("start container : {e:?}"))
+        self.docker.start_container(id, None::<StartContainerOptions<String>>).await?;
+        Ok(())
     }
 
     pub async fn stop_container(&self, id: &str) -> Result<()> {
-        let container = self.docker.containers().get(id);
-        container
-            .stop(None)
-            .await
-            .map_err(|e| anyhow!("stop container : {e:?}"))
+
+        let op = Some(StopContainerOptions{
+            t: 30,
+        });
+
+        self.docker.stop_container(id, op).await?;
+        Ok(())
     }
 
-    pub async fn image_exist(&self, image: &str, tag: &str) -> Result<bool> {
-        let repo_tag = format!("{image}:{tag}");
-        let images = self
-            .docker
-            .images()
-            .list(&ImageListOptions::default())
-            .await?;
+    pub async fn image_exist(&self, repo: &str, tag: &str) -> Result<bool> {
+        let repo_tag = format!("{repo}:{tag}");
+
+        let mut filters = HashMap::new();
+        filters.insert("reference", vec![repo_tag.as_str()]);
+
+
+        let op = ListImagesOptions {
+            all: true,
+            filters,
+            digests: false,
+        };
+
+        let images = self.docker.list_images(Some(op)).await?;
 
         let op = images.iter().find(|image| {
-            let op = if let Some(list) = &image.repo_tags {
-                list.iter().find(|v| v == &&repo_tag)
-            } else {
-                None
-            };
+
+            let op = image.repo_tags.iter().find(|v| v == &&repo_tag);
 
             if op.is_some() {
                 true
@@ -238,48 +249,45 @@ impl DockerManager {
 
     pub async fn get_image_by_repository(
         &self,
-        repository: &str,
-        version: &str,
+        repo: &str,
+        tag: &str,
     ) -> Result<Option<ImageInfo>> {
-        let op = {
-            let mut op = ImageListOptionsBuilder::default();
-            op.all();
-            op
+        let repo_tag = format!("{repo}:{tag}");
+
+        let mut filters = HashMap::new();
+        filters.insert("reference", vec![repo_tag.as_str()]);
+
+        let op = ListImagesOptions {
+            all: true,
+            filters,
+            digests: false,
         };
 
-        let images = self.docker.images().list(&op.build()).await;
-
-        if let Err(e) = &images {
-            log::error!("docker.images(): {e:?}");
-        }
-
-        let images = images.unwrap();
+        let images = self.docker.list_images(Some(op)).await?;
 
         for image in images {
-            let Some(repo_tags) = &image.repo_tags else {
-                continue;
-            };
 
-            let Some(repo_tag) = repo_tags.get(0) else {
+            let Some(repo_tag) = image.repo_tags.get(0) else {
                 continue;
             };
 
             let repo_tag_split = repo_tag.split(":").collect::<Vec<_>>();
 
-            let Some(repo) = repo_tag_split.get(0) else {
+            let Some(repo_tmp) = repo_tag_split.get(0) else {
                 continue;
             };
 
-            let Some(tag) = repo_tag_split.get(1) else {
+            let Some(tag_tmp) = repo_tag_split.get(1) else {
                 continue;
             };
 
-            if repo.eq(&repository) && tag.eq(&version) {
+            if repo_tmp.eq(&repo) && tag_tmp.eq(&tag) {
                 let split = image.id.split(":").collect::<Vec<_>>();
                 let id = split.get(1).unwrap().to_string();
+                let created = Utc.timestamp(image.created,0);
                 return Ok(Some(ImageInfo {
                     repository: repo.to_string(),
-                    created: image.created.to_rfc3339(),
+                    created: created.to_rfc3339(),
                     id,
                     tag: tag.to_string(),
                     container_list: vec![],
@@ -296,39 +304,51 @@ impl DockerManager {
         image_id: &str,
         container_ids: Vec<String>,
     ) -> Result<ImageInfo> {
-        let image = self.docker.images().get(image_id);
-        let image_detail = image.inspect().await?;
 
-        let s = image_detail
-            .repo_tags
-            .unwrap_or_default()
-            .get(0)
-            .unwrap_or(&"".to_string())
-            .clone();
+        let image = self.docker.inspect_image(image_id).await?;
 
-        let split = s.split(":").collect::<Vec<_>>();
-        let repository = split.get(0).unwrap_or(&"").to_string();
+        let Some(repo_tags) = image.repo_tags else {
+            return Err(anyhow!("image: {image_id}, not exist repo tags"));
+        };
+
+        let Some(repo_tag) = repo_tags.get(0) else {
+            return Err(anyhow!("image: {image_id}, repo tag index 0 not exist"));
+        };
+        let split = repo_tag.split(":").collect::<Vec<_>>();
+
+        let repo = split.get(0).unwrap_or(&"").to_string();
         let tag = split.get(1).unwrap_or(&"").to_string();
 
+        let Some(created) = image.created else {
+            return Err(anyhow!("image: {image_id}, not exist created"));
+        };
+
         let mut image_info = ImageInfo {
-            repository,
-            created: image_detail.created.to_rfc3339(),
-            id: image_detail.id,
+            repository: repo,
+            created: created.to_rfc3339(),
+            id: image_id.to_string(),
             tag,
             container_list: vec![],
             total: 0,
         };
 
         for container_id in container_ids {
-            let container = self.docker.containers().get(container_id);
-            let container_detail = container.inspect().await?;
+            let container = self.docker.inspect_container(&container_id, None).await?;
+
+            let Some(state) = container.state else {
+                return Err(anyhow!("image: {image_id}, not exist state"));
+            };
+
+            let Some(status) = state.status else {
+                return Err(anyhow!("image: {image_id}, not exist status"));
+            };
 
             let container_info = ContainerInfo {
-                id: container_detail.id,
-                created: container_detail.created.to_rfc3339(),
-                status: container_detail.state.status,
-                image: container_detail.image,
-                running: container_detail.state.running,
+                id: container.id.unwrap_or_default(),
+                created: container.created.unwrap_or_default(),
+                status: status.to_string(),
+                image: container.image.unwrap_or_default(),
+                running: state.running.unwrap_or_default(),
             };
 
             image_info.container_list.push(container_info);
@@ -399,7 +419,7 @@ mod test {
             dm.pull_image(image, tag).await.unwrap();
 
             // 3. new postgres
-            let cc_info = dm.new_container(image, tag, &op).await.unwrap();
+            let cc_info = dm.new_container(image, tag, 0,&op).await.unwrap();
             println!("container create info: {cc_info:?}");
 
             // 4. start
@@ -501,7 +521,7 @@ mod test {
             dm.pull_image(image, tag).await.unwrap();
 
             // 3. new postgres
-            let cc_info = dm.new_container(image, tag, &op).await.unwrap();
+            let cc_info = dm.new_container(image, tag,0, &op).await.unwrap();
             println!("container create info: {cc_info:?}");
 
             // 4. start

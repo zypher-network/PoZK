@@ -1,4 +1,4 @@
-
+prover_host_path = "/home/cloud/pozk"
 base_path = "/home/ubuntu/pozk"
 db_remove = false
 endpoint = "https://opbnb-testnet-rpc.bnbchain.org"
