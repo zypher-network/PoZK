@@ -3,7 +3,7 @@ use crate::handle::tx::TxChanData;
 use crate::monitor::MonitorChanData;
 use crate::utils;
 use crate::utils::FuncType;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chrono::Utc;
 use db::{ControllerKey, ReDB};
 use docker::{ContainerNewOption, DockerManager, Volumes};
@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::{fs, spawn};
 
 pub struct TaskService {
@@ -220,13 +220,18 @@ impl TaskService {
                 container_id
             };
 
+            let data_clone = data.clone();
             // delete container
-            Self::delete_container(
-                docker_manager.clone(),
-                db.clone(),
-                container_id.clone(),
-                data.clone(),
-            );
+            spawn(async move {
+                if let Err(e) = Self::delete_container(
+                    docker_manager.clone(),
+                    db.clone(),
+                    container_id.clone(),
+                    data_clone,
+                ).await {
+                    log::error!("[run_task] {e:?}");
+                }
+            });
 
             // - query output file
             let (publics, proof) = {
@@ -343,74 +348,54 @@ impl TaskService {
         });
     }
 
-    pub fn delete_container(
+    pub async fn delete_container(
         docker_manager: DockerManager,
         db: Arc<ReDB>,
         id: String,
         data: RunTaskData,
-    ) {
-        spawn(async move {
-            // query container status util to not running
-            let can_delete = {
-                let mut count = 0;
-                let max_count = 20;
+    ) -> Result<()> {
 
-                let mut flag = false;
+        // query container status util to not running
+        let can_delete = {
+            let mut count = 0;
+            let max_count = 20;
 
-                while !flag {
-                    count += 1;
+            let mut flag = false;
 
-                    if count >= max_count {
-                        break;
-                    }
+            while !flag {
+                count += 1;
 
-                    match docker_manager.query_container_status(&id).await {
-                        Ok(state) => {
-                            let Some(cstate) = state else {
-                                log::warn!("[delete_container] state is nil");
-                                return;
-                            };
-
-                            if cstate.running.unwrap_or(false) {
-                                tokio::time::sleep(Duration::from_secs(2)).await;
-                                continue;
-                            } else {
-                                flag = true;
-                            }
-                        }
-                        Err(e) => {
-                            log::error!("[delete_container] query container status: {id}, err: {e:?}")
-                        }
-                    }
+                if count >= max_count {
+                    break;
                 }
 
-                log::info!(
-                    "[delete_container] query container status: {id}, count: {count}, can delete: {flag}"
-                );
-                flag
-            };
-
-            // remove container
-            if can_delete {
-                match db.prover_container_remove(&data.miner, &data.prover, &data.tag, &id) {
-                    Ok(_) => {
-                        log::info!("[delete_container] db remove container: {id}, success");
+                if let Some(state) = docker_manager.query_container_status(&id).await? {
+                    if state.running.unwrap_or(false) {
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+                        continue;
+                    } else {
+                        flag = true;
                     }
-                    Err(e) => {
-                        log::error!("[delete_container] remove container: {id}: {e:?}");
-                        return;
-                    }
-                }
-                match docker_manager.remove_container(&id).await {
-                    Ok(_) => {
-                        log::info!("[delete_container] docker remove container: {id}, success");
-                    }
-                    Err(e) => {
-                        log::error!("[delete_container] docker remove container: {id}: {e:?}");
-                    }
+                } else {
+                    return Err(anyhow!("[delete_container] query container: [{id}] is nil"));
                 }
             }
-        });
+
+            log::info!(
+                    "[delete_container] query container status: {id}, count: {count}, can delete: {flag}"
+                );
+            flag
+        };
+
+        // remove container
+        if can_delete {
+            db.prover_container_remove(&data.miner, &data.prover, &data.tag, &id)?;
+            docker_manager.remove_container(&id).await?;
+        }
+
+        log::info!("[delete_container] remove container: [{id}] success");
+
+        Ok(())
     }
 
     pub fn run(mut self) {

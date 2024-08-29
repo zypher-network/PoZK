@@ -12,6 +12,7 @@ use std::time::Duration;
 use tokio::spawn;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
+/// If you need to wait for the result synchronously, use the sync field
 pub struct TxChanData {
     pub sync: Option<UnboundedSender<TransactionReceipt>>,
     pub tx: TypedTransaction,
@@ -20,7 +21,7 @@ pub struct TxChanData {
 
 impl TxChanData {
     pub fn sync_new(tx: TypedTransaction, func_type: FuncType) -> (Self, UnboundedReceiver<TransactionReceipt>) {
-        let (sender, mut receiver) = unbounded_channel();
+        let (sender, receiver) = unbounded_channel();
         (Self{
             sync: Some(sender),
             tx,
