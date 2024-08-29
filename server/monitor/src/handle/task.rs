@@ -329,7 +329,7 @@ impl TaskService {
                     func_type: FuncType::Submit,
                 }) {
                     Ok(_) => {
-                        log::debug!("[run_task] send to tx chan success")
+                        log::info!("[run_task] send to tx chan success")
                     }
                     Err(e) => {
                         log::error!("[run_task] send to tx chan: {e:?}")
@@ -338,7 +338,7 @@ impl TaskService {
 
                 let end_time = Utc::now().timestamp();
 
-                log::debug!("[run_task] Duration: [{}]sec", end_time - start_time);
+                log::info!("[run_task] Duration: [{}]sec", end_time - start_time);
             }
         });
     }
@@ -384,7 +384,7 @@ impl TaskService {
                     }
                 }
 
-                log::debug!(
+                log::info!(
                     "[delete_container] query container status: {id}, count: {count}, can delete: {flag}"
                 );
                 flag
@@ -394,7 +394,7 @@ impl TaskService {
             if can_delete {
                 match db.prover_container_remove(&data.miner, &data.prover, &data.tag, &id) {
                     Ok(_) => {
-                        log::debug!("[delete_container] db remove container: {id}, success");
+                        log::info!("[delete_container] db remove container: {id}, success");
                     }
                     Err(e) => {
                         log::error!("[delete_container] remove container: {id}: {e:?}");
@@ -403,7 +403,7 @@ impl TaskService {
                 }
                 match docker_manager.remove_container(&id).await {
                     Ok(_) => {
-                        log::debug!("[delete_container] docker remove container: {id}, success");
+                        log::info!("[delete_container] docker remove container: {id}, success");
                     }
                     Err(e) => {
                         log::error!("[delete_container] docker remove container: {id}: {e:?}");
@@ -541,7 +541,7 @@ impl TaskService {
                                         continue;
                                     }
 
-                                    log::debug!(
+                                    log::info!(
                                         "[task_service] handle: {ty:?}, miner: {:?} is miner",
                                         self.miner
                                     );
@@ -607,7 +607,7 @@ impl TaskService {
                                         continue;
                                     };
 
-                                    log::debug!(
+                                    log::info!(
                                         "[task_service] handle: {ty:?} version: {version:?} "
                                     );
 
@@ -624,57 +624,56 @@ impl TaskService {
                             format!("v{version}")
                         };
 
-                        match self.db.prover_meta(&miner_key, &prover_address, &tag) {
-                            Ok(v) => {
-                                let Some(_v) = v else {
-                                    log::warn!("[task_service] handle: {ty:?}, query prover: {prover_address:?}, tag: {tag}");
-                                    continue;
-                                };
-                            }
-                            Err(e) => {
-                                log::error!("[task_service] handle: {ty:?}, query prover: {prover_address:?}, tag: {tag} err: {e:?}");
-                                continue;
-                            }
-                        };
+                        // send accept tx
+                        {
 
-                        let accept_task_tx = {
-                            let (task_market_address, tx_data, _func) =
-                                match utils::gen_accept_task_data(id, self.miner) {
-                                    Ok(v) => v,
-                                    Err(e) => {
-                                        log::error!("[task_service] handle: {ty:?}, gen accept task tx data: {e:?}");
+                            match self.db.prover_meta(&miner_key, &prover_address, &tag) {
+                                Ok(v) => {
+                                    let Some(_v) = v else {
+                                        log::warn!("[task_service] handle: {ty:?}, query prover: {prover_address:?}, tag: {tag}");
                                         continue;
-                                    }
-                                };
-
-                            match utils::gen_tx(
-                                &self.eth_cli,
-                                Some(tx_data),
-                                Some(controller),
-                                task_market_address,
-                                None,
-                                self.chain_id,
-                                None,
-                            )
-                            .await
-                            {
-                                Ok(v) => v,
+                                    };
+                                }
                                 Err(e) => {
-                                    log::error!(
-                                        "[task_service] handle: {ty:?}, gen accept task tx: {e:?}"
-                                    );
+                                    log::error!("[task_service] handle: {ty:?}, query prover: {prover_address:?}, tag: {tag} err: {e:?}");
                                     continue;
                                 }
-                            }
-                        };
+                            };
 
-                        {
-                            let (sender, mut receiver) = unbounded_channel();
-                            if let Err(e) = self.tx_sender.send(TxChanData {
-                                sync: Some(sender),
-                                tx: accept_task_tx,
-                                func_type: FuncType::AcceptTask,
-                            }) {
+                            let accept_task_tx = {
+                                let (task_market_address, tx_data, _func) =
+                                    match utils::gen_accept_task_data(id, self.miner) {
+                                        Ok(v) => v,
+                                        Err(e) => {
+                                            log::error!("[task_service] handle: {ty:?}, gen accept task tx data: {e:?}");
+                                            continue;
+                                        }
+                                    };
+
+                                match utils::gen_tx(
+                                    &self.eth_cli,
+                                    Some(tx_data),
+                                    Some(controller),
+                                    task_market_address,
+                                    None,
+                                    self.chain_id,
+                                    None,
+                                )
+                                    .await
+                                {
+                                    Ok(v) => v,
+                                    Err(e) => {
+                                        log::error!(
+                                        "[task_service] handle: {ty:?}, gen accept task tx: {e:?}"
+                                    );
+                                        continue;
+                                    }
+                                }
+                            };
+
+                            let (tx_chan_data, mut receiver) = TxChanData::sync_new(accept_task_tx, FuncType::AcceptTask);
+                            
+                            if let Err(e) = self.tx_sender.send(tx_chan_data) {
                                 log::error!("[task_service] handle: {ty:?}, send accept task tx to chan: {e:?}");
                                 receiver.close();
                                 continue;
@@ -690,7 +689,7 @@ impl TaskService {
                                     controller: ControllerKey(controller),
                                 };
 
-                                log::debug!("[task_service] handle: {ty:?}, run task data: {run_task_data:?}");
+                                log::info!("[task_service] handle: {ty:?}, run task data: {run_task_data:?}");
 
                                 Self::run_task(
                                     self.eth_cli.clone(),

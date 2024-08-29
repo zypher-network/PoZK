@@ -171,7 +171,7 @@ impl ApiService {
             page_size: page_size.0.unwrap_or_default(),
         };
         let (begin, take_count) = pagination.begin_and_take();
-        log::debug!("[controller/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
+        log::info!("[controller/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         if let Some(res) = self.db.controller_list(&miner, begin, take_count)? {
             Ok(Resp::Ok(Json(RespData::new_data(
@@ -483,7 +483,7 @@ impl ApiService {
             page_size: page_size.0.unwrap_or_default(),
         };
         let (begin, take_count) = pagination.begin_and_take();
-        log::debug!("[prover/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
+        log::info!("[prover/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]");
 
         if let Some(data) = self.db.docker_image_list(&miner, begin, take_count)? {
             let data = serde_json::to_value(&data).map_err(|e| anyhow!(e))?;
@@ -522,7 +522,7 @@ impl ApiService {
             page_size: page_size.0.unwrap_or_default(),
         };
         let (begin, take_count) = pagination.begin_and_take();
-        log::debug!(
+        log::info!(
             "[prover/{}/list] uid: [{uid}], begin: [{begin}], take_count: [{take_count}]",
             prover
         );

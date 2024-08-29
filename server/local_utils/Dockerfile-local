@@ -1,0 +1,23 @@
+FROM docker.registry.cyou/ubuntu:22.04
+
+ENV RUST_LOG=debug
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /home/ubuntu/pozk
+
+RUN apt-get update &&  \
+    apt-get install -y --no-install-recommends apt-utils && \
+    apt-get install -y --no-install-recommends libssl-dev && \
+    apt-get install -y --no-install-recommends openssl
+
+COPY ../target/release/pozk-miner .
+COPY config.toml .
+
+# 确认文件已被正确复制并赋予权限
+RUN chmod +x pozk-miner
+
+
+EXPOSE 9098
+
+ENTRYPOINT ["./pozk-miner", "file", "--path", "./config.toml"]
+#ENTRYPOINT ["/bin/bash"]

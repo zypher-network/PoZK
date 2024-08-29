@@ -72,7 +72,7 @@ impl EventManager {
                 .map(|v| (v.name, v.value))
                 .collect::<BTreeMap<_, _>>();
 
-            log::debug!(
+            log::info!(
                 "topic: {topic:?}, tx_hash: {:?}, event_type: {ty:?}",
                 log.transaction_hash
             );

@@ -90,7 +90,7 @@ impl DockerManager {
     pub async fn remove_image(&self, image_id: &str) -> Result<()> {
         let remove_list = self.docker.remove_image(image_id, None, None).await?;
 
-        log::debug!("remove image: {remove_list:?}");
+        log::info!("remove image: {remove_list:?}");
 
         Ok(())
     }

@@ -54,7 +54,7 @@ async fn api_checker(req: &Request, api_key: ApiKey) -> Option<User> {
         let expiry = expiry.unwrap();
 
         if expiry < now {
-            log::debug!("token: {}, Timed out: {:?}", api_key.key.as_str(), expiry);
+            log::info!("token: {}, Timed out: {:?}", api_key.key.as_str(), expiry);
             return None;
         }
     }

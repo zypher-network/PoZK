@@ -115,7 +115,7 @@ impl Monitor {
                     .set_from_block(BlockNumber::Number(U64::from(from)))
                     .set_to_block(BlockNumber::Number(U64::from(to)));
 
-                log::debug!(
+                log::info!(
                     "[monitor] from: {from}, to: {to}, {block_number_type:?}: {over_block_number}"
                 );
 
@@ -130,11 +130,11 @@ impl Monitor {
                 //Record the interval time and end time between each pull event
                 let end_time = Utc::now().timestamp();
 
-                log::debug!(
+                log::info!(
                     "[monitor] step: {step}, Duration: [{}]sec",
                     end_time - start_time
                 );
-                log::debug!("[monitor] logs size: {:?}", logs.len());
+                log::info!("[monitor] logs size: {:?}", logs.len());
 
                 for log in logs {
                     match self.event_manager.parse_log(&log) {
@@ -145,7 +145,7 @@ impl Monitor {
                                         log::error!("[monitor] sender: [{i}], send data: {}", e.to_string());
                                     }
                                 }
-                                log::debug!("[monitor] sender all send success");
+                                log::info!("[monitor] sender all send success");
                             }
                         }
                         Err(e) => {

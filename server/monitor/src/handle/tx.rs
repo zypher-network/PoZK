@@ -18,6 +18,17 @@ pub struct TxChanData {
     pub func_type: FuncType,
 }
 
+impl TxChanData {
+    pub fn sync_new(tx: TypedTransaction, func_type: FuncType) -> (Self, UnboundedReceiver<TransactionReceipt>) {
+        let (sender, mut receiver) = unbounded_channel();
+        (Self{
+            sync: Some(sender),
+            tx,
+            func_type,
+        }, receiver)
+    }
+}
+
 pub struct TxService {
     db: Arc<ReDB>,
     eth_cli: Provider<Http>,

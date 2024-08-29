@@ -10,7 +10,7 @@ RUN cargo build --release
 
 FROM debian:buster
 
-ENV RUST_LOG=debug
+ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
 ENV DEBIAN_FRONTEND=noninteractive
 

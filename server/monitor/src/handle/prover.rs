@@ -149,7 +149,7 @@ impl ProverService {
                                         continue;
                                     }
 
-                                    log::debug!(
+                                    log::info!(
                                         "[prover_service] miner: {:?} is miner",
                                         self.miner
                                     );
