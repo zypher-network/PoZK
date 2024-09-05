@@ -1,32 +1,36 @@
 [package]
 name = "api"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+license.workspace = true
 
 [dependencies]
+db.workspace = true
+docker.workspace = true
+
+anyhow.workspace = true
 clap.workspace = true
-serde.workspace = true
-anyhow = { workspace = true, features = ["backtrace"] }
-log.worspace = true
-serde_json.workespace = true
-poem = { workspace = true, features = ["anyhow"] }
-poem-openapi = { workespace = true, features = ["swagger-ui"] }
-uuid = { worksapce = true, features = ["v4"] }
-tokio.workspace = true
 ethers.workspace = true
-once_cell.workspace = true
 hmac.workspace = true
-sha2.workspace = true
-jwt.workspace = true
-
-siwe = {workspace = true, features = ["serde"]}
 iri-string.workspace = true
+jwt.workspace = true
+log.workspace = true
+once_cell.workspace = true
+poem.workspace = true
+poem-openapi.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+siwe.workspace = true
 time.workspace = true
-db = { path = "../db" }
-docker = { path = "../docker" }
-
+tokio.workspace = true
+uuid.workspace = true
 
 [dev-dependencies]
-reqwest.workspace = true
 env_logger.workspace = true
-docker = { path = "../docker" }
+reqwest.workspace = true

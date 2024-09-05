@@ -1,14 +1,20 @@
 [package]
 name = "db"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+license.workspace = true
 
 [dependencies]
-serde.workspace = true
-anyhow = { workspace = true, features = ["backtrace"] }
-log.worspace = true
-serde_json.workespace = true
-redb.workespace = true
-async-trait.workespace = true
-ethers.workspace = true
+anyhow.workspace = true
+async-trait.workspace = true
 bincode.workspace = true
+ethers.workspace = true
+log.workspace = true
+redb.workspace = true
+serde.workspace = true
+serde_json.workspace = true

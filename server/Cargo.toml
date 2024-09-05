@@ -1,38 +1,53 @@
 [workspace]
 resolver = "2"
-members = [ "api", "cli", "db", "docker", "monitor"]
+members = [ "cli", "api", "db", "docker", "monitor"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Zypher <dev@zypher.network>"]
+readme = "README.md"
+homepage = "https://zypher.network"
+repository = "https://github.com/zypher-game/PoZK"
+categories = ["cryptography"]
+keywords = ["PoZK", "zytron", "miner"]
+description = "PoZK miner"
+license = "GPL-3.0-only"
 
 [workspace.dependencies]
-tokio = { version = "1", features = ["full"] }
-clap = { version = "4.5.2", features = ["derive"] }
-#shiplift = { git = "https://github.com/jalaziz/shiplift", branch = "optional-image-virtual-size" }
-#shiplift = "0.7.0"
+api = { version = "0.1", path = "./api" }
+db = { version = "0.1", path = "./db" }
+docker = { version = "0.1", path = "./docker" }
+monitor = { version = "0.1", path = "./monitor" }
+
+anyhow = { version = "1.0.80", features = ["backtrace"] }
+async-trait = "0.1.72"
+backtrace = "0.3"
+bincode = "1.3.3"
 bollard = { version = "0.17.1", features = ["chrono"] }
+chrono = "0.4.38"
+clap = { version = "4.5.2", features = ["derive"] }
 env_logger = "0.11.3"
-log = "0.4.21"
-anyhow = "1.0.80"
-hex = "0.4.3"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-toml = "0.8.15"
+ethers = "2.0.14"
+futures-util = "0.3.30"
 git2 = "0.19.0"
-time = "0.3.36"
+hex = "0.4.3"
+hmac = "0.11"
+iri-string = "0.7.2"
+jwt = "0.15.0"
+log = "0.4.21"
+once_cell = "1.19.0"
 poem = { version = "3.0.1", features = ["anyhow"] }
 poem-openapi = {version = "5.0.2", features = ["swagger-ui"]}
-uuid = { version = "1", features = ["v4"] }
-ethers = "2.0.14"
-backtrace = "0.3"
-once_cell = "1.19.0"
-hmac = "0.11"
-sha2 = "0.9"
-jwt = "0.15.0"
-siwe = "0.6.1"
-iri-string = "0.7.2"
 redb = "2.1.1"
-async-trait = "0.1.72"
-bincode = "1.3.3"
-futures-util = "0.3.30"
 reqwest = { version = "0.12.5", features = ["json"] }
-chrono = "0.4.38"
-
-
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.9"
+#shiplift = { git = "https://github.com/jalaziz/shiplift", branch = "optional-image-virtual-size" }
+#shiplift = "0.7.0"
+siwe = { version = "0.6.1", features = ["serde"] }
+time = { version = "0.3.36", features = ["local-offset", "formatting", "parsing"] }
+tokio = { version = "1", features = ["full"] }
+toml = "0.8.15"
+uuid = { version = "1", features = ["v4"] }

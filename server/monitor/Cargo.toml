@@ -1,20 +1,27 @@
 [package]
 name = "monitor"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+homepage.workspace = true
+repository.workspace = true
+categories.workspace = true
+license.workspace = true
 
 [dependencies]
-anyhow = { workspace = true, features = ["backtrace"] }
-tokio.workspace = true
-db = { path = "../db" }
+db.workspace = true
+docker.workspace = true
+
+anyhow.workspace = true
+chrono.workspace = true
+clap.workspace = true
+ethers.workspace = true
+log.workspace = true
+once_cell.workspace = true
 serde_json.workspace = true
 serde.workspace = true
-log.worspace = true
-ethers.workspace = true
-clap.workspace = true
-docker = { path = "../docker" }
-chrono.workspace = true
-once_cell.workspace = true
+tokio.workspace = true
 
 [dev-dependencies]
 env_logger.workspace = true
