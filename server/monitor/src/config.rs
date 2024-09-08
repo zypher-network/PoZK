@@ -3,6 +3,8 @@ use serde::Deserialize;
 
 #[derive(Args, Debug, Clone, Deserialize)]
 pub struct MonitorConfig {
+    #[clap(long, help = "`monitor`: open or close monitor")]
+    pub open: bool,
     #[clap(
         long,
         help = "`monitor`: task market contract address, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
@@ -47,5 +49,23 @@ pub struct MonitorConfig {
         long,
         help = "`monitor`: Download docker image proxy, eg. docker.registry.cyou"
     )]
-    pub docker_proxy_prefix: Option<String>,
+    pub docker_proxy: Option<String>,
+}
+
+impl Default for MonitorConfig {
+    fn default() -> Self {
+        Self {
+            open: true,
+            task_market_address: String::new(),
+            prover_market_address: String::new(),
+            stake_address: String::new(),
+            from: 0,
+            delay_sec: 0,
+            step: 10,
+            wait_time: 10,
+            block_number_type: "latest".to_owned(),
+            miner: String::new(),
+            docker_proxy: None,
+        }
+    }
 }

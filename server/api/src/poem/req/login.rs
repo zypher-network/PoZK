@@ -104,7 +104,7 @@ impl LoginReq {
 }
 
 impl LoginReqParam {
-    pub fn check(&self, block_num: u64, chain_id: u64, domain: &Authority) -> Result<()> {
+    pub fn check(&self, block_num: u64, chain_id: u64, domain: &Option<Authority>) -> Result<()> {
         // check
 
         // check nonce(block_number)
@@ -126,8 +126,10 @@ impl LoginReqParam {
 
         // check domain
         {
-            if domain != &self.msg.domain {
-                return Err(anyhow!("verify domain fail"));
+            if let Some(d) = domain {
+                if d != &self.msg.domain {
+                    return Err(anyhow!("verify domain fail"));
+                }
             }
         }
 

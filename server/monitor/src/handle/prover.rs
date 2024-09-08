@@ -18,7 +18,7 @@ pub struct ProverService {
     docker_manager: DockerManager,
     miner: Address,
     monitor_receiver: UnboundedReceiver<MonitorChanData>,
-    docker_proxy_prefix: Option<String>,
+    docker_proxy: Option<String>,
     chain_id: U256,
 }
 
@@ -29,7 +29,7 @@ impl ProverService {
         docker_manager: DockerManager,
         monitor_receiver: UnboundedReceiver<MonitorChanData>,
         miner: Address,
-        docker_proxy_prefix: Option<String>,
+        docker_proxy: Option<String>,
         chain_id: U256,
     ) -> Result<Self> {
         Ok(Self {
@@ -38,7 +38,7 @@ impl ProverService {
             docker_manager,
             miner,
             monitor_receiver,
-            docker_proxy_prefix,
+            docker_proxy,
             chain_id,
         })
     }
@@ -149,10 +149,7 @@ impl ProverService {
                                         continue;
                                     }
 
-                                    log::info!(
-                                        "[prover_service] miner: {:?} is miner",
-                                        self.miner
-                                    );
+                                    log::info!("[prover_service] miner: {:?} is miner", self.miner);
                                 }
                                 Err(e) => {
                                     log::error!(
@@ -222,7 +219,7 @@ impl ProverService {
                             }
                         };
 
-                        let repository = if let Some(proxy_prefix) = &self.docker_proxy_prefix {
+                        let repository = if let Some(proxy_prefix) = &self.docker_proxy {
                             format!("{proxy_prefix}/{DOCKER_HUB_REPO}/{prover_address:?}")
                         } else {
                             format!("{DOCKER_HUB_REPO}/{prover_address:?}")
@@ -306,7 +303,7 @@ mod test {
                 wait_time: 0,
                 block_number_type: "latest".to_string(),
                 miner: "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc".to_string(),
-                docker_proxy_prefix: Some("docker.registry.cyou".to_string()),
+                docker_proxy: Some("docker.registry.cyou".to_string()),
             };
 
             let task_market_address =

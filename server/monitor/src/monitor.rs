@@ -69,10 +69,10 @@ impl Monitor {
                 }
             };
             let (mut from, mut to) = {
-                let start_param = match self.pares_from_and_to().await {
+                let start_param = match self.parse_from_and_to().await {
                     Ok(v) => v,
                     Err(e) => {
-                        log::error!("[monitor] pares from and to: {e:?}");
+                        log::error!("[monitor] parse from and to: {e:?}");
                         return;
                     }
                 };
@@ -142,7 +142,10 @@ impl Monitor {
                             if let Some(data) = op {
                                 for (i, s) in self.sender.iter().enumerate() {
                                     if let Err(e) = s.send(data.clone()) {
-                                        log::error!("[monitor] sender: [{i}], send data: {}", e.to_string());
+                                        log::error!(
+                                            "[monitor] sender: [{i}], send data: {}",
+                                            e.to_string()
+                                        );
                                     }
                                 }
                                 log::info!("[monitor] sender all send success");
@@ -161,7 +164,7 @@ impl Monitor {
         });
     }
 
-    async fn pares_from_and_to(&self) -> Result<StartParam> {
+    async fn parse_from_and_to(&self) -> Result<StartParam> {
         let block_number =
             BlockNumber::from_str(&self.cfg.block_number_type).map_err(|e| anyhow!("{e}"))?;
 

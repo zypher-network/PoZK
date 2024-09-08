@@ -1,5 +1,5 @@
 # 这里填写宿主机地址,如果不使用docker,就和base_path相同
-prover_host_path = "/home/cloud/tmp/pozk2"
+prover_host_path = "./"
 
 # 1. 如果使用docker启动,这里填写容器内的路径,
 #   参照docker-compose中,就是/home/ubuntu/pozk
@@ -7,7 +7,7 @@ prover_host_path = "/home/cloud/tmp/pozk2"
 # use docker
 #base_path = "/home/ubuntu/pozk"
 # not docker
-base_path = "/home/cloud/tmp/pozk2"
+base_path = "./"
 
 
 db_remove = false

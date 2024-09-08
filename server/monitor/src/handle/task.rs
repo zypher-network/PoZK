@@ -228,7 +228,9 @@ impl TaskService {
                     db.clone(),
                     container_id.clone(),
                     data_clone,
-                ).await {
+                )
+                .await
+                {
                     log::error!("[run_task] {e:?}");
                 }
             });
@@ -354,7 +356,6 @@ impl TaskService {
         id: String,
         data: RunTaskData,
     ) -> Result<()> {
-
         // query container status util to not running
         let can_delete = {
             let mut count = 0;
@@ -611,7 +612,6 @@ impl TaskService {
 
                         // send accept tx
                         {
-
                             match self.db.prover_meta(&miner_key, &prover_address, &tag) {
                                 Ok(v) => {
                                     let Some(_v) = v else {
@@ -644,7 +644,7 @@ impl TaskService {
                                     self.chain_id,
                                     None,
                                 )
-                                    .await
+                                .await
                                 {
                                     Ok(v) => v,
                                     Err(e) => {
@@ -656,8 +656,9 @@ impl TaskService {
                                 }
                             };
 
-                            let (tx_chan_data, mut receiver) = TxChanData::sync_new(accept_task_tx, FuncType::AcceptTask);
-                            
+                            let (tx_chan_data, mut receiver) =
+                                TxChanData::sync_new(accept_task_tx, FuncType::AcceptTask);
+
                             if let Err(e) = self.tx_sender.send(tx_chan_data) {
                                 log::error!("[task_service] handle: {ty:?}, send accept task tx to chan: {e:?}");
                                 receiver.close();

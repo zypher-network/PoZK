@@ -20,13 +20,19 @@ pub struct TxChanData {
 }
 
 impl TxChanData {
-    pub fn sync_new(tx: TypedTransaction, func_type: FuncType) -> (Self, UnboundedReceiver<TransactionReceipt>) {
+    pub fn sync_new(
+        tx: TypedTransaction,
+        func_type: FuncType,
+    ) -> (Self, UnboundedReceiver<TransactionReceipt>) {
         let (sender, receiver) = unbounded_channel();
-        (Self{
-            sync: Some(sender),
-            tx,
-            func_type,
-        }, receiver)
+        (
+            Self {
+                sync: Some(sender),
+                tx,
+                func_type,
+            },
+            receiver,
+        )
     }
 }
 

@@ -1,9 +1,9 @@
 mod controller;
 mod login;
 mod prover;
-pub use prover::{ProverNewReq, ProverPullReq};
+pub use prover::ProverPullReq;
 
-pub use controller::{ControllerAddReq, ControllerSetReq};
+pub use controller::ControllerAddReq;
 
 pub use login::LoginReq;
 use serde::Deserialize;

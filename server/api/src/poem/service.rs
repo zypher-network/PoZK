@@ -38,7 +38,7 @@ pub struct ApiService {
     host: String,
     chain_id: u64,
     eth_cli: Provider<Http>,
-    domain: Authority,
+    domain: Option<Authority>,
     db: Arc<ReDB>,
     docker_manager: DockerManager,
 }
@@ -52,7 +52,12 @@ impl ApiService {
         eth_cli: Provider<Http>,
     ) -> Result<Self> {
         let host = format!("{}:{}", cfg.host, cfg.port);
-        let domain = Authority::from_str(&cfg.login_domain)?;
+        let domain = if let Some(domain) = &cfg.login_domain {
+            Some(Authority::from_str(domain)?)
+        } else {
+            None
+        };
+
         let chain_id = eth_cli.get_chainid().await?;
 
         Ok(Self {

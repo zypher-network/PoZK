@@ -1,7 +1,7 @@
 use anyhow::Result;
 use api::{ApiConfig, ApiService};
-use clap::{Args, Parser, Subcommand};
-use db::ReDB;
+use clap::{Args, Parser};
+use db::{DbConfig, ReDB};
 use ethers::prelude::{Middleware, Provider, ProviderExt};
 use ethers::types::Address;
 use monitor::{init_functions, Monitor, MonitorConfig, ProverService, TaskService, TxService};
@@ -11,52 +11,46 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
+mod networks;
+
 #[derive(Parser)]
-#[command(version, about, long_about)]
-pub struct Command {
-    #[command(subcommand)]
-    pub sub: SubCmd,
+#[command(version, about, long_about = None)]
+struct Command {
+    /// Name of the person to greet
+    #[arg(short, long)]
+    config: Option<String>,
+
+    /// Name of the person to greet
+    #[arg(short, long)]
+    host_base_path: Option<String>,
+
+    /// Name of the person to greet
+    #[arg(short, long)]
+    docker_base_path: Option<String>,
+
+    /// Name of the person to greet
+    #[arg(short, long)]
+    miner: String,
+
+    /// Name of the person to greet
+    #[arg(short, long)]
+    endpoint: String,
+
+    /// Name of the person to greet
+    #[arg(short, long)]
+    network: String,
 }
-#[derive(Subcommand, Debug)]
-pub enum SubCmd {
-    #[command(about = "Use a configuration file")]
-    File(ConfigFile),
 
-    #[command(about = "Use configuration options")]
-    Option(ConfigOption),
-}
-
-#[derive(Args, Debug)]
-pub struct ConfigFile {
-    #[clap(long, help = "Toml configuration file path")]
-    pub path: String,
-}
-
-#[derive(Args, Debug, Deserialize)]
-pub struct ConfigOption {
-    #[clap(long, help = "redb and prover file path, eg. /home/ubuntu/pozk/")]
-    pub base_path: String,
-
-    #[clap(long, help = "prover host redb and prover file path, eg. /tmp/pozk/")]
-    pub prover_host_path: String,
-
-    #[clap(long, help = "Whether to delete db")]
-    pub db_remove: bool,
-
-    #[clap(long, help = "blockchain rpc, eg. http://127.0.0.1:8545")]
-    pub endpoint: String,
-
-    #[clap(long, help = "Whether to delete db")]
-    pub open_monitor: bool,
-
-    #[clap(long, help = "docker update url, eg. http://127.0.0.1:7777/XXX")]
-    pub docker_update_url: Option<String>,
+#[derive(Args, Debug, Deserialize, Default)]
+struct Config {
+    #[clap(flatten)]
+    db_config: DbConfig,
 
     #[clap(flatten)]
-    pub api_config: ApiConfig,
+    api_config: ApiConfig,
 
     #[clap(flatten)]
-    pub monitor_config: MonitorConfig,
+    monitor_config: MonitorConfig,
 }
 
 #[tokio::main]
@@ -64,21 +58,47 @@ async fn main() -> Result<()> {
     env_logger::init();
     let args = Command::parse();
 
-    let co = match args.sub {
-        SubCmd::File(cf) => {
-            let toml_str = fs::read_to_string(cf.path)?;
-            let co: ConfigOption = toml::from_str(&toml_str)?;
-            co
-        }
-        SubCmd::Option(co) => co,
-    };
+    let miner = Address::from_str(&args.miner)?;
 
-    let eth_cli = Provider::connect(&co.endpoint).await;
+    // contract addresses
+    let (stake_address, _s_start) = networks::contract_address(&args.network, "Stake")?;
+    let (task_market_address, t_start) = networks::contract_address(&args.network, "TaskMarket")?;
+    let (prover_market_address, _p_start) =
+        networks::contract_address(&args.network, "ProverMarket")?;
+
+    let eth_cli = Provider::connect(&args.endpoint).await;
     let chain_id = eth_cli.get_chainid().await?;
 
+    let mut co = if let Some(path) = args.config {
+        let toml_str = fs::read_to_string(path)?;
+        toml::from_str(&toml_str)?
+    } else {
+        let mut co = Config::default();
+        co.monitor_config.from = t_start;
+        co
+    };
+
+    // update contract address
+    co.monitor_config.task_market_address = format!("{:?}", task_market_address);
+    co.monitor_config.prover_market_address = format!("{:?}", prover_market_address);
+    co.monitor_config.stake_address = format!("{:?}", stake_address);
+    co.monitor_config.miner = format!("{:?}", miner);
+
+    let host_base_path = if let Some(path) = args.host_base_path {
+        path
+    } else {
+        "/usr/pozk".to_owned()
+    };
+
+    let docker_base_path = if let Some(path) = args.docker_base_path {
+        path
+    } else {
+        "/usr/pozk".to_owned()
+    };
+
     let db = {
-        let db_path = PathBuf::from(&co.base_path);
-        let db = ReDB::new(&db_path, co.db_remove)?;
+        let db_path = PathBuf::from(&docker_base_path);
+        let db = ReDB::new(&db_path, co.db_config.auto_remove)?;
         Arc::new(db)
     };
 
@@ -87,13 +107,7 @@ async fn main() -> Result<()> {
         dm
     };
 
-    if co.open_monitor {
-        let task_market_address = Address::from_str(&co.monitor_config.task_market_address)?;
-        let prover_market_address = Address::from_str(&co.monitor_config.prover_market_address)?;
-        let stake_address = Address::from_str(&co.monitor_config.stake_address)?;
-
-        let miner = Address::from_str(&co.monitor_config.miner)?;
-
+    if co.monitor_config.open {
         let mut monitor = Monitor::new(&co.monitor_config, eth_cli.clone()).await?;
 
         let tx_service = TxService::new(eth_cli.clone(), db.clone(), miner, chain_id)?;
@@ -104,8 +118,8 @@ async fn main() -> Result<()> {
             docker_manager.clone(),
             monitor.register(),
             tx_service.sender(),
-            &co.base_path,
-            &co.prover_host_path,
+            &docker_base_path,
+            &host_base_path,
             chain_id,
             miner,
         )?;
@@ -116,7 +130,7 @@ async fn main() -> Result<()> {
             docker_manager.clone(),
             monitor.register(),
             miner,
-            co.monitor_config.docker_proxy_prefix,
+            co.monitor_config.docker_proxy,
             chain_id,
         )?;
 

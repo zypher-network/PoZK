@@ -1,13 +1,16 @@
-use std::collections::HashMap;
 use anyhow::{anyhow, Result};
-use bollard::container::{Config, CreateContainerOptions, InspectContainerOptions, RemoveContainerOptions, StartContainerOptions, StopContainerOptions};
-use bollard::Docker;
+use bollard::container::{
+    Config, CreateContainerOptions, InspectContainerOptions, RemoveContainerOptions,
+    StartContainerOptions, StopContainerOptions,
+};
 use bollard::image::{CreateImageOptions, ListImagesOptions};
 use bollard::models::{ContainerInspectResponse, ContainerState, HostConfig, PortBinding, PortMap};
+use bollard::Docker;
 use chrono::{TimeZone, Utc};
 use futures_util::StreamExt;
 use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct DockerManager {
@@ -67,7 +70,7 @@ impl DockerManager {
 
     pub async fn pull_image(&self, repository: &str, tag: &str) -> Result<()> {
         let repo_tag = format!("{repository}:{tag}");
-        let pull_options = CreateImageOptions{
+        let pull_options = CreateImageOptions {
             from_image: repo_tag.clone(),
             ..Default::default()
         };
@@ -107,13 +110,12 @@ impl DockerManager {
         }
 
         let repo_tag = format!("{repo}:{tag}");
-        let name = format!(
-            "minner-{}-{tag}-{}",
-            repo.replace("/", "-"),
-            task_id
-        );
+        let name = format!("minner-{}-{tag}-{}", repo.replace("/", "-"), task_id);
 
-        let create_op = CreateContainerOptions{ name, platform: None };
+        let create_op = CreateContainerOptions {
+            name,
+            platform: None,
+        };
         let mut op = Config::default();
         let mut host_op = HostConfig::default();
 
@@ -133,12 +135,13 @@ impl DockerManager {
 
             for e in list {
                 src_port_map.insert(e.src_port.to_string(), HashMap::new());
-                host_port_map.insert(e.src_port.to_string(), Some(vec![
-                    PortBinding{
+                host_port_map.insert(
+                    e.src_port.to_string(),
+                    Some(vec![PortBinding {
                         host_ip: Some("127.0.0.1".to_string()),
-                        host_port: Some(e.host_port.to_string())
-                    },
-                ]));
+                        host_port: Some(e.host_port.to_string()),
+                    }]),
+                );
             }
 
             op.exposed_ports = Some(src_port_map);
@@ -171,26 +174,25 @@ impl DockerManager {
 
         let container_create_resp = self.docker.create_container(Some(create_op), op).await?;
 
-        let op = Some(InspectContainerOptions{
-            size: false,
-        });
+        let op = Some(InspectContainerOptions { size: false });
 
-        let container_info = self.docker.inspect_container(&container_create_resp.id, op).await?;
+        let container_info = self
+            .docker
+            .inspect_container(&container_create_resp.id, op)
+            .await?;
 
         Ok(container_info)
     }
 
     pub async fn query_container_status(&self, id: &str) -> Result<Option<ContainerState>> {
-        let op = Some(InspectContainerOptions{
-            size: false,
-        });
+        let op = Some(InspectContainerOptions { size: false });
 
         let container = self.docker.inspect_container(id, op).await?;
         Ok(container.state)
     }
 
     pub async fn remove_container(&self, id: &str) -> Result<()> {
-        let op = Some(RemoveContainerOptions{
+        let op = Some(RemoveContainerOptions {
             force: true,
             ..Default::default()
         });
@@ -200,15 +202,14 @@ impl DockerManager {
     }
 
     pub async fn start_container(&self, id: &str) -> Result<()> {
-        self.docker.start_container(id, None::<StartContainerOptions<String>>).await?;
+        self.docker
+            .start_container(id, None::<StartContainerOptions<String>>)
+            .await?;
         Ok(())
     }
 
     pub async fn stop_container(&self, id: &str) -> Result<()> {
-
-        let op = Some(StopContainerOptions{
-            t: 30,
-        });
+        let op = Some(StopContainerOptions { t: 30 });
 
         self.docker.stop_container(id, op).await?;
         Ok(())
@@ -220,7 +221,6 @@ impl DockerManager {
         let mut filters = HashMap::new();
         filters.insert("reference", vec![repo_tag.as_str()]);
 
-
         let op = ListImagesOptions {
             all: true,
             filters,
@@ -230,7 +230,6 @@ impl DockerManager {
         let images = self.docker.list_images(Some(op)).await?;
 
         let op = images.iter().find(|image| {
-
             let op = image.repo_tags.iter().find(|v| v == &&repo_tag);
 
             if op.is_some() {
@@ -266,7 +265,6 @@ impl DockerManager {
         let images = self.docker.list_images(Some(op)).await?;
 
         for image in images {
-
             let Some(repo_tag) = image.repo_tags.get(0) else {
                 continue;
             };
@@ -284,7 +282,7 @@ impl DockerManager {
             if repo_tmp.eq(&repo) && tag_tmp.eq(&tag) {
                 let split = image.id.split(":").collect::<Vec<_>>();
                 let id = split.get(1).unwrap().to_string();
-                let created = Utc.timestamp(image.created,0);
+                let created = Utc.timestamp_opt(image.created, 0).unwrap();
                 return Ok(Some(ImageInfo {
                     repository: repo.to_string(),
                     created: created.to_rfc3339(),
@@ -304,7 +302,6 @@ impl DockerManager {
         image_id: &str,
         container_ids: Vec<String>,
     ) -> Result<ImageInfo> {
-
         let image = self.docker.inspect_image(image_id).await?;
 
         let Some(repo_tags) = image.repo_tags else {
@@ -419,7 +416,7 @@ mod test {
             dm.pull_image(image, tag).await.unwrap();
 
             // 3. new postgres
-            let cc_info = dm.new_container(image, tag, 0,&op).await.unwrap();
+            let cc_info = dm.new_container(image, tag, 0, &op).await.unwrap();
             println!("container create info: {cc_info:?}");
 
             // 4. start
@@ -521,7 +518,7 @@ mod test {
             dm.pull_image(image, tag).await.unwrap();
 
             // 3. new postgres
-            let cc_info = dm.new_container(image, tag,0, &op).await.unwrap();
+            let cc_info = dm.new_container(image, tag, 0, &op).await.unwrap();
             println!("container create info: {cc_info:?}");
 
             // 4. start
