@@ -6,26 +6,29 @@
 // global scope, and execute the script.
 const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
-const { writeFile } = require('fs');
+const { writeFile, readFileSync } = require('fs');
 
 async function deployContractWithProxy(name, params=[]) {
+  const block = await ethers.provider.getBlockNumber();
   const Factory = await ethers.getContractFactory(name);
   //  use upgradeable deploy, then contracts can be upgraded success, otherwise will get error about ERC 1967 proxy
   const contract = await upgrades.deployProxy(Factory, params);
   await contract.waitForDeployment();
   const address = await contract.getAddress();
-  console.log(`${name} address: ${address}`);
+  console.log(`${name} address: ${address} from ${block}`);
 
-  return address;
+  return [address, block];
 }
 
 async function deployContract(name, params=[]) {
+  const block = await ethers.provider.getBlockNumber();
   const Factory = await ethers.getContractFactory(name);
   const contract = await Factory.deploy(...params);
+  console.log(contract);
   const address = await contract.getAddress();
-  console.log(`${name} address: ${address}`);
+  console.log(`${name} address: ${address} from ${block}`);
 
-  return address;
+  return [address, block];
 }
 
 const ONE_TOKEN = 10000000000000000000n;
@@ -40,18 +43,18 @@ async function deployNew() {
 }
 
 async function deploy() {
-  const token = await deployContract("Token", [1000000000n * ONE_TOKEN]); // 1,000,000,000 TOEKN
+  const [token, token_s] = await deployContract("Token", [1000000000n * ONE_TOKEN]); // 1,000,000,000 TOEKN
   //const tokenContract = await attachContract("Token");
   //const token = await tokenContract.getAddress();
 
-  const addresses = await deployContractWithProxy("Addresses", []);
-  const vesting = await deployContractWithProxy("Vesting", [addresses, 10000n * ONE_TOKEN]);
-  const epoch = await deployContractWithProxy("Epoch", [addresses, 100]);
-  const stake = await deployContractWithProxy("Stake", [addresses, 100n * ONE_TOKEN]);
-  const reward = await deployContractWithProxy("Reward", [addresses, 1, 4, 1, 4, 1, 4, 90, 10, 10000]);
-  const prover = await deployContractWithProxy("Prover", [addresses]);
-  const task = await deployContractWithProxy("Task", [addresses]);
-  const controller = await deployContractWithProxy("Controller", [addresses]);
+  const [addresses, addresses_s] = await deployContractWithProxy("Addresses", []);
+  const [vesting, vesting_s] = await deployContractWithProxy("Vesting", [addresses, 10000n * ONE_TOKEN]);
+  const [epoch, epoch_s] = await deployContractWithProxy("Epoch", [addresses, 100]);
+  const [stake, stake_s] = await deployContractWithProxy("Stake", [addresses, 100n * ONE_TOKEN]);
+  const [reward, reward_s] = await deployContractWithProxy("Reward", [addresses, 1, 4, 1, 4, 1, 4, 90, 10, 10000]);
+  const [prover, prover_s] = await deployContractWithProxy("Prover", [addresses]);
+  const [task, task_s] = await deployContractWithProxy("Task", [addresses]);
+  const [controller, controller_s] = await deployContractWithProxy("Controller", [addresses]);
 
   const addressesContract = await ethers.getContractFactory("Addresses");
   const C = await addressesContract.attach(addresses);
@@ -78,22 +81,55 @@ async function deploy() {
     ]
   );
 
-  const contracts = {
-    Addresses: addresses,
-    Token: token,
-    Vesting: vesting,
-    Epoch: epoch,
-    Stake: stake,
-    Reward: reward,
-    Prover: prover,
-    Task: task,
-    Controller: controller,
+  const filename = `../public/networks.json`;
+  const filebytes = readFileSync(filename, 'utf8');
+  let obj = {};
+  if (filebytes) {
+    obj = JSON.parse(filebytes);
+  }
+
+  obj[network.name] = {
+    Addresses: {
+      address: addresses,
+      startBlock: addresses_s,
+    },
+    Token: {
+      address: token,
+      startBlock: token_s,
+    },
+    Vesting: {
+      address: vesting,
+      startBlock: vesting_s,
+    },
+    Epoch: {
+      address: epoch,
+      startBlock: epoch_s,
+    },
+    Stake: {
+      address: stake,
+      startBlock: stake_s,
+    },
+    Reward: {
+      address: reward,
+      startBlock: reward_s,
+    },
+    Prover: {
+      address: prover,
+      startBlock: prover_s,
+    },
+    Task: {
+      address: task,
+      startBlock: task_s,
+    },
+    Controller: {
+      address: controller,
+      startBlock: controller_s,
+    }
   };
 
-  const filename = `../public/${network.name}.json`;
   writeFile(
     filename,
-    JSON.stringify(contracts, null, 2),
+    JSON.stringify(obj, null, 4),
     function(err) {
       if (err) {
         console.log(err);

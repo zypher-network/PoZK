@@ -30,19 +30,11 @@ module.exports = {
       url: 'http://127.0.0.1:8545',
       accounts: [LOCAL_SK1, LOCAL_SK2, LOCAL_SK3, LOCAL_SK4]
     },
-    holesky: {
-      url: 'https://1rpc.io/holesky',
-      accounts: [SECRET_KEY]
-    },
-    sepolia: {
-      url: 'https://rpc.sepolia.org',
-      accounts: [SECRET_KEY]
-    },
-    opbnbtestnet: {
+    testnet: {
       url: 'https://opbnb-testnet-rpc.bnbchain.org',
       accounts: [SECRET_KEY]
     },
-    zytrontestnet: {
+    mainnet: {
       url: 'https://linea-testnet-zytron.zypher.game',
       accounts: [SECRET_KEY]
     },
