@@ -61,7 +61,7 @@ impl Default for MonitorConfig {
             stake_address: String::new(),
             from: 0,
             delay_sec: 0,
-            step: 10,
+            step: 100,
             wait_time: 10,
             block_number_type: "latest".to_owned(),
             miner: String::new(),
