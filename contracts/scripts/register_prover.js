@@ -13,7 +13,7 @@ const VERSION = 1;
 const OVERTIME = 20;
 
 async function main() {
-  const c = await attachContract("ProverMarket");
+  const c = await attachContract("Prover");
   await c.register(ADDRESS, WORK, VERSION, OVERTIME, ADDRESS);
   await c.approve(ADDRESS, true, true);
   console.log("Prover set ok");

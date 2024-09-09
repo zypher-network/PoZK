@@ -9,8 +9,8 @@ const main = async () => {
       "Epoch",
       "Stake",
       "Reward",
-      "ProverMarket",
-      "TaskMarket",
+      "Prover",
+      "Task",
       "Controller"
     ];
 

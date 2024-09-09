@@ -7,6 +7,6 @@ enum TaskStatus {
     Proving
 }
 
-interface ITaskMarket {
+interface ITask {
     function create(address prover, address player, uint256 fee, bytes calldata data) external returns(uint256);
 }

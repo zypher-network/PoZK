@@ -1,6 +1,6 @@
 # Solidity API
 
-## ProverMarket
+## Prover
 
 Manage all registered provers
 
@@ -36,10 +36,10 @@ Prover struct
 struct Prover {
   enum ProverStatus status;
   address owner;
-  struct ProverMarket.ProverWork work;
-  struct ProverMarket.ProverWork version;
-  struct ProverMarket.ProverWork overtime;
-  struct ProverMarket.ProverVerifier verifier;
+  struct Prover.ProverWork work;
+  struct Prover.ProverWork version;
+  struct Prover.ProverWork overtime;
+  struct Prover.ProverVerifier verifier;
   bool minable;
 }
 ```

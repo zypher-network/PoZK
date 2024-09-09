@@ -20,7 +20,7 @@ async function vesting() {
 }
 
 async function prover() {
-  const c = await attachContract("ProverMarket");
+  const c = await attachContract("Prover");
   await c.register(myProver, 10000, 1, 10, myProver);
   await c.approve(myProver, true, true);
   console.log("Prover set ok");
@@ -75,7 +75,7 @@ async function loopTask(times) {
   // 2s/epoch
   await e.setPeriod(10);
 
-  const c = await attachContract("TaskMarket");
+  const c = await attachContract("Task");
   const account = c.runner.address;
   let tid = await c.nextId();
   console.log("Set epoch period to 2s");

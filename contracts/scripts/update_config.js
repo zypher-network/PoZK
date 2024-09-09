@@ -9,7 +9,7 @@ const { attachContract, sleep } = require("./address_utils.js");
 
 async function update_player_limit() {
   let addr = "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44";
-  const c = await attachContract("ProverMarket");
+  const c = await attachContract("Prover");
   //await c.register(addr, 10000, 1, 10, addr);
   await c.approve(addr, true, true);
   //await c.setMinerPlayerPer(10, 90, 10000);

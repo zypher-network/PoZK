@@ -8,16 +8,16 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./interface/IAddresses.sol";
 import "./interface/IController.sol";
-import "./interface/IProverMarket.sol";
+import "./interface/IProver.sol";
 import "./interface/IReward.sol";
 import "./interface/IStake.sol";
-import "./interface/ITaskMarket.sol";
+import "./interface/ITask.sol";
 import "./interface/IVerifier.sol";
 
 /// @notice Manage all proof tasks, player create new zk task, and miner can accept it,
 /// when miner acceped, miner need submit the proof within overtime, if overflow, others
 /// can accept and replace, and previous miner will be punished
-contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
+contract Task is Initializable, OwnableUpgradeable, ITask {
     using SafeERC20 for IERC20;
 
     /// @notice Struct of ZK Task
@@ -82,7 +82,7 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         }
 
         // check prover is valid
-        require(IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket)).isProver(prover), "T01");
+        require(IProver(IAddresses(addresses).get(Contracts.Prover)).isProver(prover), "T01");
 
         Task storage task = tasks[nextId];
         task.prover = prover;
@@ -108,7 +108,7 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         bool acceptable = task.status == TaskStatus.Waiting || task.overtime < block.timestamp;
         require(acceptable, "T04");
 
-        uint256 overtime = IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket)).overtime(task.prover);
+        uint256 overtime = IProver(IAddresses(addresses).get(Contracts.Prover)).overtime(task.prover);
         task.status = TaskStatus.Proving;
         task.miner = miner;
         task.overtime = block.timestamp + overtime;
@@ -126,7 +126,7 @@ contract TaskMarket is Initializable, OwnableUpgradeable, ITaskMarket {
         require(task.status == TaskStatus.Proving, "T05");
 
         // zk verifier
-        address verifier = IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket)).verifier(task.prover);
+        address verifier = IProver(IAddresses(addresses).get(Contracts.Prover)).verifier(task.prover);
         require(IVerifier(verifier).verify(publics, proof), "T99");
 
         // send fee to miner

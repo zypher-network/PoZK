@@ -2,22 +2,20 @@ use std::env;
 use std::fs::File;
 use std::io::Write;
 
-static TASK_MARKET_INFO: &str = "/task_market.rs";
+static TASK_INFO: &str = "/task.rs";
 static STAKE_INFO: &str = "/stake.rs";
 
-static GAME_MARKET_INFO: &str = "/prover_market.rs";
+static GAME_MARKET_INFO: &str = "/prover.rs";
 
 fn main() {
     let dest_path = env::var("OUT_DIR").unwrap();
 
-    let _task_market_info = {
-        let json_content = std::fs::read_to_string("./../../public/ABI/TaskMarket.json").unwrap();
+    let _task_info = {
+        let json_content = std::fs::read_to_string("./../../public/ABI/Task.json").unwrap();
 
-        let mut f = File::create(&format!("{dest_path}{TASK_MARKET_INFO}")).unwrap();
-        f.write_all(
-            format!("pub const TASK_MARKET_CONTRACT_ABI: &str = {json_content:?};\n").as_bytes(),
-        )
-        .unwrap();
+        let mut f = File::create(&format!("{dest_path}{TASK_INFO}")).unwrap();
+        f.write_all(format!("pub const TASK_CONTRACT_ABI: &str = {json_content:?};\n").as_bytes())
+            .unwrap();
     };
 
     let _stake_info = {
@@ -28,12 +26,12 @@ fn main() {
             .unwrap();
     };
 
-    let _prover_market_info = {
-        let json_content = std::fs::read_to_string("./../../public/ABI/ProverMarket.json").unwrap();
+    let _prover_info = {
+        let json_content = std::fs::read_to_string("./../../public/ABI/Prover.json").unwrap();
 
         let mut f = File::create(&format!("{dest_path}{GAME_MARKET_INFO}")).unwrap();
         f.write_all(
-            format!("pub const PROVER_MARKET_CONTRACT_ABI: &str = {json_content:?};\n").as_bytes(),
+            format!("pub const PROVER_CONTRACT_ABI: &str = {json_content:?};\n").as_bytes(),
         )
         .unwrap();
     };

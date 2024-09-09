@@ -310,7 +310,7 @@ Update the miner and player reward percent
 function work(address prover, address player, address miner) external
 ```
 
-Add work(labor) to current epoch & prover, only call from TaskMarket
+Add work(labor) to current epoch & prover, only call from Task
 
 #### Parameters
 

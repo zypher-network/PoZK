@@ -2,6 +2,10 @@
 pragma solidity ^0.8.20;
 
 interface IVerifier {
+    /// game (prover/verifier) name
+    function name() external view returns (string memory);
+
+    // verify the zkp
     function verify(bytes calldata publics, bytes calldata proof) external view returns (bool);
 
     /// show how to serialize/deseriaze the inputs params

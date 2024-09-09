@@ -1,4 +1,4 @@
-use crate::{PROVER_MARKET_CONTRACT_ABI, STAKE_CONTRACT_ABI, TASK_MARKET_CONTRACT_ABI};
+use crate::{PROVER_CONTRACT_ABI, STAKE_CONTRACT_ABI, TASK_CONTRACT_ABI};
 use anyhow::{anyhow, Result};
 use ethers::abi::{Contract, Function, Token};
 use ethers::core::k256::ecdsa::SigningKey;
@@ -86,13 +86,9 @@ pub fn gen_is_miner_data(prover: &Token, miner: Address) -> Result<(Address, Byt
 pub fn gen_prover_version_data(prover: &Token) -> Result<(Address, Bytes, Function)> {
     let functions = FUNCTIONS.get().ok_or(anyhow!("functions not init"))?;
 
-    if let Some((prover_market_address, func)) = functions.get(&FuncType::ProverVersion) {
+    if let Some((prover_address, func)) = functions.get(&FuncType::ProverVersion) {
         let tx_data = func.encode_input(&vec![prover.clone()])?;
-        Ok((
-            prover_market_address.clone(),
-            Bytes::from(tx_data),
-            func.clone(),
-        ))
+        Ok((prover_address.clone(), Bytes::from(tx_data), func.clone()))
     } else {
         Err(anyhow!("not match ProverVersion func"))
     }
@@ -101,13 +97,9 @@ pub fn gen_prover_version_data(prover: &Token) -> Result<(Address, Bytes, Functi
 pub fn gen_accept_task_data(id: Token, miner: Address) -> Result<(Address, Bytes, Function)> {
     let functions = FUNCTIONS.get().ok_or(anyhow!("functions not init"))?;
 
-    if let Some((task_market_address, func)) = functions.get(&FuncType::AcceptTask) {
+    if let Some((task_address, func)) = functions.get(&FuncType::AcceptTask) {
         let tx_data = func.encode_input(&vec![id, Token::Address(miner)])?;
-        Ok((
-            task_market_address.clone(),
-            Bytes::from(tx_data),
-            func.clone(),
-        ))
+        Ok((task_address.clone(), Bytes::from(tx_data), func.clone()))
     } else {
         Err(anyhow!("not match ProverVersion func"))
     }
@@ -116,9 +108,9 @@ pub fn gen_accept_task_data(id: Token, miner: Address) -> Result<(Address, Bytes
 pub fn gen_submit_data(id: Token, publics: Token, proof: Token) -> Result<(Address, Bytes)> {
     let functions = FUNCTIONS.get().ok_or(anyhow!("functions not init"))?;
 
-    if let Some((task_market_address, func)) = functions.get(&FuncType::Submit) {
+    if let Some((task_address, func)) = functions.get(&FuncType::Submit) {
         let tx_data = func.encode_input(&vec![id, publics, proof])?;
-        Ok((task_market_address.clone(), Bytes::from(tx_data)))
+        Ok((task_address.clone(), Bytes::from(tx_data)))
     } else {
         Err(anyhow!("not match ProverVersion func"))
     }
@@ -135,32 +127,29 @@ pub enum FuncType {
 static FUNCTIONS: OnceCell<BTreeMap<FuncType, (Address, Function)>> = OnceCell::new();
 
 pub fn init_functions(
-    task_market_address: Address,
+    task_address: Address,
     stake_address: Address,
-    prover_market_address: Address,
+    prover_address: Address,
 ) -> Result<()> {
     let mut functions = BTreeMap::new();
 
-    let _task_market = {
-        let task_market = serde_json::from_str::<Contract>(TASK_MARKET_CONTRACT_ABI)?;
-        let accept_func = task_market
+    let _task = {
+        let task = serde_json::from_str::<Contract>(TASK_CONTRACT_ABI)?;
+        let accept_func = task
             .functions
             .get("accept")
             .ok_or(anyhow!("not match accept function"))?
             .get(0)
             .ok_or(anyhow!("functions[0] is nil"))?;
-        functions.insert(
-            FuncType::AcceptTask,
-            (task_market_address, accept_func.clone()),
-        );
+        functions.insert(FuncType::AcceptTask, (task_address, accept_func.clone()));
 
-        let submit_func = task_market
+        let submit_func = task
             .functions
             .get("submit")
             .ok_or(anyhow!("not match accept function"))?
             .get(0)
             .ok_or(anyhow!("functions[0] is nil"))?;
-        functions.insert(FuncType::Submit, (task_market_address, submit_func.clone()));
+        functions.insert(FuncType::Submit, (task_address, submit_func.clone()));
     };
 
     let _stake = {
@@ -175,9 +164,9 @@ pub fn init_functions(
         functions.insert(FuncType::IsMiner, (stake_address, is_miner_func.clone()));
     };
 
-    let _prover_market = {
-        let prover_market = serde_json::from_str::<Contract>(PROVER_MARKET_CONTRACT_ABI)?;
-        let version_func = prover_market
+    let _prover = {
+        let prover = serde_json::from_str::<Contract>(PROVER_CONTRACT_ABI)?;
+        let version_func = prover
             .functions
             .get("version")
             .ok_or(anyhow!("not match version function"))?
@@ -185,7 +174,7 @@ pub fn init_functions(
             .ok_or(anyhow!("functions[0] is nil"))?;
         functions.insert(
             FuncType::ProverVersion,
-            (prover_market_address, version_func.clone()),
+            (prover_address, version_func.clone()),
         );
     };
 

@@ -11,8 +11,8 @@ type IContractList = {
   Epoch: Address;
   Stake: Address;
   Reward: Address;
-  ProverMarket: Address;
-  TaskMarket: Address;
+  Prover: Address;
+  Task: Address;
   Controller: Address;
 };
 export const contractAddress: Record<ChainId, IContractList> = {
@@ -23,8 +23,8 @@ export const contractAddress: Record<ChainId, IContractList> = {
     Epoch: "0xA6b210712135d208bB7545f935a8F15d7b6CBd2e",
     Stake: "0x003C1F8F552EE2463e517FDD464B929F8C0bFF06",
     Reward: "0xD4f85C18434E332A26A90C20EEB3b6bdb1dA1b1a",
-    ProverMarket: "0x1c23e9F06b10f491e86b506c025080C96513C9f5",
-    TaskMarket: "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793",
+    Prover: "0x1c23e9F06b10f491e86b506c025080C96513C9f5",
+    Task: "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793",
     Controller: "0xB362781Da5dbF9EeE57dc15FC0F526Ac83a9eD74",
   },
 };

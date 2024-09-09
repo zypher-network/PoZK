@@ -49,8 +49,8 @@ async function deploy() {
   const epoch = await deployContractWithProxy("Epoch", [addresses, 100]);
   const stake = await deployContractWithProxy("Stake", [addresses, 100n * ONE_TOKEN]);
   const reward = await deployContractWithProxy("Reward", [addresses, 1, 4, 1, 4, 1, 4, 90, 10, 10000]);
-  const proverMarket = await deployContractWithProxy("ProverMarket", [addresses]);
-  const taskMarket = await deployContractWithProxy("TaskMarket", [addresses]);
+  const prover = await deployContractWithProxy("Prover", [addresses]);
+  const task = await deployContractWithProxy("Task", [addresses]);
   const controller = await deployContractWithProxy("Controller", [addresses]);
 
   const addressesContract = await ethers.getContractFactory("Addresses");
@@ -62,8 +62,8 @@ async function deploy() {
       2, // Contracts.Epoch,
       3, // Contracts.Stake,
       4, // Contracts.Reward,
-      5, // Contracts.ProverMarket,
-      6, // Contracts.TaskMarket,
+      5, // Contracts.Prover,
+      6, // Contracts.Task,
       7, // Contracts.Controller
     ],
     [
@@ -72,8 +72,8 @@ async function deploy() {
       epoch,
       stake,
       reward,
-      proverMarket,
-      taskMarket,
+      prover,
+      task,
       controller
     ]
   );
@@ -85,8 +85,8 @@ async function deploy() {
     Epoch: epoch,
     Stake: stake,
     Reward: reward,
-    ProverMarket: proverMarket,
-    TaskMarket: taskMarket,
+    Prover: prover,
+    Task: task,
     Controller: controller,
   };
 

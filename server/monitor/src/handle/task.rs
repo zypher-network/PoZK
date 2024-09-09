@@ -303,7 +303,7 @@ impl TaskService {
                     }
                 };
 
-                let (task_market_address, tx_data) =
+                let (task_address, tx_data) =
                     match utils::gen_submit_data(Token::Uint(data.tid), publics, proof) {
                         Ok(v) => v,
                         Err(e) => {
@@ -316,7 +316,7 @@ impl TaskService {
                     &eth_cli,
                     Some(tx_data),
                     Some(data.controller.0),
-                    task_market_address,
+                    task_address,
                     None,
                     chain_id,
                     None,
@@ -626,7 +626,7 @@ impl TaskService {
                             };
 
                             let accept_task_tx = {
-                                let (task_market_address, tx_data, _func) =
+                                let (task_address, tx_data, _func) =
                                     match utils::gen_accept_task_data(id, self.miner) {
                                         Ok(v) => v,
                                         Err(e) => {
@@ -639,7 +639,7 @@ impl TaskService {
                                     &self.eth_cli,
                                     Some(tx_data),
                                     Some(controller),
-                                    task_market_address,
+                                    task_address,
                                     None,
                                     self.chain_id,
                                     None,
@@ -715,14 +715,14 @@ mod test {
 
         rt.block_on(async {
 
-            let task_market_address = Address::from_str("0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793").unwrap();
-            let prover_market_address = Address::from_str("0x1c23e9F06b10f491e86b506c025080C96513C9f5").unwrap();
+            let task_address = Address::from_str("0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793").unwrap();
+            let prover_address = Address::from_str("0x1c23e9F06b10f491e86b506c025080C96513C9f5").unwrap();
             let stake_address = Address::from_str("0x003C1F8F552EE2463e517FDD464B929F8C0bFF06").unwrap();
 
             utils::init_functions(
-                task_market_address,
+                task_address,
                 stake_address,
-                prover_market_address,
+                prover_address,
             ).unwrap();
 
             let controller = Address::from_str("0x29474bEAc49D74099e995b351CA1eDc59cE5bBAb").unwrap();
@@ -734,7 +734,7 @@ mod test {
             let t_publics = Token::Bytes(hex::decode(publics).unwrap());
             let t_proof = Token::Bytes(hex::decode(proof).unwrap());
 
-            let (task_market_address,tx_data) = utils::gen_submit_data(Token::Uint(Uint::from(tid)), t_publics, t_proof).unwrap();
+            let (task_address,tx_data) = utils::gen_submit_data(Token::Uint(Uint::from(tid)), t_publics, t_proof).unwrap();
 
             let eth_cli = Provider::connect("https://opbnb-testnet-rpc.bnbchain.org").await;
             let chain_id = eth_cli.get_chainid().await.unwrap();
@@ -743,7 +743,7 @@ mod test {
                 &eth_cli,
                 Some(tx_data),
                 Some(controller),
-                task_market_address,
+                task_address,
                 None,
                 chain_id,
                 None,

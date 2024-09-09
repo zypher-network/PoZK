@@ -15,8 +15,8 @@ endpoint = "https://opbnb-testnet-rpc.bnbchain.org"
 open_monitor = true
 
 [monitor_config]
-task_market_address = "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793"
-prover_market_address = "0x1c23e9F06b10f491e86b506c025080C96513C9f5"
+task_address = "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793"
+prover_address = "0x1c23e9F06b10f491e86b506c025080C96513C9f5"
 stake_address = "0x003C1F8F552EE2463e517FDD464B929F8C0bFF06"
 from = 0
 delay_sec = 0

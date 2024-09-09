@@ -16,27 +16,27 @@ mod networks;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Command {
-    /// Name of the person to greet
+    /// Config file for advance features
     #[arg(short, long)]
     config: Option<String>,
 
-    /// Name of the person to greet
-    #[arg(short, long)]
+    /// Host system path for pozk, e.g. /usr/pozk(default), /home/ubuntu/pozk
+    #[arg(short = 'o', long)]
     host_base_path: Option<String>,
 
-    /// Name of the person to greet
+    /// Docker inner path, default is /usr/pozk
     #[arg(short, long)]
     docker_base_path: Option<String>,
 
-    /// Name of the person to greet
+    /// Miner account, e.g. 0x00000000000000000000000000000000000000
     #[arg(short, long)]
     miner: String,
 
-    /// Name of the person to greet
+    /// RPC endpoint to listen and submit tx with chain
     #[arg(short, long)]
     endpoint: String,
 
-    /// Name of the person to greet
+    /// Network type, includes: localhost | testnet | mainnet
     #[arg(short, long)]
     network: String,
 }
@@ -62,9 +62,8 @@ async fn main() -> Result<()> {
 
     // contract addresses
     let (stake_address, _s_start) = networks::contract_address(&args.network, "Stake")?;
-    let (task_market_address, t_start) = networks::contract_address(&args.network, "TaskMarket")?;
-    let (prover_market_address, _p_start) =
-        networks::contract_address(&args.network, "ProverMarket")?;
+    let (task_address, t_start) = networks::contract_address(&args.network, "Task")?;
+    let (prover_address, _p_start) = networks::contract_address(&args.network, "Prover")?;
 
     let eth_cli = Provider::connect(&args.endpoint).await;
     let chain_id = eth_cli.get_chainid().await?;
@@ -79,8 +78,8 @@ async fn main() -> Result<()> {
     };
 
     // update contract address
-    co.monitor_config.task_market_address = format!("{:?}", task_market_address);
-    co.monitor_config.prover_market_address = format!("{:?}", prover_market_address);
+    co.monitor_config.task_address = format!("{:?}", task_address);
+    co.monitor_config.prover_address = format!("{:?}", prover_address);
     co.monitor_config.stake_address = format!("{:?}", stake_address);
     co.monitor_config.miner = format!("{:?}", miner);
 
@@ -134,7 +133,7 @@ async fn main() -> Result<()> {
             chain_id,
         )?;
 
-        init_functions(task_market_address, stake_address, prover_market_address)?;
+        init_functions(task_address, stake_address, prover_address)?;
 
         tx_service.run();
         task_service.run();

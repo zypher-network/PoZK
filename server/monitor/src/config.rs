@@ -9,12 +9,12 @@ pub struct MonitorConfig {
         long,
         help = "`monitor`: task market contract address, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
     )]
-    pub task_market_address: String,
+    pub task_address: String,
     #[clap(
         long,
         help = "`monitor`: prover market contract address, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
     )]
-    pub prover_market_address: String,
+    pub prover_address: String,
     #[clap(
         long,
         help = "`monitor`: stake contract address, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
@@ -56,8 +56,8 @@ impl Default for MonitorConfig {
     fn default() -> Self {
         Self {
             open: true,
-            task_market_address: String::new(),
-            prover_market_address: String::new(),
+            task_address: String::new(),
+            prover_address: String::new(),
             stake_address: String::new(),
             from: 0,
             delay_sec: 0,

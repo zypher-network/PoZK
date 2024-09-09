@@ -1,6 +1,6 @@
 use crate::monitor::MonitorChanData;
-use crate::PROVER_MARKET_CONTRACT_ABI;
-use crate::TASK_MARKET_CONTRACT_ABI;
+use crate::PROVER_CONTRACT_ABI;
+use crate::TASK_CONTRACT_ABI;
 use anyhow::Result;
 use ethers::abi::{Bytes as AbiBytes, RawLog};
 use ethers::abi::{Contract, Event};
@@ -26,30 +26,30 @@ pub struct EventManager {
 }
 
 impl EventManager {
-    pub fn new(task_market_address: &str, prover_market_address: &str) -> Result<Self> {
+    pub fn new(task_address: &str, prover_address: &str) -> Result<Self> {
         let mut topic_event = BTreeMap::new();
         let mut address_contracts = BTreeMap::new();
 
         let _insert_task = {
-            let task_market = serde_json::from_str::<Contract>(TASK_MARKET_CONTRACT_ABI)?;
-            let event = task_market.event("CreateTask")?;
+            let task = serde_json::from_str::<Contract>(TASK_CONTRACT_ABI)?;
+            let event = task.event("CreateTask")?;
             let topic = event.signature();
 
             topic_event.insert(topic, (event.clone(), EventType::CreateTask));
 
-            let address = Address::from_str(task_market_address)?;
-            address_contracts.insert(address, task_market);
+            let address = Address::from_str(task_address)?;
+            address_contracts.insert(address, task);
         };
 
         let _insert_prover = {
-            let prover_market = serde_json::from_str::<Contract>(PROVER_MARKET_CONTRACT_ABI)?;
-            let event = prover_market.event("ApproveProver")?;
+            let prover = serde_json::from_str::<Contract>(PROVER_CONTRACT_ABI)?;
+            let event = prover.event("ApproveProver")?;
             let topic = event.signature();
 
             topic_event.insert(topic, (event.clone(), EventType::ApproveProver));
 
-            let address = Address::from_str(prover_market_address)?;
-            address_contracts.insert(address, prover_market);
+            let address = Address::from_str(prover_address)?;
+            address_contracts.insert(address, prover);
         };
 
         Ok(Self {

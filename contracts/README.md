@@ -28,8 +28,8 @@ npm run deploy --network xxx
 - **Epoch**: "Block time" in the network
 - **Stake**: Player/Miner/Game staking status
 - **Reward**: Network Rewards Distribution
-- **ProverMarket**: Manage all registered provers
-- **TaskMarket**: Manage all proof tasks
+- **Prover**: Manage all registered provers
+- **Task**: Manage all proof tasks
 
 ## License
 

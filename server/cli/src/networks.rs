@@ -10,13 +10,13 @@ pub fn contract_address(network: &str, name: &str) -> Result<(Address, u64)> {
 
     let address: Address = addresses[network][name]["address"]
         .as_str()
-        .ok_or(anyhow!("contract address is invalid"))?
+        .ok_or(anyhow!("contract address is invalid 1"))?
         .parse()
-        .map_err(|_| anyhow!("contract address is invalid"))?;
+        .map_err(|_| anyhow!("contract address is invalid 2"))?;
 
     let start: i64 = addresses[network][name]["startBlock"]
         .as_i64()
-        .ok_or(anyhow!("contract address is invalid"))?;
+        .ok_or(anyhow!("contract block is invalid"))?;
 
     Ok((address, start as u64))
 }

@@ -294,8 +294,8 @@ mod test {
 
         rt.block_on(async {
             let config = MonitorConfig {
-                task_market_address: "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793".to_string(),
-                prover_market_address: "0x1c23e9F06b10f491e86b506c025080C96513C9f5".to_string(),
+                task_address: "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793".to_string(),
+                prover_address: "0x1c23e9F06b10f491e86b506c025080C96513C9f5".to_string(),
                 stake_address: "0x003C1F8F552EE2463e517FDD464B929F8C0bFF06".to_string(),
                 from: 36537285,
                 delay_sec: 0,
@@ -306,9 +306,9 @@ mod test {
                 docker_proxy: Some("docker.registry.cyou".to_string()),
             };
 
-            let task_market_address =
+            let task_address =
                 Address::from_str("0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793").unwrap();
-            let prover_market_address =
+            let prover_address =
                 Address::from_str("0x1c23e9F06b10f491e86b506c025080C96513C9f5").unwrap();
             let stake_address =
                 Address::from_str("0x003C1F8F552EE2463e517FDD464B929F8C0bFF06").unwrap();
@@ -323,8 +323,7 @@ mod test {
             let eth_cli = Provider::connect("https://opbnb-testnet-rpc.bnbchain.org").await;
             let chain_id = eth_cli.get_chainid().await.unwrap();
 
-            utils::init_functions(task_market_address, stake_address, prover_market_address)
-                .unwrap();
+            utils::init_functions(task_address, stake_address, prover_address).unwrap();
 
             let mut monitor = Monitor::new(&config, eth_cli.clone()).await.unwrap();
 

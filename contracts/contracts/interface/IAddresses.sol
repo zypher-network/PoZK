@@ -7,8 +7,8 @@ enum Contracts {
     Epoch,
     Stake,
     Reward,
-    ProverMarket,
-    TaskMarket,
+    Prover,
+    Task,
     Controller
 }
 

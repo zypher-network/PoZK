@@ -8,11 +8,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interface/IAddresses.sol";
 import "./interface/IEpoch.sol";
 import "./interface/IProver.sol";
-import "./interface/IProverMarket.sol";
 import "./interface/IVerifier.sol";
 
 /// @notice Manage all registered provers
-contract ProverMarket is Initializable, OwnableUpgradeable, IProverMarket {
+contract Prover is Initializable, OwnableUpgradeable, IProver {
     using ERC165Checker for address;
 
     /// @notice Unit struct for number change
@@ -98,7 +97,6 @@ contract ProverMarket is Initializable, OwnableUpgradeable, IProverMarket {
     /// @param _verifier the verifier contract, uses the IVerifier interface
     function register(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
         require(provers[prover].version.value == 0 && _version > 0, "G01");
-        require(prover.supportsInterface(type(IProver).interfaceId), "G05");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
 
         Prover storage g = provers[prover];

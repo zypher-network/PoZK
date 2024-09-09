@@ -10,7 +10,7 @@ import "./interface/IAddresses.sol";
 import "./interface/IEpoch.sol";
 import "./interface/IStake.sol";
 import "./interface/IReward.sol";
-import "./interface/IProverMarket.sol";
+import "./interface/IProver.sol";
 import "./interface/IVesting.sol";
 import "./utils/FixedMath.sol";
 
@@ -216,12 +216,12 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         emit MinerPlayerPer(minerMaxPer, minerMinPer, playerMaxNum);
     }
 
-    /// @notice Add work(labor) to current epoch & prover, only call from TaskMarket
+    /// @notice Add work(labor) to current epoch & prover, only call from Task
     /// @param prover the prover address
     /// @param player player account
     /// @param miner miner account
     function work(address prover, address player, address miner) external {
-        require(msg.sender == IAddresses(addresses).get(Contracts.TaskMarket), "R01"); // only task contract
+        require(msg.sender == IAddresses(addresses).get(Contracts.Task), "R01"); // only task contract
 
         IStake s = IStake(IAddresses(addresses).get(Contracts.Stake));
 
@@ -439,7 +439,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // check or collect prover total reward,
         // and release epoch token to reward
         if (gp.totalMinerReward == 0 && gp.totalPlayerReward == 0) {
-            IProverMarket gm = IProverMarket(IAddresses(addresses).get(Contracts.ProverMarket));
+            IProver gm = IProver(IAddresses(addresses).get(Contracts.Prover));
             address vestingAddress = IAddresses(addresses).get(Contracts.Vesting);
             IVesting vesting = IVesting(vestingAddress);
 

@@ -39,8 +39,7 @@ struct StartParam {
 
 impl Monitor {
     pub async fn new(cfg: &MonitorConfig, eth_cli: Provider<Http>) -> Result<Self> {
-        let event_manager =
-            EventManager::new(&cfg.task_market_address, &cfg.prover_market_address)?;
+        let event_manager = EventManager::new(&cfg.task_address, &cfg.prover_address)?;
         let filter = event_manager.get_filter()?;
 
         Ok(Self {
