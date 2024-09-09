@@ -1,0 +1,20 @@
+[db_config]
+auto_remove = false
+
+[monitor_config]
+open = true
+task_address = "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793"
+prover_address = "0x1c23e9F06b10f491e86b506c025080C96513C9f5"
+stake_address = "0x003C1F8F552EE2463e517FDD464B929F8C0bFF06"
+miner = "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc"
+from = 0
+delay_sec = 0
+step = 10
+wait_time = 10
+block_number_type = "latest"
+docker_proxy = "docker.registry.cyou"
+
+[api_config]
+host = "0.0.0.0"
+port = 9098
+login_domain = "localhost:4000"
