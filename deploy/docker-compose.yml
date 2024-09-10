@@ -24,3 +24,4 @@ services:
       - "4000:4000"
     environment:
       - API_BASE_URL=http://localhost:9098/api
+      - NETWORK=testnet

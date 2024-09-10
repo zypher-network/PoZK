@@ -8,6 +8,29 @@ const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
 const { writeFile, readFileSync } = require('fs');
 
+const FILENAME = `../public/networks.json`;
+
+function readNetworks() {
+  const filebytes = readFileSync(FILENAME, 'utf8');
+  let obj = {};
+  if (filebytes) {
+    obj = JSON.parse(filebytes);
+  }
+  return obj;
+}
+
+function writeNetworks(obj) {
+  writeFile(
+    FILENAME,
+    JSON.stringify(obj, null, 4),
+    function(err) {
+      if (err) {
+        console.log(err);
+      }
+    });
+  console.log(`Save to ${FILENAME}`);
+}
+
 async function deployContractWithProxy(name, params=[]) {
   const block = await ethers.provider.getBlockNumber();
   const Factory = await ethers.getContractFactory(name);
@@ -24,7 +47,6 @@ async function deployContract(name, params=[]) {
   const block = await ethers.provider.getBlockNumber();
   const Factory = await ethers.getContractFactory(name);
   const contract = await Factory.deploy(...params);
-  console.log(contract);
   const address = await contract.getAddress();
   console.log(`${name} address: ${address} from ${block}`);
 
@@ -42,8 +64,28 @@ async function deployNew() {
   await addresses.set(3, vesting);
 }
 
+async function deployL2() {
+  const [token, token_s] = await deployContract("L2Token", [5000000000n * ONE_TOKEN]); // 5,000,000,000 TOEKN for stake
+  const [vesting, vesting_s] = await deployContractWithProxy("L2Vesting", [token]);
+
+  let obj = readNetworks();
+
+  obj[network.name] = {
+    Token: {
+      address: token,
+      startBlock: token_s,
+    },
+    Vesting: {
+      address: vesting,
+      startBlock: vesting_s,
+    },
+  };
+
+  writeNetworks(obj);
+}
+
 async function deploy() {
-  const [token, token_s] = await deployContract("Token", [1000000000n * ONE_TOKEN]); // 1,000,000,000 TOEKN
+  const [token, token_s] = await deployContract("Token", [5000000000n * ONE_TOKEN]); // 5,000,000,000 TOEKN for mine
   //const tokenContract = await attachContract("Token");
   //const token = await tokenContract.getAddress();
 
@@ -81,12 +123,7 @@ async function deploy() {
     ]
   );
 
-  const filename = `../public/networks.json`;
-  const filebytes = readFileSync(filename, 'utf8');
-  let obj = {};
-  if (filebytes) {
-    obj = JSON.parse(filebytes);
-  }
+  let obj = readNetworks();
 
   obj[network.name] = {
     Addresses: {
@@ -127,19 +164,12 @@ async function deploy() {
     }
   };
 
-  writeFile(
-    filename,
-    JSON.stringify(obj, null, 4),
-    function(err) {
-      if (err) {
-        console.log(err);
-      }
-    });
-  console.log(`Save to ${filename}`);
+  writeNetworks(obj);
 }
 
 async function main() {
   await deploy();
+  // await deployL2();
   // await deployNew();
 }
 

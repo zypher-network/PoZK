@@ -21,6 +21,12 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
         uint256 newEpoch;
     }
 
+    /// @notice Unit struct about miner's vesting
+    struct MinerVesting {
+        uint256 amount;
+        uint256 end;
+    }
+
     /// @notice Common Addresses contract
     address addresses;
 
@@ -31,7 +37,7 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
     MineReward mineReward;
 
     /// @notice Store all miners vesting
-    mapping(address => uint256) miners;
+    mapping(address => MinerVesting) miners;
 
     /// @notice Emit when controller changed, isAdd if true is add, if false is remove
     event NewMineReward(uint256 epoch, uint256 amount);
@@ -92,9 +98,11 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
     /// @notice Batch set miner vesting amounts
     /// @param _miners the miners list
     /// @param amounts the amounts list
-    function setMinerAmount(address[] calldata _miners, uint256[] calldata amounts) external onlyOwner {
+    /// @param ends the ends list
+    function setMinerAmount(address[] calldata _miners, uint256[] calldata amounts, uint256[] calldata ends) external onlyOwner {
         for (uint i = 0; i < _miners.length; i++) {
-            miners[_miners[i]] += amounts[i];
+            miners[_miners[i]].amount += amounts[i];
+            miners[_miners[i]].end = ends[i];
         }
     }
 
@@ -108,6 +116,11 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
     /// @param account the miner account
     /// @return the amount of this miner
     function miner(address account) external view returns(uint256) {
-        return miners[account];
+        MinerVesting memory mv = miners[account];
+        if (block.timestamp > mv.end) {
+            return 0;
+        } else {
+            return mv.amount;
+        }
     }
 }

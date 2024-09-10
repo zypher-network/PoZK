@@ -35,7 +35,11 @@ module.exports = {
       accounts: [SECRET_KEY]
     },
     mainnet: {
-      url: 'https://linea-testnet-zytron.zypher.game',
+      url: 'https://linea-testnet-zytron.zypher.game', // https://linea-mainnet-zytron.zypher.game
+      accounts: [SECRET_KEY]
+    },
+    l2: {
+      url: 'https://rpc.sepolia.linea.build', // https://rpc.linea.build
       accounts: [SECRET_KEY]
     },
   },
