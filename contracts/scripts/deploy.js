@@ -65,7 +65,7 @@ async function deployNew() {
 }
 
 async function deployL2() {
-  const [token, token_s] = await deployContract("L2Token", [5000000000n * ONE_TOKEN]); // 5,000,000,000 TOEKN for stake
+  const [token, token_s] = await deployContract("Token", [5000000000n * ONE_TOKEN]); // 5,000,000,000 TOEKN for stake
   const [vesting, vesting_s] = await deployContractWithProxy("L2Vesting", [token]);
 
   let obj = readNetworks();

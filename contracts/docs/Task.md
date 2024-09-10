@@ -1,6 +1,6 @@
 # Solidity API
 
-## TaskMarket
+## Task
 
 Manage all proof tasks, player create new zk task, and miner can accept it,
 when miner acceped, miner need submit the proof within overtime, if overflow, others

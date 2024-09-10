@@ -221,6 +221,11 @@
         "internalType": "uint256[]",
         "name": "amounts",
         "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "ends",
+        "type": "uint256[]"
       }
     ],
     "name": "setMinerAmount",

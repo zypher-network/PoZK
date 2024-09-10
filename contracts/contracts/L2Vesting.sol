@@ -91,11 +91,11 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
     /// @param planId the plan id
     /// @param user the user account
     function claim(uint256 planId, address user) external {
-        require(planId < plans.length, 'V013');
-        require(allocations[planId][user] != 0, 'V011');
+        require(planId < plans.length, "V01");
+        require(allocations[planId][user] != 0, "V02");
 
         uint256 amount = claimable(planId, user);
-        require(amount > 0, 'V012');
+        require(amount > 0, "V03");
 
         claimed[planId][user] += amount;
 

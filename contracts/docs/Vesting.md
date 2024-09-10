@@ -16,6 +16,17 @@ struct MineReward {
 }
 ```
 
+### MinerVesting
+
+Unit struct about miner's vesting
+
+```solidity
+struct MinerVesting {
+  uint256 amount;
+  uint256 end;
+}
+```
+
 ### addresses
 
 ```solidity
@@ -35,7 +46,7 @@ Rewards of every epoch will be released for mine & play
 ### miners
 
 ```solidity
-mapping(address => uint256) miners
+mapping(address => struct Vesting.MinerVesting) miners
 ```
 
 Store all miners vesting
@@ -91,6 +102,20 @@ Set the mine amount pre epoch
 | ---- | ---- | ----------- |
 | amount | uint256 | new amount |
 
+### approveForReward
+
+```solidity
+function approveForReward(uint256 amount) external
+```
+
+Approve enough token for reward
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| amount | uint256 | new amount |
+
 ### mine
 
 ```solidity
@@ -109,7 +134,7 @@ epoch the epoch height
 ### setMinerAmount
 
 ```solidity
-function setMinerAmount(address[] _miners, uint256[] amounts) external
+function setMinerAmount(address[] _miners, uint256[] amounts, uint256[] ends) external
 ```
 
 Batch set miner vesting amounts
@@ -120,6 +145,7 @@ Batch set miner vesting amounts
 | ---- | ---- | ----------- |
 | _miners | address[] | the miners list |
 | amounts | uint256[] | the amounts list |
+| ends | uint256[] | the ends list |
 
 ### minersTotal
 

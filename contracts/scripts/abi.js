@@ -11,7 +11,8 @@ const main = async () => {
       "Reward",
       "Prover",
       "Task",
-      "Controller"
+      "Controller",
+      "L2Vesting",
     ];
 
     contracts.forEach(function (name) {
