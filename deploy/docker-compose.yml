@@ -2,7 +2,7 @@ version: '3'
 
 services:
   pozk-miner:
-    image: zyphernetwork/pozk-miner:0.0.13
+    image: zyphernetwork/pozk-miner:0.0.14
     container_name: pozk-miner
     ports:
       - "9098:9098"
@@ -10,8 +10,8 @@ services:
       - ./:/usr/pozk
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-      - --miner=0xbB64D716FAbDEC3a106bb913Fb4f82c1EeC851b8
-      - --endpoint=https://opbnb-testnet-rpc.bnbchain.org
+      - --miner=0x0000000000000000000000000000000000000000
+      - --endpoint=https://linea-testnet-zytron.zypher.game
       - --network=testnet
       # - --config=/usr/pozk/config.toml # advance configure, default is none
       # - --host_base_path=/usr/pozk # change host base path for docker use, default is /usr/pozk

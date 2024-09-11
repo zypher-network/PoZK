@@ -90,9 +90,9 @@ async function deploy() {
   //const token = await tokenContract.getAddress();
 
   const [addresses, addresses_s] = await deployContractWithProxy("Addresses", []);
-  const [vesting, vesting_s] = await deployContractWithProxy("Vesting", [addresses, 10000n * ONE_TOKEN]);
-  const [epoch, epoch_s] = await deployContractWithProxy("Epoch", [addresses, 100]);
-  const [stake, stake_s] = await deployContractWithProxy("Stake", [addresses, 100n * ONE_TOKEN]);
+  const [vesting, vesting_s] = await deployContractWithProxy("Vesting", [addresses, 1000000n * ONE_TOKEN]);
+  const [epoch, epoch_s] = await deployContractWithProxy("Epoch", [addresses, 3600 * 24 * 7]);
+  const [stake, stake_s] = await deployContractWithProxy("Stake", [addresses, 10000n * ONE_TOKEN]);
   const [reward, reward_s] = await deployContractWithProxy("Reward", [addresses, 1, 4, 1, 4, 1, 4, 90, 10, 10000]);
   const [prover, prover_s] = await deployContractWithProxy("Prover", [addresses]);
   const [task, task_s] = await deployContractWithProxy("Task", [addresses]);
