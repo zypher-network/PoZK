@@ -3,7 +3,7 @@ import React from 'react'
 import { ApolloClient, InMemoryCache, ApolloProvider as Provider } from '@apollo/client';
 
 const client = new ApolloClient({
-  uri: 'https://pozk-subgraph.zypher.dev/subgraphs/name/opbnb/pozk/',
+  uri: 'https://pozk-subgraph.zypher.dev/subgraphs/name/testnet/pozk/',
   cache: new InMemoryCache(),
 });
 

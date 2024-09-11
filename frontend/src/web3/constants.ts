@@ -1,9 +1,9 @@
 import { Address } from "viem";
 
 export enum ChainId {
-  OPBNBTEST = "5611",
+  TESTNET = "19546",
 }
-export const CHAINID = ChainId.OPBNBTEST;
+export const CHAINID = ChainId.TESTNET;
 type IContractList = {
   Addresses: Address;
   Token: Address;
@@ -16,26 +16,26 @@ type IContractList = {
   Controller: Address;
 };
 export const contractAddress: Record<ChainId, IContractList> = {
-  [ChainId.OPBNBTEST]: {
-    Addresses: "0x86f23Be54493B1BF89eae9322ED3A78B7d6D3497",
-    Token: "0x5211e2c5Bc985caB4755c939eF94FDF28355A5EA",
-    Vesting: "0x72E8C1C2c5eCA1Bc145efD61d03E8428C93d050b",
-    Epoch: "0xA6b210712135d208bB7545f935a8F15d7b6CBd2e",
-    Stake: "0x003C1F8F552EE2463e517FDD464B929F8C0bFF06",
-    Reward: "0xD4f85C18434E332A26A90C20EEB3b6bdb1dA1b1a",
-    Prover: "0x1c23e9F06b10f491e86b506c025080C96513C9f5",
-    Task: "0x27DE7777C1c643B7F3151F7e4Bd3ba5dacc62793",
-    Controller: "0xB362781Da5dbF9EeE57dc15FC0F526Ac83a9eD74",
+  [ChainId.TESTNET]: {
+      Addresses: "0x5b92b011513F9aAF8F6541003DC088625E7438e8",
+      Token: "0x3b942aEbA931c3350E49F4f54ED5Af943cdd86C2",
+      Vesting: "0x47732f366aded920b5b96F7f220812b3a49EB66E",
+      Epoch: "0x0235f8aA167D848Fa20CA39B5F02C4092D616105",
+      Stake: "0xa7cF188836aa197015685F2F868bf470db5E66cE",
+      Reward: "0x63d57BdfF1176AB682CE93C289624f2C315810BB",
+      Prover: "0x075A3517b1350bFFEBC5F15dF034B6856c7B483A",
+      Task: "0xA72C3013A345522057005F0e034a8440f8D7a4aC",
+      Controller: "0x40c55B01A9272746AF60A9623f1F7Ceb91eF3AB7",
   },
 };
 export const gamesList = {
-  [ChainId.OPBNBTEST]: {
+  [ChainId.TESTNET]: {
     game1: {
-      address: "0x48a7fb14fd5711cf057bc7392973680231e8aebb" as Address,
+      address: "0xd64b51e6f5db063c9532bfc5f9f3472265771827" as Address,
       version: "1",
     },
   },
 };
 export const ChainRpcUrls: Record<ChainId, string[]> = {
-  [ChainId.OPBNBTEST]: ["https://opbnb-testnet-rpc.bnbchain.org/"],
+  [ChainId.TESTNET]: ["https://linea-testnet-zytron.zypher.game/"],
 };

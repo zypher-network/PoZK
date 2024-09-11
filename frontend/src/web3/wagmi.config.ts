@@ -1,14 +1,37 @@
 import { cookieStorage, createStorage } from "wagmi";
-import { opBNBTestnet } from "viem/chains";
 import { defaultWagmiConfig } from "@web3modal/wagmi/react/config";
 import generateMetadata from "@/lib/generateMetadata";
 import { CHAINID, ChainId } from "@/web3/constants";
+
+import { defineChain } from "viem/utils";
+const testnetSourceId = 59141 // Linea Sepolia
+const zytronTestnet = /*#__PURE__*/ defineChain({
+    id: 19546,
+    name: 'Zytron Testnet',
+    nativeCurrency: {
+        name: 'Ether',
+        symbol: 'ETH',
+        decimals: 18,
+    },
+    rpcUrls: {
+        default: {
+            http: ['https://linea-testnet-zytron.zypher.game'],
+        },
+    },
+    blockExplorers: {
+        default: {
+            name: 'Blockscout',
+            url: 'https://linea-testnet-zytron-blockscout.zypher.game',
+        },
+    },
+    testnetSourceId,
+})
 
 // export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
 // Get your projectId on https://cloud.walletconnect.com
 export const projectId = "bc467c124a7a7a8ce06a41ef40b1b842";
 const ChainList = {
-  [ChainId.OPBNBTEST]: opBNBTestnet,
+  [ChainId.TESTNET]: zytronTestnet,
 };
 export const chain = ChainList[CHAINID];
 export const wagmiConfig = defaultWagmiConfig({
