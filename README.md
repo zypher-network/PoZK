@@ -3,7 +3,9 @@ Proof of ZK work
 
 ### Setup
 1. install `docker`
-2. `docker run -p 5005:5005 -p 7364:7364 -e ACCOUNT_SK="" zyphernetwork/pozk:v0.1.0`
+2. Download or copy the `deploy/docker-compose.yml`
+3. Update the params in docker-compose.yml
+4. `docker compose up -d` to run the mining service
 
 ### Games
 

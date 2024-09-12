@@ -2,7 +2,7 @@ version: '3'
 
 services:
   pozk-miner:
-    image: zyphernetwork/pozk-miner:0.0.14
+    image: zyphernetwork/pozk-miner:0.0.15
     container_name: pozk-miner
     ports:
       - "9098:9098"
@@ -18,7 +18,7 @@ services:
       # - --docker_base_path=/usr/pozk # keep same with volumes's params
 
   pozk-frontend:
-    image: zyphernetwork/pozk-frontend:0.0.5
+    image: zyphernetwork/pozk-frontend:0.0.8
     container_name: pozk-frontend
     ports:
       - "4000:4000"
