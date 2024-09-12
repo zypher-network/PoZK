@@ -81,7 +81,8 @@ async fn main() -> Result<()> {
     co.monitor_config.task_address = format!("{:?}", task_address);
     co.monitor_config.prover_address = format!("{:?}", prover_address);
     co.monitor_config.stake_address = format!("{:?}", stake_address);
-    co.monitor_config.miner = format!("{:?}", miner);
+    co.monitor_config.miner = args.miner.clone();
+    co.api_config.miner = args.miner.clone();
 
     let host_base_path = if let Some(path) = args.host_base_path {
         path

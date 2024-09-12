@@ -35,6 +35,7 @@ enum ApiTags {
 }
 
 pub struct ApiService {
+    miner: Address,
     host: String,
     chain_id: u64,
     eth_cli: Provider<Http>,
@@ -51,6 +52,7 @@ impl ApiService {
         docker_manager: DockerManager,
         eth_cli: Provider<Http>,
     ) -> Result<Self> {
+        let miner: Address =  cfg.miner.parse()?;
         let host = format!("{}:{}", cfg.host, cfg.port);
         let domain = if let Some(domain) = &cfg.login_domain {
             Some(Authority::from_str(domain)?)
@@ -61,6 +63,7 @@ impl ApiService {
         let chain_id = eth_cli.get_chainid().await?;
 
         Ok(Self {
+            miner,
             host,
             chain_id: chain_id.as_u64(),
             eth_cli,
@@ -104,6 +107,12 @@ impl ApiService {
     pub async fn login(&self, req: Json<LoginReq>) -> poem::Result<Resp> {
         let uid = Uuid::new_v4().to_string();
         log::info!("[login] uid: [{uid}], req: [{req:?}]");
+
+        // check miner
+        let sender: Address = req.address.parse().map_err(|_| anyhow!("Invalid address"))?;
+        if sender != self.miner {
+            return Err(anyhow!("Invalid miner account").into());
+        }
 
         // to param
         let param = req.to_param().map_err(|e| {

@@ -11,6 +11,12 @@ pub struct ApiConfig {
 
     #[clap(long, help = "`api`: service login param, eg. localhost:4000")]
     pub login_domain: Option<String>,
+
+    #[clap(
+        long,
+        help = "`monitor`: owner, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
+    )]
+    pub miner: String,
 }
 
 impl Default for ApiConfig {
@@ -19,6 +25,7 @@ impl Default for ApiConfig {
             host: "0.0.0.0".to_owned(),
             port: 9098,
             login_domain: None,
+            miner: String::new(),
         }
     }
 }
