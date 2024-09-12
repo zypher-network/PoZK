@@ -8,7 +8,6 @@
 .yarn
 .yarnrc.yml
 .tool-versions
-yarn.lock
 package-lock.json
 
 # testing
