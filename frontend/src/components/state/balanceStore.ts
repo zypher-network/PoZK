@@ -34,30 +34,33 @@ const useBalanceStore = create<BalanceStore>((set, get) => ({
   fetching: false,
   updateBalance: async (address: Address) => {
     set({ fetching: true });
-    const contract = new ContractService();
-    const params = [
-      {
-        address: contractAddress[CHAINID].Token,
-        abi: TokenAbi,
-        functionName: "allowance",
-        args: [address, contractAddress[CHAINID].Stake],
-      },
-      {
-        address: contractAddress[CHAINID].Token,
-        abi: TokenAbi,
-        functionName: "balanceOf",
-        args: [address],
-      },
-      {
-        address: contractAddress[CHAINID].Stake,
-        abi: StakeAbi,
-        functionName: "minStakeAmount",
-      },
-    ];
-    const [allowance, balanceOf, minStake] = await contract.readContractDataBatch(params);
-    const allowanceValue = allowance.result.toString();
-    const payTokenValue = balanceOf.result.toString();
-    const minStakeValue = minStake.result.toString();
+    const tokenContract = new ContractService(contractAddress[CHAINID].Token, TokenAbi);
+    const stakeContract = new ContractService(contractAddress[CHAINID].Stake, StakeAbi);
+    // const params = [
+    //   {
+    //     address: contractAddress[CHAINID].Token,
+    //     abi: TokenAbi,
+    //     functionName: "allowance",
+    //     args: [address, contractAddress[CHAINID].Stake],
+    //   },
+    //   {
+    //     address: contractAddress[CHAINID].Token,
+    //     abi: TokenAbi,
+    //     functionName: "balanceOf",
+    //     args: [address],
+    //   },
+    //   {
+    //     address: contractAddress[CHAINID].Stake,
+    //     abi: StakeAbi,
+    //     functionName: "minStakeAmount",
+    //   },
+    // ];
+    const allowance = await tokenContract.readContractData('allowance', [address, contractAddress[CHAINID].Stake]);
+    const balanceOf = await tokenContract.readContractData('balanceOf', [address]);
+    const minStake = await stakeContract.readContractData('minStakeAmount', []);
+    const allowanceValue = allowance.toString();
+    const payTokenValue = balanceOf.toString();
+    const minStakeValue = minStake.toString();
     set({
       fetching: false,
       payToken: {
