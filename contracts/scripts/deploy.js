@@ -53,7 +53,7 @@ async function deployContract(name, params=[]) {
   return [address, block];
 }
 
-const ONE_TOKEN = 10000000000000000000n;
+const ONE_TOKEN = 1000000000000000000n;
 
 async function deployNew() {
   const addresses = await attachContract("Addresses");
@@ -92,7 +92,7 @@ async function deploy() {
   const [addresses, addresses_s] = await deployContractWithProxy("Addresses", []);
   const [vesting, vesting_s] = await deployContractWithProxy("Vesting", [addresses, 1000000n * ONE_TOKEN]);
   const [epoch, epoch_s] = await deployContractWithProxy("Epoch", [addresses, 3600 * 24 * 7]);
-  const [stake, stake_s] = await deployContractWithProxy("Stake", [addresses, 10000n * ONE_TOKEN]);
+  const [stake, stake_s] = await deployContractWithProxy("Stake", [addresses, 1000n * ONE_TOKEN]);
   const [reward, reward_s] = await deployContractWithProxy("Reward", [addresses, 1, 4, 1, 4, 1, 4, 90, 10, 10000]);
   const [prover, prover_s] = await deployContractWithProxy("Prover", [addresses]);
   const [task, task_s] = await deployContractWithProxy("Task", [addresses]);

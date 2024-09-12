@@ -7,16 +7,19 @@
 const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
 
-async function update_player_limit() {
-  let addr = "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44";
-  const c = await attachContract("Prover");
-  //await c.register(addr, 10000, 1, 10, addr);
-  await c.approve(addr, true, true);
-  //await c.setMinerPlayerPer(10, 90, 10000);
+async function updateEpochPeriod() {
+  const c = await attachContract("Stake");
+  await c.setMinStakeAmount(600); // 10min
+}
+
+async function updateMinStaking() {
+  const c = await attachContract("Stake");
+  await c.setMinStakeAmount(1000000000000000000000n); // 1000
 }
 
 async function main() {
-  await update_player_limit();
+  // await updateEpochPeriod();
+  // await updateMinStaking();
 }
 
 // We recommend this pattern to be able to use async/await everywhere
