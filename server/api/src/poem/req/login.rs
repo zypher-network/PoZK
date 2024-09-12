@@ -79,6 +79,12 @@ impl LoginReq {
             None
         };
 
+        let nonce_4361 = if self.nonce.len() < 8 {
+            "0".repeat(8 - self.nonce.len()) + &self.nonce
+        } else {
+            format!("0{}", self.nonce)
+        };
+
         let msg = Message {
             domain: Authority::from_str(&self.domain)?,
             address: Address::from_str(&self.address)?.0,
@@ -86,7 +92,7 @@ impl LoginReq {
             uri: UriString::from_str(&self.uri)?,
             version: Version::from_str(&self.version)?,
             chain_id: self.chain_id,
-            nonce: self.nonce.clone(),
+            nonce: nonce_4361,
             issued_at: TimeStamp::from_str(&self.issued_at)?,
             expiration_time,
             not_before,
