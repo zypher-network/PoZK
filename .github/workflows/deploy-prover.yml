@@ -11,6 +11,10 @@ on:
       version:
         description: 'Prover version'
         required: true
+      platforms:
+        description: 'amd64 (Dev) | amd64,arm64 (Prod)'
+        required: true
+        default: 'amd64'
 
 jobs:
   build-push-docker:
@@ -41,8 +45,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          # platforms: amd64
-          platforms: amd64,arm64
+          platforms: ${{ github.event.inputs.platforms }}
           file: ./provers/${{ github.event.inputs.name }}/Dockerfile
           cache-from: type=gha
           cache-to: type=gha,mode=max
