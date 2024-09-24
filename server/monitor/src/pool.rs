@@ -72,18 +72,18 @@ impl Pool {
                         Ok(pending) => {
                             if let Ok(receipt) = pending.await {
                                 info!(
-                                    "Accepted, Gas used: {:?}",
+                                    "[Pool] Accepted, Gas used: {:?}",
                                     receipt.map(|x| x.cumulative_gas_used)
                                 );
                             } else {
-                                error!("Accept failed");
+                                error!("[Pool] Accept failed");
                             }
                         }
                         Err(err) => {
                             if let Some(rcode) = err.decode_revert::<String>() {
-                                error!("Accept failed: {}", rcode);
+                                error!("[Pool] Accept failed: {}", rcode);
                             } else {
-                                error!("Accept failed: {}", err);
+                                error!("[Pool] Accept failed: {}", err);
                             }
                         }
                     }
@@ -107,18 +107,18 @@ impl Pool {
                         Ok(pending) => {
                             if let Ok(receipt) = pending.await {
                                 info!(
-                                    "Submitted, Gas used: {:?}",
+                                    "[Pool] Submitted, Gas used: {:?}",
                                     receipt.map(|x| x.cumulative_gas_used)
                                 );
                             } else {
-                                error!("Submit failed");
+                                error!("[Pool] Submit failed");
                             }
                         }
                         Err(err) => {
                             if let Some(rcode) = err.decode_revert::<String>() {
-                                error!("Submit failed: {}", rcode);
+                                error!("[Pool] Submit failed: {}", rcode);
                             } else {
-                                error!("submit failed: {}", err);
+                                error!("[Pool] Submit failed: {}", err);
                             }
                         }
                     }

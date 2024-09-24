@@ -65,8 +65,6 @@ pub async fn upload_proof_with_uri(uri: &str, output: Vec<u8>, proof: Vec<u8>) -
     bytes.extend(output);
     bytes.extend(proof);
 
-    println!("bytes: {}", bytes.len());
-
     let client = reqwest::Client::new();
     let _ = client.post(uri).body(bytes).send().await?;
 

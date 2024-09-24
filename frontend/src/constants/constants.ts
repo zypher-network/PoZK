@@ -1,6 +1,6 @@
 export const base = process.env.metadataBase;
 export const appName = "Pozk";
-export const tokenKey = "X-API-Key";
+export const tokenKey = "Bearer";
 export const accountKey = "account-Key";
 
 // export const miningDevices = [

@@ -48,10 +48,10 @@ impl DockerManager {
         while let Some(pull_result) = pull_stream.next().await {
             match pull_result {
                 Ok(v) => {
-                    info!("pull image: {v:?}");
+                    info!("[Docker] pull image: {v:?}");
                 }
                 Err(e) => {
-                    error!("pull image: {e:?}");
+                    error!("[Docker] pull image: {e:?}");
                     return Err(anyhow!("pull image repo_tag: {repo_tag}, err: {e:?}"));
                 }
             }
@@ -133,7 +133,7 @@ impl DockerManager {
     pub async fn remove(&self, image: &str) -> Result<()> {
         let remove_list = self.docker.remove_image(image, None, None).await?;
 
-        info!("remove image: {remove_list:?}");
+        info!("[Docker] remove image: {remove_list:?}");
 
         Ok(())
     }

@@ -82,6 +82,7 @@ impl App {
             // cors
             let cors = CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST, Method::DELETE])
+                .allow_headers(Any)
                 .allow_origin(Any);
 
             let app = Router::new()

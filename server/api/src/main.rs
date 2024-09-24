@@ -12,12 +12,15 @@ use service::MainService;
 use anyhow::Result;
 use clap::{Args, Parser};
 use ethers::prelude::*;
-use pozk_db::{DbConfig, ReDB};
+use pozk_db::{Controller, DbConfig, MainController, ReDB};
 use pozk_docker::DockerManager;
 use pozk_monitor::{MonitorConfig, Pool, Scan};
 use pozk_utils::{init_path_and_server, new_service_channel};
 use serde::Deserialize;
 use std::{fs, path::PathBuf, sync::Arc};
+
+// empty account: sk = 0, address = 0x7e5f4552091a69125d5dfcb7b8c2659029395bdf
+const DEFAULT_WALLET: &str = "0000000000000000000000000000000000000000000000000000000000000001";
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -32,7 +35,7 @@ struct Command {
 
     /// base server for pozk, e.g. http://pozk-miner:9098(default), http://localhost:9098
     #[arg(short, long, default_value = "http://pozk-miner:9098")]
-    base_server: String,
+    server: String,
 
     /// Miner account, e.g. 0x00000000000000000000000000000000000000
     #[arg(short, long)]
@@ -79,7 +82,7 @@ async fn main() -> Result<()> {
     co.api_config.miner = args.miner.clone();
 
     // setup base path
-    init_path_and_server(&args.base_path, &args.base_server);
+    init_path_and_server(&args.base_path, &args.server);
 
     // setup database
     let db = {
@@ -95,7 +98,15 @@ async fn main() -> Result<()> {
     };
 
     // setup controller
-    let controller: LocalWallet = "".parse()?;
+    let controller = if let Some(addr) = db.get::<MainController>(MainController::to_key())? {
+        LocalWallet::from(
+            db.get::<Controller>(Controller::to_key(&addr.controller))?
+                .unwrap()
+                .singing_key,
+        )
+    } else {
+        DEFAULT_WALLET.parse::<LocalWallet>()?
+    };
 
     let (service_sender, service_receiver) = new_service_channel();
 

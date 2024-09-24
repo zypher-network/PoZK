@@ -123,7 +123,7 @@ impl Scan {
                 if next_index == self.providers.len() {
                     next_index = 0;
                 }
-                error!("[SCAN] provider failure, next_index: {}", next_index);
+                error!("[Scan] provider failure, next_index: {}", next_index);
             }
         });
     }
@@ -141,16 +141,16 @@ impl Scan {
             {
                 res
             } else {
-                warn!("[SCAN] Timeout: {}", i);
+                warn!("[Scan] Timeout: {}", i);
                 return start;
             };
             if let Err(err) = end_res {
-                error!("[SCAN] Provider: {}", err);
+                error!("[Scan] Provider: {}", err);
                 return start;
             }
             let mut end = end_res.unwrap().as_u64() - self.cfg.delay; // safe
             if start == end {
-                debug!("[SCAN] no new block: {}", start);
+                debug!("[Scan] no new block: {}", start);
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 continue;
             }
@@ -169,7 +169,7 @@ impl Scan {
             let logs = match self.providers[i].get_logs(&new_filter).await {
                 Ok(v) => v,
                 Err(e) => {
-                    error!("[SCAN] get logs: {e:?}");
+                    error!("[Scan] get logs: {e:?}");
                     continue;
                 }
             };
@@ -180,14 +180,14 @@ impl Scan {
                         self.sender.send(op).expect("Missing scan receiver"); // panic if channel is missing
                     }
                     Err(e) => {
-                        error!("[SCAN] parse log: {e:?}");
+                        error!("[Scan] parse log: {e:?}");
                         continue;
                     }
                 }
             }
 
             info!(
-                "[SCAN] {start} - {end}, Duration: [{}]sec",
+                "[Scan] {start} - {end}, Duration: [{}]sec",
                 start_time.elapsed().as_secs()
             );
 

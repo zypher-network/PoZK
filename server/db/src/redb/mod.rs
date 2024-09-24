@@ -39,6 +39,16 @@ impl ReDB {
         let db_path = path.join("db.redb");
         let db = Database::create(db_path)?;
 
+        // init all tables
+        let txn = db.begin_write()?;
+        {
+            let _ = txn.open_table(Controller::table());
+            let _ = txn.open_table(MainController::table());
+            let _ = txn.open_table(Prover::table());
+            let _ = txn.open_table(Task::table());
+        }
+        txn.commit()?;
+
         Ok(Self { db })
     }
 

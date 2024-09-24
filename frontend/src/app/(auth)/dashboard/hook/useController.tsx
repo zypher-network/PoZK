@@ -19,19 +19,13 @@ const useGetData = () => {
         const res: any = await api.get(
           // page_count = 页数
           // page_size = 页面大小
-          "/controller/list?page_size=100&page_count=1"
+          "/api/controllers?page_size=100&page_count=1"
         );
-        console.log({ res });
-        if (res && res.data.data.length) {
+        if (res && res.data.length) {
+          console.log(res);
           // 获取active
-          let active: undefined | Address = undefined;
-          try {
-            const resSet: any = await api.get("/controller/set");
-            if (resSet && resSet.data && resSet.data.controller) {
-              active = resSet.data.controller.toLowerCase();
-            }
-          } catch (e: any) {}
-          const data = res.data.data.map((v: Address) => ({
+          const active = res.main;
+          const data = res.data.map((v: Address) => ({
             address: v,
             status: active === v.toLowerCase() ? "on" : "off",
           })) as IControllerItem[];
@@ -108,10 +102,10 @@ export const usePostController = () => {
   const addController = useCallback(
     async (secretKey: `0x${string}`) => {
       try {
-        const res: any = await api.post("/controller/add", {
+        const res: any = await api.post("/api/controllers", {
           signing_key: secretKey,
         });
-        if (res.code === 0) {
+        if (res.controller) {
           const controller = evmWallet.getAccount(secretKey);
           await contractAdd(controller);
           toast({
@@ -133,10 +127,10 @@ export const usePostController = () => {
     async (address: Address): Promise<boolean> => {
       try {
         const res: any = await api.post(
-          `/controller/set/${address}`,
+          `/api/controllers/${address}`,
           undefined
         );
-        if (res.code === 0) {
+        if (res["status"] === "success") {
           toast({
             title: "Set controller Success",
             variant: "success",
@@ -160,17 +154,17 @@ export const usePostController = () => {
     async (address: Address): Promise<[boolean, string]> => {
       try {
         const res: any = await api.get(
-          `/controller/export/${address}`,
+          `/api/controllers/${address}`,
           undefined
         );
         console.log({ res });
-        if (res.code === 0) {
+        if (res.singing_key) {
           // toast({
           //   title: "Set controller Success",
           //   variant: "success",
           // });
           // getData();
-          return [true, res.data.singing_key];
+          return [true, res.singing_key];
         } else {
           throw Error(res ?? "Controller set Error");
         }

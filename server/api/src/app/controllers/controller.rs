@@ -18,12 +18,8 @@ pub async fn index(
     let (items, total) = app.db.list::<Controller>(begin, take_count)?;
     let data = items
         .iter()
-        .map(|item| {
-            json!({
-                "controller": format!("{:?}", item.controller)
-            })
-        })
-        .collect::<Vec<Value>>();
+        .map(|item| format!("{:?}", item.controller))
+        .collect::<Vec<String>>();
 
     let m = app
         .db
@@ -31,7 +27,7 @@ pub async fn index(
         .map(|c| format!("{:?}", c.controller));
 
     Ok(Json(json!({
-        "set": m,
+        "main": m,
         "data": data,
         "total": total
     })))
@@ -49,7 +45,7 @@ pub async fn create(
 ) -> Result<Json<Value>> {
     let singing_key = if let Some(key) = form.signing_key {
         let bytes =
-            hex::decode(&key).map_err(|_| Error::Invalid(1100, "Invalid secret key".to_owned()))?;
+            hex::decode(key.trim_start_matches("0x")).map_err(|_| Error::Invalid(1100, "Invalid secret key".to_owned()))?;
         SigningKey::from_slice(&bytes)
             .map_err(|_| Error::Invalid(1101, "Invalid secret key".to_owned()))?
     } else {
@@ -62,7 +58,10 @@ pub async fn create(
     };
     app.db.add(&c)?;
 
-    Ok(success())
+    Ok(Json(json!({
+        "controller": format!("{:?}", c.controller),
+        "singing_key": format!("0x{}", hex::encode(&c.singing_key.to_bytes()))
+    })))
 }
 
 /// export controller account
