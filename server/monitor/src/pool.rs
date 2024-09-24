@@ -9,6 +9,8 @@ use crate::MonitorConfig;
 const GAS_PRICE: u64 = 1_000_000_000; // 1 GWEI
 const EXTRA_GAS: u64 = 10; // extra 10%
 
+// TODO use 0-gas service
+
 pub enum PoolMessage {
     ChangeController(LocalWallet),
     AcceptTask(u64),
