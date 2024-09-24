@@ -48,25 +48,13 @@ export default function Home() {
       );
       if (message && signature) {
         console.log({ signature });
-        const { v, r, s } = parseSignature(signature);
         const params = {
-          domain: msgData.domain,
-          address: msgData.address,
-          uri: msgData.origin,
-          version: msgData.version,
-          chain_id: msgData.chainId,
-          nonce: msgData.nonce,
-          issued_at: msgData.issuedAt,
-          // signType: msgData.signType,
-          v: Number(v),
-          r,
-          s,
-          statement: msgData.statement,
-          resources: [],
+          message: message,
+          signature: signature,
         };
         console.log({ params });
         const res: any = await pozk.login(params);
-        const token = res.data.token;
+        const token = res.token;
         // const local: any = await api.post(
         //   "/login",
         //   { token },

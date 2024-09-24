@@ -3,29 +3,38 @@ use serde::Deserialize;
 
 #[derive(Args, Debug, Clone, Deserialize)]
 pub struct ApiConfig {
-    #[clap(long, help = "`api`: service host, eg. 0.0.0.0")]
-    pub host: String,
-
     #[clap(long, help = "`api`: service port, eg. 9098")]
-    pub port: u32,
+    pub port: u16,
 
     #[clap(long, help = "`api`: service login param, eg. localhost:4000")]
-    pub login_domain: Option<String>,
+    pub domains: Option<String>,
 
-    #[clap(
-        long,
-        help = "`monitor`: owner, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
-    )]
+    #[clap(long, help = "`api`: owner, eg. 0x00...0000")]
     pub miner: String,
+
+    #[clap(long, help = "`api`: service secret, eg. randomthisissecret")]
+    pub secret: Option<String>,
+}
+
+impl ApiConfig {
+    pub fn domains(&self) -> Vec<String> {
+        let mut ds = vec![];
+        if let Some(d) = &self.domains {
+            for s in d.split(";") {
+                ds.push(s.to_owned());
+            }
+        }
+        ds
+    }
 }
 
 impl Default for ApiConfig {
     fn default() -> Self {
         Self {
-            host: "0.0.0.0".to_owned(),
             port: 9098,
-            login_domain: None,
+            domains: None,
             miner: String::new(),
+            secret: None,
         }
     }
 }

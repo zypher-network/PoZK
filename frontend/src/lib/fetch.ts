@@ -2,7 +2,7 @@ import SessionManager from "./session/SessionManager";
 
 // utils/api.ts
 const API_BASE_URL =
-  process.env.API_BASE_URL || "https://miner.zypher.game/api";
+  process.env.API_BASE_URL || "http://localhost:9098";
 
 interface FetchOptions extends RequestInit {
   accessToken?: string;
@@ -16,7 +16,7 @@ async function fetcher<T>(url: string, options: FetchOptions = {}): Promise<T> {
   };
   const cookie = SessionManager.getSession();
   if (cookie) {
-    headers["X-API-Key"] = cookie;
+    headers["AUTHORIZATION"] = "Bearer " + cookie;
   }
   // console.log({ useUrl });
   const response = await fetch(

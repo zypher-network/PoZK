@@ -6,8 +6,8 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: "/api/controller/new",
-        destination: "https://miner.zypher.game/api/controller/new",
+        source: "/api/controllers",
+        destination: "http://localhost:9098/api/controllers",
         permanent: false,
       },
     ];

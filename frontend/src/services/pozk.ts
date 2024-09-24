@@ -3,8 +3,8 @@ import { stringify } from 'querystring';
 import { Address } from "viem";
 
 type ProveContainer = {
-  created: string;
-  image_id: string;
+  created: number;
+  image: string;
   name: string;
   prover: string;
 }
@@ -12,22 +12,21 @@ type ProveContainer = {
 class PoZK {
   endpoints = {
     login: '/login',
-    proverImage: '/prover/{id}/list',
+    proverImage: '/api/provers/{id}',
     controller: {
-      new: '/controller/new',
-      list: '/controller/list',
-      active: '/controller/set',
+      new: '/api/controllers',
+      list: '/api/controllers',
     },
     prover: {
-      list: '/prover/list',
-      pull: '/prover/pull',
+      list: '/api/provers',
+      pull: '/api/provers',
     },
   }
 
   async getProverContainers (page: number = 1, pageSize: number = 10): Promise<ProveContainer[]> {
     try {
       const params = stringify({ page_count: page, page_size: pageSize });
-      const { data } = await api.get(`${this.endpoints.prover.list}?${params}`) as any;
+      const data = await api.get(`${this.endpoints.prover.list}?${params}`) as any;
       return data?.data ?? [];
     } catch (error) {
       return this.handleError(error as Error, []);
@@ -45,7 +44,8 @@ class PoZK {
 
   async newController (): Promise<Address | ''> {
     try {
-      const { data } = await api.post(this.endpoints.controller.new, undefined) as any;
+      const data = await api.post(this.endpoints.controller.new, {"singing_key": null}) as any;
+      console.log(data);
       return data?.controller ?? '';
     } catch (error) {
       return this.handleError(error as Error, '');
@@ -55,7 +55,7 @@ class PoZK {
   async getControllers (page: number = 1, pageSize: number = 10): Promise<Address[]> {
     const params = stringify({ page_count: page, page_size: pageSize });
     try {
-      const { data } = await api.get(`${this.endpoints.controller.list}?${params}`) as any;
+      const data = await api.get(`${this.endpoints.controller.list}?${params}`) as any;
       return data?.data ?? [];
     } catch (error) {
       return this.handleError(error as Error, []);
@@ -63,9 +63,10 @@ class PoZK {
   }
 
   async getActiveController (): Promise<Address | ''> {
+    const params = stringify({ page_count: 0, page_size: 0 });
     try {
-      const { data } = await api.get(`${this.endpoints.controller.active}`) as any;
-      return data?.controller ?? '';
+      const data = await api.get(`${this.endpoints.controller.list}?${params}`) as any;
+      return data?.main ?? '';
     } catch (error) {
       return this.handleError(error as Error, '');
     }
@@ -78,7 +79,6 @@ class PoZK {
   async pullProve (prover: Address, tag: string, name: string, overtime: string) {
     try {
       const req = {
-        repository: `docker.registry.cyou/zyphernetwork/${prover}`,
         tag: `v${tag}`,
         name,
         prover,

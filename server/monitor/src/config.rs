@@ -1,53 +1,58 @@
+use anyhow::Result;
 use clap::Args;
+use ethers::prelude::Address;
+use pozk_utils::contract_address;
 use serde::Deserialize;
 
 #[derive(Args, Debug, Clone, Deserialize)]
 pub struct MonitorConfig {
-    #[clap(long, help = "`monitor`: open or close monitor")]
-    pub open: bool,
+    #[clap(long, help = "`monitor`: network type, localhost|testnet|mainnet")]
+    pub network: String,
+
     #[clap(
         long,
-        help = "`monitor`: task market contract address, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
+        help = "`monitor`: RPC endpoints, e.g. https://example.com or https://example.com;https://example2.com"
     )]
-    pub task_address: String,
+    pub endpoints: String,
+
     #[clap(
         long,
-        help = "`monitor`: prover market contract address, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
-    )]
-    pub prover_address: String,
-    #[clap(
-        long,
-        help = "`monitor`: stake contract address, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
-    )]
-    pub stake_address: String,
-    #[clap(long, help = "`monitor`: monitor start height, eg. 34736669")]
-    pub from: u64,
-    #[clap(
-        long,
-        help = "`monitor`: solve the configuration of rollback and delay the acquisition of events, eg. 60"
-    )]
-    pub delay_sec: u64,
-    #[clap(long, help = "`monitor`: how many blocks to pull each time, eg. 10")]
-    pub step: u64,
-    #[clap(
-        long,
-        help = "`monitor`: if the number of blocks pulled is insufficient, the waiting time will be executed, eg. 10"
-    )]
-    pub wait_time: u64,
-    #[clap(
-        long,
-        help = "`monitor`: get the type of block, there are `Latest`, `Finalized`, `Safe`, the default is `Latest`, eg. Latest"
-    )]
-    pub block_number_type: String,
-    #[clap(
-        long,
-        help = "`monitor`: owner, eg. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
+        help = "`monitor`: miner account, e.g. 0x6cF0DE16160A1eF873f196aC9FB671e20598e2F8"
     )]
     pub miner: String,
 
     #[clap(
         long,
-        help = "`monitor`: Download docker image proxy, eg. docker.registry.cyou"
+        help = "`monitor`: delay for network rollback, e.g. 1",
+        default_value = "1"
+    )]
+    pub delay: u64,
+
+    #[clap(
+        long,
+        help = "`monitor`: how many blocks to pull each time, e.g. 100",
+        default_value = "100"
+    )]
+    pub step: u64,
+
+    #[clap(
+        long,
+        help = "`monitor`: monitor start height (Optional), e.g. 34736669"
+    )]
+    pub from: Option<u64>,
+
+    #[clap(long, help = "`monitor`: special task contract (Optional)")]
+    pub task_address: Option<String>,
+
+    #[clap(long, help = "`monitor`: special prover contract (Optional)")]
+    pub prover_address: Option<String>,
+
+    #[clap(long, help = "`monitor`: special stake contract (Optional)")]
+    pub stake_address: Option<String>,
+
+    #[clap(
+        long,
+        help = "`monitor`: Download docker image proxy (Optional), e.g. docker.registry.cyou"
     )]
     pub docker_proxy: Option<String>,
 }
@@ -55,17 +60,75 @@ pub struct MonitorConfig {
 impl Default for MonitorConfig {
     fn default() -> Self {
         Self {
-            open: true,
-            task_address: String::new(),
-            prover_address: String::new(),
-            stake_address: String::new(),
-            from: 0,
-            delay_sec: 0,
-            step: 100,
-            wait_time: 10,
-            block_number_type: "latest".to_owned(),
+            network: "mainnet".to_owned(),
+            endpoints: "".to_owned(),
             miner: String::new(),
+            delay: 1,
+            step: 100,
+            from: None,
+            task_address: None,
+            prover_address: None,
+            stake_address: None,
             docker_proxy: None,
+        }
+    }
+}
+
+impl MonitorConfig {
+    pub fn endpoints(&self) -> Vec<String> {
+        self.endpoints.split(";").map(|x| x.to_owned()).collect()
+    }
+
+    pub fn miner(&self) -> Result<Address> {
+        let miner: Address = self.miner.parse()?;
+        Ok(miner)
+    }
+
+    pub fn task_address(&self) -> Result<(Address, Option<u64>)> {
+        if let Some(t) = &self.task_address {
+            let a: Address = t.parse()?;
+
+            Ok((a, self.from))
+        } else {
+            let (a, f) = contract_address(&self.network, "Task")?;
+
+            if self.from.is_none() {
+                Ok((a, Some(f)))
+            } else {
+                Ok((a, self.from))
+            }
+        }
+    }
+
+    pub fn stake_address(&self) -> Result<(Address, Option<u64>)> {
+        if let Some(t) = &self.stake_address {
+            let a: Address = t.parse()?;
+
+            Ok((a, self.from))
+        } else {
+            let (a, f) = contract_address(&self.network, "Stake")?;
+
+            if self.from.is_none() {
+                Ok((a, Some(f)))
+            } else {
+                Ok((a, self.from))
+            }
+        }
+    }
+
+    pub fn prover_address(&self) -> Result<(Address, Option<u64>)> {
+        if let Some(t) = &self.prover_address {
+            let a: Address = t.parse()?;
+
+            Ok((a, self.from))
+        } else {
+            let (a, f) = contract_address(&self.network, "Prover")?;
+
+            if self.from.is_none() {
+                Ok((a, Some(f)))
+            } else {
+                Ok((a, self.from))
+            }
         }
     }
 }

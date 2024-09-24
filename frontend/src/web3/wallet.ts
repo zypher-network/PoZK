@@ -98,7 +98,7 @@ class EvmWallet {
     const loginMsg = {
       domain: location.host, // "0.0.0.0:9098", //
       chainId: this.chainId, // 31337, // this.chainId,
-      origin: location.origin, // "http://0.0.0.0:9098/api/login", //
+      origin: location.origin, // "http://0.0.0.0:9098/login", //
       issuedAt: new Date().toISOString(),
       version: "1",
       nonce: nonce,

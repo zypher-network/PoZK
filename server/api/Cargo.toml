@@ -1,5 +1,5 @@
 [package]
-name = "api"
+name = "pozk-miner"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,27 +10,30 @@ categories.workspace = true
 license.workspace = true
 
 [dependencies]
-db.workspace = true
-docker.workspace = true
+pozk-db.workspace = true
+pozk-docker.workspace = true
+pozk-monitor.workspace = true
+pozk-utils.workspace = true
 
 anyhow.workspace = true
+axum.workspace = true
 clap.workspace = true
+chrono.workspace = true
 ethers.workspace = true
-hmac.workspace = true
-iri-string.workspace = true
-jwt.workspace = true
-log.workspace = true
+hex.workspace = true
+jsonwebtoken.workspace = true
 once_cell.workspace = true
-poem.workspace = true
-poem-openapi.workspace = true
+rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 siwe.workspace = true
-time.workspace = true
+sysinfo.workspace = true
 tokio.workspace = true
-uuid.workspace = true
+toml.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
 
 [dev-dependencies]
-env_logger.workspace = true
 reqwest.workspace = true

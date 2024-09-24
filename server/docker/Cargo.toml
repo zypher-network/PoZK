@@ -1,5 +1,5 @@
 [package]
-name = "docker"
+name = "pozk-docker"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,19 +10,10 @@ categories.workspace = true
 license.workspace = true
 
 [dependencies]
-db.workspace = true
+pozk-utils.workspace = true
 
 anyhow.workspace = true
 bollard.workspace = true
 chrono.workspace = true
 futures-util.workspace = true
-log.workspace = true
-poem-openapi.workspace = true
-reqwest.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-tokio.workspace = true
-
-[dev-dependencies]
-env_logger.workspace = true
-poem.workspace = true
+tracing.workspace = true
