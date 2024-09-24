@@ -8,8 +8,9 @@ const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
 
 async function updateEpochPeriod() {
-  const c = await attachContract("Stake");
-  await c.setMinStakeAmount(600); // 10min
+  const c = await attachContract("Epoch");
+  await c.setPeriod(600); // 10s
+  // await c.getAndUpdate();
 }
 
 async function updateMinStaking() {
@@ -18,8 +19,8 @@ async function updateMinStaking() {
 }
 
 async function main() {
-  // await updateEpochPeriod();
-  // await updateMinStaking();
+  await updateEpochPeriod();
+  //await updateMinStaking();
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -1,5 +1,5 @@
 [package]
-name = "monitor"
+name = "pozk-monitor"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,22 +10,11 @@ categories.workspace = true
 license.workspace = true
 
 [dependencies]
-db.workspace = true
-docker.workspace = true
+pozk-utils.workspace = true
 
 anyhow.workspace = true
-chrono.workspace = true
 clap.workspace = true
 ethers.workspace = true
-log.workspace = true
-once_cell.workspace = true
-serde_json.workspace = true
 serde.workspace = true
 tokio.workspace = true
-
-[dev-dependencies]
-env_logger.workspace = true
-hex.workspace = true
-
-[build-dependencies]
-serde_json.workspace = true
+tracing.workspace = true
