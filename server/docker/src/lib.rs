@@ -25,20 +25,23 @@ pub struct RunOption {
 
 #[derive(Clone)]
 pub struct DockerManager {
+    proxy: Option<String>,
     docker: Docker,
 }
 
 impl DockerManager {
-    pub fn new() -> Result<Self> {
+    pub fn new(proxy: Option<String>) -> Result<Self> {
         let docker = Docker::connect_with_socket_defaults()?;
-        Ok(Self { docker })
+        Ok(Self { proxy, docker })
     }
 
     /// pull new prover image
     pub async fn pull(&self, prover: &str, tag: &str) -> Result<String> {
-        let repo_tag = format!("{}/{}:{}", DOCKER_ORG, prover, tag);
-
-        // TODO proxy
+        let repo_tag = if let Some(proxy) = &self.proxy {
+            format!("{}/{}/{}:{}", proxy, DOCKER_ORG, prover, tag)
+        } else {
+            format!("{}/{}:{}", DOCKER_ORG, prover, tag)
+        };
 
         let pull_options = CreateImageOptions {
             from_image: repo_tag.clone(),

@@ -48,6 +48,10 @@ struct Command {
     /// Network type, includes: localhost | testnet | mainnet
     #[arg(short, long)]
     network: String,
+
+    /// Download docker image proxy (Optional), e.g. docker.registry.cyou
+    #[arg(short, long)]
+    docker_proxy: Option<String>,
 }
 
 #[derive(Args, Debug, Deserialize, Default)]
@@ -93,7 +97,7 @@ async fn main() -> Result<()> {
 
     // setup docker
     let docker = {
-        let dm = DockerManager::new()?;
+        let dm = DockerManager::new(args.docker_proxy)?;
         Arc::new(dm)
     };
 

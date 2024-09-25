@@ -44,8 +44,8 @@ pub async fn create(
     Json(form): Json<CreateForm>,
 ) -> Result<Json<Value>> {
     let singing_key = if let Some(key) = form.signing_key {
-        let bytes =
-            hex::decode(key.trim_start_matches("0x")).map_err(|_| Error::Invalid(1100, "Invalid secret key".to_owned()))?;
+        let bytes = hex::decode(key.trim_start_matches("0x"))
+            .map_err(|_| Error::Invalid(1100, "Invalid secret key".to_owned()))?;
         SigningKey::from_slice(&bytes)
             .map_err(|_| Error::Invalid(1101, "Invalid secret key".to_owned()))?
     } else {
