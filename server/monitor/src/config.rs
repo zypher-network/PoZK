@@ -49,6 +49,9 @@ pub struct MonitorConfig {
 
     #[clap(long, help = "`monitor`: special stake contract (Optional)")]
     pub stake_address: Option<String>,
+
+    #[clap(long, help = "`monitor`: add 0 gas service (Optional)")]
+    pub zero_gas: Option<String>,
 }
 
 impl Default for MonitorConfig {
@@ -63,6 +66,7 @@ impl Default for MonitorConfig {
             task_address: None,
             prover_address: None,
             stake_address: None,
+            zero_gas: None,
         }
     }
 }

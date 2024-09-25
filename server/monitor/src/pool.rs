@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use ethers::prelude::*;
-use pozk_utils::{new_providers, new_signer, DefaultSigner, Task};
+use pozk_utils::{new_providers, new_signer, zero_gas, DefaultSigner, Task};
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
@@ -9,8 +9,6 @@ use crate::MonitorConfig;
 const GAS_PRICE: u64 = 1_000_000_000; // 1 GWEI
 const EXTRA_GAS: u64 = 10; // extra 10%
 
-// TODO use 0-gas service
-
 pub enum PoolMessage {
     ChangeController(LocalWallet),
     AcceptTask(u64),
@@ -18,8 +16,10 @@ pub enum PoolMessage {
 }
 
 pub struct Pool {
+    wallet: LocalWallet,
     task: Task<DefaultSigner>,
     miner: Address,
+    zero_gas: Option<String>,
 }
 
 impl Pool {
@@ -30,12 +30,18 @@ impl Pool {
         }
 
         let (task_address, _start) = cfg.task_address()?;
-        let signer = new_signer(providers[0].clone(), wallet).await?;
+        let signer = new_signer(providers[0].clone(), wallet.clone()).await?;
         let task = Task::new(task_address, signer);
 
         let miner = cfg.miner()?;
+        let zero_gas = cfg.zero_gas.clone();
 
-        Ok(Self { task, miner })
+        Ok(Self {
+            wallet,
+            task,
+            miner,
+            zero_gas,
+        })
     }
 
     pub fn run(self) -> UnboundedSender<PoolMessage> {
@@ -50,8 +56,9 @@ impl Pool {
                 PoolMessage::ChangeController(wallet) => {
                     // change controller account
                     let task_address = self.task.address();
-                    let signer = Arc::new(self.task.client_ref().with_signer(wallet));
+                    let signer = Arc::new(self.task.client_ref().with_signer(wallet.clone()));
                     self.task = Task::new(task_address, signer);
+                    self.wallet = wallet;
                 }
                 PoolMessage::AcceptTask(tid) => {
                     let gas_price = self
@@ -62,31 +69,11 @@ impl Pool {
                         .unwrap_or(GAS_PRICE.into());
                     let extra_gas = gas_price + gas_price / U256::from(EXTRA_GAS);
 
-                    match self
+                    let func = self
                         .task
                         .accept(U256::from(tid), self.miner)
-                        .gas_price(extra_gas)
-                        .send()
-                        .await
-                    {
-                        Ok(pending) => {
-                            if let Ok(receipt) = pending.await {
-                                info!(
-                                    "[Pool] Accepted, Gas used: {:?}",
-                                    receipt.map(|x| x.cumulative_gas_used)
-                                );
-                            } else {
-                                error!("[Pool] Accept failed");
-                            }
-                        }
-                        Err(err) => {
-                            if let Some(rcode) = err.decode_revert::<String>() {
-                                error!("[Pool] Accept failed: {}", rcode);
-                            } else {
-                                error!("[Pool] Accept failed: {}", err);
-                            }
-                        }
-                    }
+                        .gas_price(extra_gas);
+                    self.send(func).await;
                 }
                 PoolMessage::SubmitTask(tid, publics, proof) => {
                     let gas_price = self
@@ -97,30 +84,36 @@ impl Pool {
                         .unwrap_or(GAS_PRICE.into());
                     let extra_gas = gas_price + gas_price / U256::from(EXTRA_GAS);
 
-                    match self
+                    let func = self
                         .task
                         .submit(U256::from(tid), publics.into(), proof.into())
-                        .gas_price(extra_gas)
-                        .send()
-                        .await
-                    {
-                        Ok(pending) => {
-                            if let Ok(receipt) = pending.await {
-                                info!(
-                                    "[Pool] Submitted, Gas used: {:?}",
-                                    receipt.map(|x| x.cumulative_gas_used)
-                                );
-                            } else {
-                                error!("[Pool] Submit failed");
-                            }
-                        }
-                        Err(err) => {
-                            if let Some(rcode) = err.decode_revert::<String>() {
-                                error!("[Pool] Submit failed: {}", rcode);
-                            } else {
-                                error!("[Pool] Submit failed: {}", err);
-                            }
-                        }
+                        .gas_price(extra_gas);
+                    self.send(func).await;
+                }
+            }
+        }
+    }
+
+    async fn send(&self, func: FunctionCall<Arc<DefaultSigner>, DefaultSigner, ()>) {
+        if let Some(proxy) = &self.zero_gas {
+            let _ = zero_gas(proxy, func.tx, &self.wallet).await;
+        } else {
+            match func.send().await {
+                Ok(pending) => {
+                    if let Ok(receipt) = pending.await {
+                        info!(
+                            "[Pool] Tx submitted, Gas used: {:?}",
+                            receipt.map(|x| x.cumulative_gas_used)
+                        );
+                    } else {
+                        error!("[Pool] Tx submit failed");
+                    }
+                }
+                Err(err) => {
+                    if let Some(rcode) = err.decode_revert::<String>() {
+                        error!("[Pool] Tx failed: {}", rcode);
+                    } else {
+                        error!("[Pool] Tx failed: {}", err);
                     }
                 }
             }

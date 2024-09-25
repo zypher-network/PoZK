@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
-use ethers::prelude::*;
-use serde_json::Value;
+use ethers::{prelude::*, types::transaction::eip2718::TypedTransaction};
+use serde_json::{json, Value};
 use std::sync::Arc;
 
 // Vesting contract with abi
@@ -66,4 +66,14 @@ pub async fn new_signer(
 ) -> Result<Arc<DefaultSigner>> {
     let signer = SignerMiddleware::new_with_provider_chain(provider, wallet).await?;
     Ok(Arc::new(signer))
+}
+
+pub async fn zero_gas<S: Signer>(uri: &str, _tx: TypedTransaction, _wallet: &S) -> Result<()> {
+    let client = reqwest::Client::new();
+    let data = json!({
+        "": ""
+    });
+    let _ = client.post(uri).json(&data).send().await?;
+
+    todo!()
 }

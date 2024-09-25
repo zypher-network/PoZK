@@ -52,6 +52,10 @@ struct Command {
     /// Download docker image proxy (Optional), e.g. docker.registry.cyou
     #[arg(short, long)]
     docker_proxy: Option<String>,
+
+    /// Use 0 gas service to send tx (Optional).
+    #[arg(short, long)]
+    zero_gas: Option<String>,
 }
 
 #[derive(Args, Debug, Deserialize, Default)]
@@ -83,6 +87,7 @@ async fn main() -> Result<()> {
     co.monitor_config.network = args.network.clone();
     co.monitor_config.endpoints = args.endpoints.clone();
     co.monitor_config.miner = args.miner.clone();
+    co.monitor_config.zero_gas = args.zero_gas.clone();
     co.api_config.miner = args.miner.clone();
 
     // setup base path
