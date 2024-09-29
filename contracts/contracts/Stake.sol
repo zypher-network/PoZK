@@ -230,15 +230,23 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param prover the prover address
     /// @param amount the new staking amount
     function minerStake(address prover, uint256 amount) external {
+        minerStakeFor(msg.sender, prover, amount);
+    }
+
+    /// @notice Stake by someone for the miner
+    /// @param miner the miner address
+    /// @param prover the prover address
+    /// @param amount the new staking amount
+    function minerStakeFor(address miner, address prover, uint256 amount) public {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(miner, address(this), amount);
 
         ProverStaking storage gs = proversStaking[prover];
 
         // add to staking
-        Staking storage sm = gs.miners[msg.sender];
+        Staking storage sm = gs.miners[miner];
         if (currentEpoch >= sm.newEpoch) {
             sm.value = sm.newValue;
             sm.newEpoch = currentEpoch + 1;
@@ -254,7 +262,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
         st.newValue += amount;
 
-        emit MinerStakeChange(st.newEpoch, prover, msg.sender, int256(amount), sm.newValue, st.newValue);
+        emit MinerStakeChange(st.newEpoch, prover, miner, int256(amount), sm.newValue, st.newValue);
     }
 
     /// @notice Unstake by miner
@@ -323,13 +331,20 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @notice Stake by player
     /// @param amount the new staking amount of player
     function playerStake(uint256 amount) external {
+        playerStakeFor(msg.sender, amount);
+    }
+
+    /// @notice Stake by player
+    /// @param player the player address
+    /// @param amount the new staking amount of player
+    function playerStakeFor(address player, uint256 amount) public {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(player, address(this), amount);
 
         // add to staking
-        Staking storage sp = playersStaking[msg.sender];
+        Staking storage sp = playersStaking[player];
         if (currentEpoch >= sp.newEpoch) {
             sp.value = sp.newValue;
             sp.newEpoch = currentEpoch + 1;
@@ -344,7 +359,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
         st.newValue += amount;
 
-        emit PlayerStakeChange(st.newEpoch, msg.sender, int256(amount), sp.newValue, st.newValue);
+        emit PlayerStakeChange(st.newEpoch, player, int256(amount), sp.newValue, st.newValue);
     }
 
     /// @notice Unstake by player

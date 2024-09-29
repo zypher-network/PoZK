@@ -13,10 +13,17 @@ const main = async () => {
       "Task",
       "Controller",
       "L2Vesting",
+      ["others", "MiningCompetition"],
     ];
 
-    contracts.forEach(function (name) {
-      const readPath = `build/artifacts/contracts/${name}.sol/${name}.json`;
+    contracts.forEach(function (item) {
+      let root = item + ".sol";
+      let name = item;
+      if (Array.isArray(item)) {
+        name = item[1];
+        root = item[0] + "/" + name + ".sol";
+      }
+      const readPath = `build/artifacts/contracts/${root}/${name}.json`;
       const contract = JSON.parse(readFileSync(readPath, 'utf8'));
       console.log(`Load contract: ${name}`);
 

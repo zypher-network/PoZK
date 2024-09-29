@@ -357,6 +357,29 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "miner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "minerStakeFor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "prover",
         "type": "address"
       },
@@ -436,6 +459,24 @@
       }
     ],
     "name": "playerStake",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "playerStakeFor",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
