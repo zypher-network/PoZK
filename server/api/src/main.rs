@@ -121,7 +121,7 @@ async fn main() -> Result<()> {
 
     // setup monitor
     let pool_sender = Pool::new(&co.monitor_config, controller).await?.run();
-    Scan::new(co.monitor_config, service_sender.clone())
+    Scan::new(co.monitor_config, service_sender.clone(), db.clone())
         .await?
         .run();
 

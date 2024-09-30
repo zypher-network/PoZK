@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use ethers::prelude::*;
+use pozk_db::{ReDB, ScanBlock};
 use pozk_utils::{new_providers, DefaultProvider, ServiceMessage};
 use std::{
     collections::HashMap,
@@ -25,6 +26,7 @@ pub struct Scan {
     filter: Filter,
     events: HashMap<H256, EventType>,
     sender: UnboundedSender<ServiceMessage>,
+    db: Arc<ReDB>,
 }
 
 #[derive(Clone)]
@@ -64,7 +66,11 @@ struct ApproveProver {
 }
 
 impl Scan {
-    pub async fn new(cfg: MonitorConfig, sender: UnboundedSender<ServiceMessage>) -> Result<Self> {
+    pub async fn new(
+        cfg: MonitorConfig,
+        sender: UnboundedSender<ServiceMessage>,
+        db: Arc<ReDB>,
+    ) -> Result<Self> {
         let providers = new_providers(&cfg.endpoints());
         let miner = cfg.miner()?;
 
@@ -94,6 +100,7 @@ impl Scan {
             filter,
             events,
             sender,
+            db,
         })
     }
 
@@ -101,6 +108,10 @@ impl Scan {
         tokio::spawn(async move {
             let mut next_index = 0;
             let mut start_block = self.init_start.clone();
+
+            if let Ok(Some(db_start)) = self.db.get::<ScanBlock>(ScanBlock::to_key()) {
+                start_block = Some(db_start.block);
+            }
 
             loop {
                 let start = if start_block.is_some() {
@@ -192,6 +203,8 @@ impl Scan {
             );
 
             start = end;
+
+            let _ = self.db.add(&ScanBlock { block: start });
 
             // waiting 2s
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;

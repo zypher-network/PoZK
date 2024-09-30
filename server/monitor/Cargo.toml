@@ -10,6 +10,7 @@ categories.workspace = true
 license.workspace = true
 
 [dependencies]
+pozk-db.workspace = true
 pozk-utils.workspace = true
 
 anyhow.workspace = true

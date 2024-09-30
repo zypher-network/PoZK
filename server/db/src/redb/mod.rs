@@ -1,8 +1,10 @@
 mod controller;
 mod prover;
+mod scan;
 mod task;
 pub use controller::{Controller, MainController};
 pub use prover::Prover;
+pub use scan::ScanBlock;
 pub use task::Task;
 
 use anyhow::Result;
