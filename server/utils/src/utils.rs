@@ -41,7 +41,7 @@ pub async fn remove_task_input(tid: u64) -> Result<()> {
 
 pub fn get_task_api(tid: u64) -> String {
     let server = API_SERVER.get().expect("Missing API SERVER");
-    format!("{}/task/{}", server, tid)
+    format!("{}/tasks/{}", server, tid)
 }
 
 pub async fn download_input() -> Result<Vec<u8>> {
@@ -77,7 +77,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_download() {
-        let res = download_input_with_uri("http://localhost:9098/task/1")
+        let res = download_input_with_uri("http://localhost:9098/tasks/1")
             .await
             .unwrap();
         println!("{} {:?}", res.len(), res);
@@ -86,7 +86,7 @@ mod tests {
     #[tokio::test]
     async fn test_upload() {
         upload_proof_with_uri(
-            "http://localhost:9098/task/1",
+            "http://localhost:9098/tasks/1",
             vec![1, 2, 3],
             vec![1, 2, 3, 4],
         )

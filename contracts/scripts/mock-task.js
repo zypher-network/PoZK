@@ -10,7 +10,7 @@ async function create2048Task() {
   const c = await attachContract("Task");
   // address prover, address player, uint256 fee, bytes calldata data
   const tid = await c.create(prover, player, 0, data);
-  console.log(tid);
+  console.log(tid.hash);
 }
 
 async function main() {

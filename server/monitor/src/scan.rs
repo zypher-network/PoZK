@@ -42,7 +42,7 @@ struct CreateTask {
     prover: Address,
     player: Address,
     fee: U256,
-    data: Vec<u8>,
+    data: Bytes,
 }
 
 #[derive(Clone, Debug, EthEvent)]
@@ -110,7 +110,13 @@ impl Scan {
             let mut start_block = self.init_start.clone();
 
             if let Ok(Some(db_start)) = self.db.get::<ScanBlock>(ScanBlock::to_key()) {
-                start_block = Some(db_start.block);
+                if let Some(init_start) = &self.init_start {
+                    if *init_start < db_start.block {
+                        start_block = Some(db_start.block);
+                    }
+                } else {
+                    start_block = Some(db_start.block);
+                }
             }
 
             loop {
@@ -217,21 +223,24 @@ impl Scan {
             match et {
                 EventType::CreateTask => {
                     let ct = <CreateTask as EthEvent>::decode_log(&log.into())?;
-                    Ok(ServiceMessage::CreateTask(
-                        ct.id.as_u64(),
-                        ct.prover,
-                        ct.data,
-                    ))
+                    let tid = ct.id.as_u64();
+                    info!("[Scan] fetch new CreateTask: {}", tid);
+                    Ok(ServiceMessage::CreateTask(tid, ct.prover, ct.data.to_vec()))
                 }
                 EventType::AcceptTask => {
                     let at = <AcceptTask as EthEvent>::decode_log(&log.into())?;
                     let is_me = at.miner == self.miner;
+                    info!("[Scan] fetch new AcceptTask: {}", is_me);
                     Ok(ServiceMessage::AcceptTask(at.id.as_u64(), is_me))
                 }
                 EventType::ApproveProver => {
                     let ap = <ApproveProver as EthEvent>::decode_log(&log.into())?;
                     let version = ap.version.as_u64();
                     let overtime = ap.overtime.as_u64();
+                    info!(
+                        "[Scan] fetch new ApproveProver: {} - {}",
+                        ap.prover, version
+                    );
                     Ok(ServiceMessage::ApproveProver(ap.prover, version, overtime))
                 }
             }

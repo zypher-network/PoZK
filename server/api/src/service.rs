@@ -83,8 +83,10 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
                 if !is_me {
                     t.over = true;
                     // 2. stop task
-                    app.docker.stop(&t.container).await?;
+                    let _ = app.docker.stop(&t.container).await;
                 }
+
+                app.db.add(&t)?;
             }
         }
         ServiceMessage::UploadProof(tid, publics, proof) => {
