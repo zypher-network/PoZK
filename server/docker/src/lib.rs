@@ -16,6 +16,7 @@ use pozk_utils::get_task_api;
 use std::collections::HashMap;
 
 const DOCKER_ORG: &str = "zyphernetwork";
+const DEFAULT_NETWORK: &str = "pozk"; // it will use in docker-compose
 
 #[derive(Default)]
 pub struct RunOption {
@@ -105,6 +106,7 @@ impl DockerManager {
                 auto_remove: Some(true),
                 memory: roption.memory,
                 cpu_count: roption.cpu,
+                network_mode: Some(DEFAULT_NETWORK),
                 ..Default::default()
             }),
             ..Default::default()

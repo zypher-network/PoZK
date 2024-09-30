@@ -1,8 +1,12 @@
 version: '3'
 
+networks:
+  default:
+    name: pozk
+
 services:
   pozk-miner:
-    image: zyphernetwork/pozk-miner:0.0.15
+    image: zyphernetwork/pozk-miner:0.0.16
     container_name: pozk-miner
     ports:
       - "9098:9098"
@@ -11,11 +15,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - --miner=0x0000000000000000000000000000000000000000
-      - --endpoint=https://linea-testnet-zytron.zypher.game
+      - --endpoints=https://linea-testnet-zytron.zypher.game
       - --network=testnet
       # - --config=/usr/pozk/config.toml # advance configure, default is none
-      # - --host_base_path=/usr/pozk # change host base path for docker use, default is /usr/pozk
-      # - --docker_base_path=/usr/pozk # keep same with volumes's params
+      # - --base_path=/usr/pozk # change host base path for docker use, default is /usr/pozk
+      # - --server=http://pozk-miner:9098 # the pozk-miner server with default networks: pozk
+      # - --docker-proxy=xxx # if need use docker proxy server
+      # - --zero-gas=xxx # if need other zero gas server uri, default is zytron 0 gas service
 
   pozk-frontend:
     image: zyphernetwork/pozk-frontend:0.0.8
@@ -23,5 +29,5 @@ services:
     ports:
       - "4000:4000"
     environment:
-      - API_BASE_URL=http://localhost:9098/api
+      - API_BASE_URL=http://localhost:9098
       - NETWORK=testnet
