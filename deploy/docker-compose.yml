@@ -24,7 +24,7 @@ services:
       # - --zero-gas=xxx # if need other zero gas server uri, default is zytron 0 gas service
 
   pozk-frontend:
-    image: zyphernetwork/pozk-frontend:0.0.8
+    image: zyphernetwork/pozk-frontend:0.0.9
     container_name: pozk-frontend
     ports:
       - "4000:4000"

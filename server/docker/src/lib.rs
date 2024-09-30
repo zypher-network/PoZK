@@ -106,7 +106,7 @@ impl DockerManager {
                 auto_remove: Some(true),
                 memory: roption.memory,
                 cpu_count: roption.cpu,
-                network_mode: Some(DEFAULT_NETWORK),
+                network_mode: Some(DEFAULT_NETWORK.to_owned()),
                 ..Default::default()
             }),
             ..Default::default()
