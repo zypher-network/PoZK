@@ -89,7 +89,7 @@ impl DockerManager {
     }
 
     /// start a container to run the zkp
-    pub async fn run(&self, image: &str, tid: u64, roption: RunOption) -> Result<String> {
+    pub async fn run(&self, image: &str, tid: &str, roption: RunOption) -> Result<String> {
         let name = format!("{}-{}", image, tid);
         let input_env = format!("INPUT={}", get_task_api(tid));
 

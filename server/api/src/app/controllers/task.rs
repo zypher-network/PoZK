@@ -7,14 +7,14 @@ use serde_json::Value;
 
 use crate::app::{success, AppContext, Error, Result};
 
-pub async fn download(Path(id): Path<u64>) -> Result<Bytes> {
-    let data = read_task_input(id).await?;
+pub async fn download(Path(id): Path<String>) -> Result<Bytes> {
+    let data = read_task_input(&id).await?;
     Ok(data.into())
 }
 
 pub async fn upload(
     Extension(app): Extension<AppContext>,
-    Path(id): Path<u64>,
+    Path(id): Path<String>,
     body: Bytes,
 ) -> Result<Json<Value>> {
     if body.is_empty() {

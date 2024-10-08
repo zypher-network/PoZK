@@ -42,7 +42,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         address miner;
         address prover;
         uint256 amount;
-        uint256 startAt;
+        uint256 overAt;
         bytes publics;
     }
 
@@ -98,7 +98,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     event RequireMinerTest(uint256 id, address miner, address prover);
 
     /// @notice Emit when test have been created and start
-    event MinerTest(uint256 id, address miner, address prover, uint256 startAt, bytes data);
+    event MinerTest(uint256 id, address miner, address prover, uint256 overtime, bytes inputs, bytes publics);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -309,16 +309,18 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// @notice DAO create the test
     /// @param id the test id
-    /// @param data the zk input data
+    /// @param inputs the zk input data
     /// @param publics the zk public inputs
-    function minerTest(uint256 id, bytes calldata data, bytes calldata publics) external {
+    function minerTest(uint256 id, bytes calldata inputs, bytes calldata publics) external {
         require(IEpoch(IAddresses(addresses).get(Contracts.Epoch)).isDao(msg.sender), "E02");
 
         ZkTest storage test = tests[id];
         test.publics = publics;
-        test.startAt = block.timestamp;
 
-        emit MinerTest(id, test.miner, test.prover, test.startAt, data);
+        uint256 overtime = IProver(IAddresses(addresses).get(Contracts.Prover)).overtime(test.prover);
+        test.overAt = overtime + block.timestamp;
+
+        emit MinerTest(id, test.miner, test.prover, test.overAt, inputs, publics);
     }
 
     /// @notice Miner submit the proof of the test
@@ -332,12 +334,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
         ZkTest storage test = tests[id];
 
-        IProver p = IProver(IAddresses(addresses).get(Contracts.Prover));
-
         // check overtime
-        uint256 overtime = p.overtime(test.prover);
-        uint256 endAt = block.timestamp;
-        if (endAt - test.startAt > overtime) {
+        if (test.overAt < block.timestamp) {
             if (autoNew) {
                 emit RequireMinerTest(id, test.miner, test.prover);
                 return;
@@ -347,7 +345,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         }
 
         // check zk verifier
-        address verifier = p.verifier(test.prover);
+        address verifier = IProver(IAddresses(addresses).get(Contracts.Prover)).verifier(test.prover);
         require(IVerifier(verifier).verify(test.publics, proof), "S99");
 
         _minerStakeFor(test.miner, test.prover, test.amount);

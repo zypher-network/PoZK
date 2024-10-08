@@ -34,6 +34,7 @@ enum EventType {
     CreateTask,
     AcceptTask,
     ApproveProver,
+    MinerTest,
 }
 
 #[derive(Clone, Debug, EthEvent)]
@@ -66,6 +67,16 @@ struct ApproveProver {
     approved: bool,
 }
 
+#[derive(Clone, Debug, EthEvent)]
+struct MinerTest {
+    id: U256,
+    miner: Address,
+    prover: Address,
+    overtime: U256,
+    inputs: Bytes,
+    publics: Bytes,
+}
+
 impl Scan {
     pub async fn new(
         cfg: MonitorConfig,
@@ -77,18 +88,21 @@ impl Scan {
 
         let (task_address, init_start) = cfg.task_address()?;
         let (prover_address, _) = cfg.prover_address()?;
-        let addresses = vec![task_address, prover_address];
+        let (stake_address, _) = cfg.stake_address()?;
+        let addresses = vec![task_address, prover_address, stake_address];
 
         let create_task = CreateTask::signature();
         let accept_task = AcceptTask::signature();
         let approve_prover = ApproveProver::signature();
+        let miner_test = MinerTest::signature();
 
         let mut events = HashMap::new();
         events.insert(create_task, EventType::CreateTask);
         events.insert(accept_task, EventType::AcceptTask);
         events.insert(approve_prover, EventType::ApproveProver);
+        events.insert(miner_test, EventType::MinerTest);
 
-        let topics = vec![create_task, accept_task, approve_prover];
+        let topics = vec![create_task, accept_task, approve_prover, miner_test];
 
         // filter
         let filter = Filter::new().address(addresses).topic0(topics);
@@ -194,8 +208,11 @@ impl Scan {
 
             for log in logs {
                 match self.parse_log(log) {
-                    Ok(op) => {
+                    Ok(Some(op)) => {
                         self.sender.send(op).expect("Missing scan receiver"); // panic if channel is missing
+                    }
+                    Ok(None) => {
+                        continue;
                     }
                     Err(e) => {
                         error!("[Scan] parse log: {e:?}");
@@ -218,7 +235,7 @@ impl Scan {
         }
     }
 
-    fn parse_log(&self, log: Log) -> Result<ServiceMessage> {
+    fn parse_log(&self, log: Log) -> Result<Option<ServiceMessage>> {
         let topic = &log.topics[0];
         if let Some(et) = self.events.get(topic) {
             match et {
@@ -226,13 +243,18 @@ impl Scan {
                     let ct = <CreateTask as EthEvent>::decode_log(&log.into())?;
                     let tid = ct.id.as_u64();
                     info!("[Scan] fetch new CreateTask: {}", tid);
-                    Ok(ServiceMessage::CreateTask(tid, ct.prover, ct.inputs.to_vec(), ct.publics.to_vec()))
+                    Ok(Some(ServiceMessage::CreateTask(
+                        tid,
+                        ct.prover,
+                        ct.inputs.to_vec(),
+                        ct.publics.to_vec(),
+                    )))
                 }
                 EventType::AcceptTask => {
                     let at = <AcceptTask as EthEvent>::decode_log(&log.into())?;
                     let is_me = at.miner == self.miner;
                     info!("[Scan] fetch new AcceptTask: {}", is_me);
-                    Ok(ServiceMessage::AcceptTask(at.id.as_u64(), is_me))
+                    Ok(Some(ServiceMessage::AcceptTask(at.id.as_u64(), is_me)))
                 }
                 EventType::ApproveProver => {
                     let ap = <ApproveProver as EthEvent>::decode_log(&log.into())?;
@@ -242,7 +264,23 @@ impl Scan {
                         "[Scan] fetch new ApproveProver: {} - {}",
                         ap.prover, version
                     );
-                    Ok(ServiceMessage::ApproveProver(ap.prover, version, overtime))
+                    Ok(Some(ServiceMessage::ApproveProver(
+                        ap.prover, version, overtime,
+                    )))
+                }
+                EventType::MinerTest => {
+                    let mt = <MinerTest as EthEvent>::decode_log(&log.into())?;
+                    let is_me = mt.miner == self.miner;
+                    if is_me {
+                        let id = mt.id.as_u64();
+                        let overtime = mt.overtime.as_u64();
+                        info!("[Scan] fetch new miner test: {} - {}", id, mt.prover);
+                        Ok(Some(ServiceMessage::MinerTest(
+                            id, mt.prover, overtime, mt.inputs.to_vec(), mt.publics.to_vec()
+                        )))
+                    } else {
+                        Ok(None)
+                    }
                 }
             }
         } else {

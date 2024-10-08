@@ -48,11 +48,13 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
             // 1. check prover in local
             let key = Prover::to_key(&prover);
             if let Some(p) = app.db.get::<Prover>(key)? {
+                let sid = tid.to_string();
+
                 // 2. write data to file
-                write_task_input(tid, inputs, publics).await?;
+                write_task_input(&sid, inputs, publics).await?;
 
                 // 3. start docker container to run, TODO we can do more about cpu & memory
-                let container = app.docker.run(&p.image, tid, RunOption::default()).await?;
+                let container = app.docker.run(&p.image, &sid, RunOption::default()).await?;
 
                 // 4. save task to db
                 let created = Utc::now().timestamp();
@@ -89,10 +91,10 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
                 app.db.add(&t)?;
             }
         }
-        ServiceMessage::UploadProof(tid, proof) => {
+        ServiceMessage::UploadProof(sid, proof) => {
             tokio::spawn(upload_proof(
                 app.db.clone(),
-                tid,
+                sid,
                 proof,
                 app.pool_sender.clone(),
             ));
@@ -156,6 +158,19 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
                 .send(PoolMessage::ChangeController(wallet))
                 .expect("Missing pool");
         }
+        ServiceMessage::MinerTest(id, prover, overtime, inputs, publics) => {
+            // 1. check prover in local
+            let key = Prover::to_key(&prover);
+            if let Some(p) = app.db.get::<Prover>(key)? {
+                let sid = format!("m-{}-{}", id, overtime);
+
+                // 2. write data to file
+                write_task_input(&sid, inputs, publics).await?;
+
+                // 3. start docker container to run, TODO we can do more about cpu & memory
+                let _container = app.docker.run(&p.image, &sid, RunOption::default()).await?;
+            }
+        }
     }
 
     Ok(())
@@ -163,10 +178,35 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
 
 async fn upload_proof(
     db: Arc<ReDB>,
-    tid: u64,
+    sid: String,
     proof: Vec<u8>,
     pool_sender: UnboundedSender<PoolMessage>,
 ) {
+    // 0. check task is miner test or task by tid
+    if sid.starts_with("m-") {
+        // Miner test
+        let s: Vec<&str> = sid.split(' ').collect();
+        if s.len() != 3 {
+            return;
+        }
+        let id: u64 = s[1].parse().unwrap_or(0);
+        let overtime: u64 = s[2].parse().unwrap_or(0);
+        let now = Utc::now().timestamp() as u64;
+
+        if overtime < now {
+            error!("CANNOT complete the miner tests");
+        } else {
+            pool_sender
+                .send(PoolMessage::SubmitMinerTest(id, proof))
+                .expect("Missing pool");
+        }
+
+        let _ = remove_task_input(&sid).await;
+        return;
+    }
+
+    let tid: u64 = sid.parse().unwrap_or(0);
+
     // 1. check task is me from db
     let key = Task::to_key(tid);
     let mut max_times = 100;
@@ -196,7 +236,7 @@ async fn upload_proof(
             let _ = db.add(&t);
 
             // 4. remove task input from disk
-            let _ = remove_task_input(tid).await;
+            let _ = remove_task_input(&sid).await;
 
             break;
         } else {

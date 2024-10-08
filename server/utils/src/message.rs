@@ -9,13 +9,15 @@ pub enum ServiceMessage {
     /// prover, version, overtime
     ApproveProver(Address, u64, u64),
     /// tid, proof
-    UploadProof(u64, Vec<u8>),
+    UploadProof(String, Vec<u8>),
     /// controller wallet
     ChangeController(LocalWallet),
     /// pull prover, tag, name and overtime
     PullProver(Address, String, String, u64),
     /// remove prover
     RemoveProver(Address),
+    /// test id, prover, overtime, inputs, publics
+    MinerTest(u64, Address, u64, Vec<u8>, Vec<u8>),
 }
 
 pub fn new_service_channel() -> (

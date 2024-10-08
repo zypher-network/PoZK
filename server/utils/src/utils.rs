@@ -15,9 +15,9 @@ pub fn init_path_and_server(path: &str, server: &str) {
         .expect("Unable set API_SERVER");
 }
 
-pub async fn write_task_input(tid: u64, inputs: Vec<u8>, publics: Vec<u8>) -> Result<()> {
+pub async fn write_task_input(tid: &str, inputs: Vec<u8>, publics: Vec<u8>) -> Result<()> {
     let mut path = BASE_PATH.get().expect("Missing BASE PATH").clone();
-    path.push(tid.to_string());
+    path.push(tid);
 
     let mut bytes = (inputs.len() as u32).to_be_bytes().to_vec();
     bytes.extend(inputs);
@@ -27,9 +27,9 @@ pub async fn write_task_input(tid: u64, inputs: Vec<u8>, publics: Vec<u8>) -> Re
     Ok(())
 }
 
-pub async fn read_task_input(tid: u64) -> Result<Vec<u8>> {
+pub async fn read_task_input(tid: &str) -> Result<Vec<u8>> {
     let mut path = BASE_PATH.get().expect("Missing BASE PATH").clone();
-    path.push(tid.to_string());
+    path.push(tid);
 
     let bytes = fs::read(path).await?;
     Ok(bytes)
@@ -50,15 +50,15 @@ pub async fn parse_task_input(data: Vec<u8>) -> Result<(Vec<u8>, Vec<u8>)> {
     Ok((inputs, publics))
 }
 
-pub async fn remove_task_input(tid: u64) -> Result<()> {
+pub async fn remove_task_input(tid: &str) -> Result<()> {
     let mut path = BASE_PATH.get().expect("Missing BASE PATH").clone();
-    path.push(tid.to_string());
+    path.push(tid);
 
     fs::remove_file(path).await?;
     Ok(())
 }
 
-pub fn get_task_api(tid: u64) -> String {
+pub fn get_task_api(tid: &str) -> String {
     let server = API_SERVER.get().expect("Missing API SERVER");
     format!("{}/tasks/{}", server, tid)
 }
