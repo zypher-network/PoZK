@@ -67,11 +67,14 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @notice Store all miner allowlist
     mapping(address => bool) public allowlist;
 
-    /// @notice The id of next test
+    /// @notice The id of next test, start from 1
     uint256 private nextTestId;
 
     /// @notice Store all tests for miner in permissioned mode, account => ZK public inputs
     mapping(uint256 => ZkTest) private tests;
+
+    /// @notice Store all tests results
+    mapping(bytes32 => uint256) private testsResults;
 
     /// @notice Emit when prover staking change
     event ProverStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 staking, uint256 total);
@@ -104,6 +107,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         __Ownable_init(msg.sender);
         addresses = _addresses;
         minStakeAmount = _minStakeAmount;
+        nextTestId = 1;
     }
 
     /// @notice Set the Addresses contract
@@ -322,6 +326,10 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param autoNew auto renew the task if over time
     /// @param proof the zk proof
     function minerTestSubmit(uint256 id, bool autoNew, bytes calldata proof) external {
+        bytes32 hash = keccak256(proof);
+        require(testsResults[hash] == 0, "S97");
+        testsResults[hash] = id;
+
         ZkTest storage test = tests[id];
 
         IProver p = IProver(IAddresses(addresses).get(Contracts.Prover));

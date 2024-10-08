@@ -21,7 +21,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     using SafeERC20 for IERC20;
 
     /// @notice Struct of ZK Task
-    struct Task {
+    struct GameTask {
         /// notice TaskStatus including: Over, Waiting, Proving
         TaskStatus status;
         /// @notice the prover address
@@ -41,11 +41,14 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     /// @notice Common Addresses contract
     address addresses;
 
-    /// @notice Next task id
+    /// @notice Next task id, start from 1
     uint256 public nextId;
 
     /// @notice Store all tasks
-    mapping(uint256 => Task) private tasks;
+    mapping(uint256 => GameTask) private tasks;
+
+    /// @notice Store all tasks results
+    mapping(bytes32 => uint256) private tasksResults;
 
     /// @notice Emit when created a new task
     event CreateTask(uint256 id, address prover, address player, uint256 fee, bytes inputs, bytes publics);
@@ -61,6 +64,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     function initialize(address _addresses) public initializer {
         __Ownable_init(msg.sender);
         addresses = _addresses;
+        nextId = 1;
     }
 
     /// @notice Set the Addresses contract
@@ -85,7 +89,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         // check prover is valid
         require(IProver(IAddresses(addresses).get(Contracts.Prover)).isProver(prover), "T01");
 
-        Task storage task = tasks[nextId];
+        GameTask storage task = tasks[nextId];
         task.prover = prover;
         task.player = player;
         task.fee = fee;
@@ -103,7 +107,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     function accept(uint256 tid, address miner) external {
         require(IController(IAddresses(addresses).get(Contracts.Controller)).check(miner, msg.sender), "T02");
 
-        Task storage task = tasks[tid];
+        GameTask storage task = tasks[tid];
         require(IStake(IAddresses(addresses).get(Contracts.Stake)).isMiner(task.prover, miner), "T03");
 
         bool acceptable = task.status == TaskStatus.Waiting || task.overtime < block.timestamp;
@@ -121,7 +125,11 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     /// @param tid the task id
     /// @param proof the zk proof
     function submit(uint256 tid, bytes calldata proof) external {
-        Task storage task = tasks[tid];
+        bytes32 hash = keccak256(proof);
+        require(tasksResults[hash] == 0, "T98");
+        tasksResults[hash] = tid;
+
+        GameTask storage task = tasks[tid];
 
         require(task.status == TaskStatus.Proving, "T05");
 
