@@ -86,7 +86,13 @@
       {
         "indexed": false,
         "internalType": "bytes",
-        "name": "data",
+        "name": "inputs",
+        "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "publics",
         "type": "bytes"
       }
     ],
@@ -137,12 +143,6 @@
       {
         "indexed": false,
         "internalType": "bytes",
-        "name": "publics",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
         "name": "proof",
         "type": "bytes"
       }
@@ -187,7 +187,12 @@
       },
       {
         "internalType": "bytes",
-        "name": "data",
+        "name": "inputs",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "publics",
         "type": "bytes"
       }
     ],
@@ -267,11 +272,6 @@
         "internalType": "uint256",
         "name": "tid",
         "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "publics",
-        "type": "bytes"
       },
       {
         "internalType": "bytes",

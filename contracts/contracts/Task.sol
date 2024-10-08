@@ -34,8 +34,8 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         address miner;
         /// @notice the overtime of this task
         uint256 overtime;
-        /// @notice the proof inputs data
-        bytes data;
+        /// @notice the proof public inputs data
+        bytes publics;
     }
 
     /// @notice Common Addresses contract
@@ -48,13 +48,13 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     mapping(uint256 => Task) private tasks;
 
     /// @notice Emit when created a new task
-    event CreateTask(uint256 id, address prover, address player, uint256 fee, bytes data);
+    event CreateTask(uint256 id, address prover, address player, uint256 fee, bytes inputs, bytes publics);
 
     /// @notice Emit when miner accepted a task
     event AcceptTask(uint256 id, address miner, uint256 overtime);
 
     /// @notice Emit when miner submit a proof for a task
-    event SubmitTask(uint256 id, bytes publics, bytes proof);
+    event SubmitTask(uint256 id, bytes proof);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -73,9 +73,10 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     /// @param prover the prover address
     /// @param player the player account
     /// @param fee the fee fot this task
-    /// @param data the zk serialized inputs data
+    /// @param inputs the zk serialized inputs data
+    /// @param publics the zk serialized publics data
     /// @return the task id
-    function create(address prover, address player, uint256 fee, bytes calldata data) external returns(uint256) {
+    function create(address prover, address player, uint256 fee, bytes calldata inputs, bytes calldata publics) external returns(uint256) {
         // transfer fee from msg.sender
         if (fee > 0) {
             IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), fee);
@@ -88,9 +89,9 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         task.prover = prover;
         task.player = player;
         task.fee = fee;
-        task.data = data;
+        task.publics = publics;
 
-        emit CreateTask(nextId, prover, player, fee, data);
+        emit CreateTask(nextId, prover, player, fee, inputs, publics);
 
         nextId += 1;
         return nextId - 1;
@@ -118,22 +119,21 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
 
     /// @notice Submit a proof for a task, will call verifier to verify
     /// @param tid the task id
-    /// @param publics the zk serialized publics data
     /// @param proof the zk proof
-    function submit(uint256 tid, bytes calldata publics, bytes calldata proof) external {
+    function submit(uint256 tid, bytes calldata proof) external {
         Task storage task = tasks[tid];
 
         require(task.status == TaskStatus.Proving, "T05");
 
         // zk verifier
         address verifier = IProver(IAddresses(addresses).get(Contracts.Prover)).verifier(task.prover);
-        require(IVerifier(verifier).verify(publics, proof), "T99");
+        require(IVerifier(verifier).verify(task.publics, proof), "T99");
 
         // send fee to miner
         if (task.fee > 0) {
             IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(task.miner, task.fee);
         }
-        emit SubmitTask(tid, publics, proof);
+        emit SubmitTask(tid, proof);
 
         // PoZK to reward
         IReward(IAddresses(addresses).get(Contracts.Reward)).work(task.prover, task.player, task.miner);

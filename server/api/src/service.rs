@@ -44,12 +44,12 @@ impl MainService {
 
 async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
     match msg {
-        ServiceMessage::CreateTask(tid, prover, data) => {
+        ServiceMessage::CreateTask(tid, prover, inputs, publics) => {
             // 1. check prover in local
             let key = Prover::to_key(&prover);
             if let Some(p) = app.db.get::<Prover>(key)? {
                 // 2. write data to file
-                write_task_input(tid, data).await?;
+                write_task_input(tid, inputs, publics).await?;
 
                 // 3. start docker container to run, TODO we can do more about cpu & memory
                 let container = app.docker.run(&p.image, tid, RunOption::default()).await?;
@@ -89,11 +89,10 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
                 app.db.add(&t)?;
             }
         }
-        ServiceMessage::UploadProof(tid, publics, proof) => {
+        ServiceMessage::UploadProof(tid, proof) => {
             tokio::spawn(upload_proof(
                 app.db.clone(),
                 tid,
-                publics,
                 proof,
                 app.pool_sender.clone(),
             ));
@@ -165,7 +164,6 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
 async fn upload_proof(
     db: Arc<ReDB>,
     tid: u64,
-    publics: Vec<u8>,
     proof: Vec<u8>,
     pool_sender: UnboundedSender<PoolMessage>,
 ) {
@@ -179,7 +177,7 @@ async fn upload_proof(
                 if t.is_me {
                     // 2. if is_me, send tx
                     pool_sender
-                        .send(PoolMessage::SubmitTask(tid, publics, proof))
+                        .send(PoolMessage::SubmitTask(tid, proof))
                         .expect("Missing pool");
                 }
             } else {

@@ -17,23 +17,13 @@ pub async fn upload(
     Path(id): Path<u64>,
     body: Bytes,
 ) -> Result<Json<Value>> {
-    if body.len() < 4 {
+    if body.is_empty() {
         return Err(Error::Invalid(1000, "Invalid proof length".to_owned()));
     }
-    let mut output_len_bytes = [0u8; 4];
-    output_len_bytes.copy_from_slice(&body[0..4]);
-    let output_len = u32::from_be_bytes(output_len_bytes) as usize;
-    if body.len() < output_len + 4 {
-        return Err(Error::Invalid(1001, "Invalid proof length".to_owned()));
-    }
-
-    let raw_data = &body[4..];
-    let output_bytes = raw_data[..output_len].to_vec();
-    let proof_bytes = raw_data[output_len..].to_vec();
 
     // send to task tx pool
     app.sender
-        .send(ServiceMessage::UploadProof(id, output_bytes, proof_bytes))
+        .send(ServiceMessage::UploadProof(id, body.to_vec()))
         .expect("Service sender invalid");
 
     Ok(success())

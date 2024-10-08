@@ -10,7 +10,8 @@ import "./interface/IAddresses.sol";
 import "./interface/IEpoch.sol";
 import "./interface/IVesting.sol";
 import "./interface/IStake.sol";
-
+import "./interface/IProver.sol";
+import "./interface/IVerifier.sol";
 
 /// @notice Stake Contract, including player, miner & prover,
 /// every change will work in next epoch, and unstake can claim in next epoch
@@ -36,6 +37,15 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         mapping(address => Staking) miners;
     }
 
+    /// @notice Unit struct about ZK test
+    struct ZkTest {
+        address miner;
+        address prover;
+        uint256 amount;
+        uint256 startAt;
+        bytes publics;
+    }
+
     /// @notice Common Addresses contract
     address addresses;
 
@@ -54,6 +64,15 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @notice Store miners/players unstaking list
     mapping(address => Staking) private unstakings;
 
+    /// @notice Store all miner allowlist
+    mapping(address => bool) public allowlist;
+
+    /// @notice The id of next test
+    uint256 private nextTestId;
+
+    /// @notice Store all tests for miner in permissioned mode, account => ZK public inputs
+    mapping(uint256 => ZkTest) private tests;
+
     /// @notice Emit when prover staking change
     event ProverStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 staking, uint256 total);
 
@@ -68,6 +87,15 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// @notice Emit when account claimed the unstaking
     event ClaimUnstaking(address account, uint256 amount);
+
+    /// @notice Emit when add new account to miner allowlist
+    event AddAllowlist(address[] account, bool ok);
+
+    /// @notice Emit when miner need do a test
+    event RequireMinerTest(uint256 id, address miner, address prover);
+
+    /// @notice Emit when test have been created and start
+    event MinerTest(uint256 id, address miner, address prover, uint256 startAt, bytes data);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -88,6 +116,17 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param _minStakeAmount the minimum value of miner staking
     function setMinStakeAmount(uint256 _minStakeAmount) external onlyOwner {
         minStakeAmount = _minStakeAmount;
+    }
+
+    /// @notice Add allowlist accounts (multiple)
+    /// @param accounts the accounts
+    /// @param ok the true or false
+    function addAllowlist(address[] calldata accounts, bool ok) external onlyOwner {
+        for(uint i = 0; i < accounts.length; i++) {
+            allowlist[accounts[i]] = ok;
+        }
+
+        emit AddAllowlist(accounts, ok);
     }
 
     /// --------------- Prover --------------- ///
@@ -238,6 +277,79 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param prover the prover address
     /// @param amount the new staking amount
     function minerStakeFor(address miner, address prover, uint256 amount) public {
+        IEpoch e = IEpoch(IAddresses(addresses).get(Contracts.Epoch));
+        NetworkMode enm = e.networkMode();
+
+        // check network mode & allowlist
+        if (enm == NetworkMode.Allowlist) {
+            require(allowlist[msg.sender], "E01");
+        } else if (enm == NetworkMode.Permissioned) {
+            // check already pass the test
+            Staking memory sm = proversStaking[prover].miners[miner];
+            if (sm.value > 0 || sm.newValue > 0) {
+                _minerStakeFor(miner, prover, amount);
+            } else {
+                // do test
+                ZkTest storage test = tests[nextTestId];
+                test.miner = miner;
+                test.prover = prover;
+                test.amount = amount;
+
+                emit RequireMinerTest(nextTestId, miner, prover);
+                nextTestId++;
+            }
+        } else {
+            _minerStakeFor(miner, prover, amount);
+        }
+    }
+
+    /// @notice DAO create the test
+    /// @param id the test id
+    /// @param data the zk input data
+    /// @param publics the zk public inputs
+    function minerTest(uint256 id, bytes calldata data, bytes calldata publics) external {
+        require(IEpoch(IAddresses(addresses).get(Contracts.Epoch)).isDao(msg.sender), "E02");
+
+        ZkTest storage test = tests[id];
+        test.publics = publics;
+        test.startAt = block.timestamp;
+
+        emit MinerTest(id, test.miner, test.prover, test.startAt, data);
+    }
+
+    /// @notice Miner submit the proof of the test
+    /// @param id the test id
+    /// @param autoNew auto renew the task if over time
+    /// @param proof the zk proof
+    function minerTestSubmit(uint256 id, bool autoNew, bytes calldata proof) external {
+        ZkTest storage test = tests[id];
+
+        IProver p = IProver(IAddresses(addresses).get(Contracts.Prover));
+
+        // check overtime
+        uint256 overtime = p.overtime(test.prover);
+        uint256 endAt = block.timestamp;
+        if (endAt - test.startAt > overtime) {
+            if (autoNew) {
+                emit RequireMinerTest(id, test.miner, test.prover);
+                return;
+            } else {
+                revert("S98");
+            }
+        }
+
+        // check zk verifier
+        address verifier = p.verifier(test.prover);
+        require(IVerifier(verifier).verify(test.publics, proof), "S99");
+
+        _minerStakeFor(test.miner, test.prover, test.amount);
+    }
+
+    /// @notice Stake by someone for the miner (Private)
+    /// @param miner the miner address
+    /// @param prover the prover address
+    /// @param amount the new staking amount
+    function _minerStakeFor(address miner, address prover, uint256 amount) private {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account

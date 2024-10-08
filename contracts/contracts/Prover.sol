@@ -34,8 +34,8 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         uint256 newEpoch;
     }
 
-    /// @notice Prover struct
-    struct Prover {
+    /// @notice GameProver struct
+    struct GameProver {
         /// @notice Prover status, include: Reviewing, Working, Upgrading, Stopped
         ProverStatus status;
         /// @notice The prover owner account
@@ -59,7 +59,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     ProverWork private proversTotalWork;
 
     /// @notice Store all prover list
-    mapping(address => Prover) private provers;
+    mapping(address => GameProver) private provers;
 
     /// @notice Emit when new prover register and waiting reviewing
     event RegisterProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier);
@@ -99,7 +99,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         require(provers[prover].version.value == 0 && _version > 0, "G01");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
 
-        Prover storage g = provers[prover];
+        GameProver storage g = provers[prover];
         g.status = ProverStatus.Reviewing;
         g.owner = msg.sender;
         g.work = ProverWork(_work, _work, 0);
@@ -134,7 +134,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
 
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
-        Prover storage g = provers[prover];
+        GameProver storage g = provers[prover];
         if (g.status == ProverStatus.Working || g.status == ProverStatus.Upgrading) {
             g.status = ProverStatus.Upgrading;
         } else {
@@ -187,11 +187,14 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @param prover the prover
     /// @param minable if the prover is minable, that means when create/accept the prover task, will get reward from network
     /// @param approved approve or reject
-    function approve(address prover, bool minable, bool approved) external onlyOwner {
-        Prover storage g = provers[prover];
+    function approve(address prover, bool minable, bool approved) external {
+        IEpoch e = IEpoch(IAddresses(addresses).get(Contracts.Epoch));
+        require(e.isDao(msg.sender), "E02");
+
+        GameProver storage g = provers[prover];
         require(g.status == ProverStatus.Reviewing || g.status == ProverStatus.Upgrading, "G03");
 
-        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+        uint256 currentEpoch = e.getAndUpdate();
 
         g.minable  = minable;
 
@@ -233,7 +236,9 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
 
     /// @notice DAO can stop a prover
     /// @param prover the prover
-    function stop(address prover) external onlyOwner {
+    function stop(address prover) external {
+        require(IEpoch(IAddresses(addresses).get(Contracts.Epoch)).isDao(msg.sender), "E02");
+
         provers[prover].status = ProverStatus.Stopped;
 
         emit StopProver(prover);

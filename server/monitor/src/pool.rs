@@ -12,7 +12,7 @@ const EXTRA_GAS: u64 = 10; // extra 10%
 pub enum PoolMessage {
     ChangeController(LocalWallet),
     AcceptTask(u64),
-    SubmitTask(u64, Vec<u8>, Vec<u8>),
+    SubmitTask(u64, Vec<u8>),
 }
 
 pub struct Pool {
@@ -75,7 +75,7 @@ impl Pool {
                         .gas_price(extra_gas);
                     self.send(func).await;
                 }
-                PoolMessage::SubmitTask(tid, publics, proof) => {
+                PoolMessage::SubmitTask(tid, proof) => {
                     let gas_price = self
                         .task
                         .client_ref()
@@ -86,7 +86,7 @@ impl Pool {
 
                     let func = self
                         .task
-                        .submit(U256::from(tid), publics.into(), proof.into())
+                        .submit(U256::from(tid), proof.into())
                         .gas_price(extra_gas);
                     self.send(func).await;
                 }

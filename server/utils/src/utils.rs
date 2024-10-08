@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
 use std::path::PathBuf;
 use tokio::fs;
@@ -15,11 +15,15 @@ pub fn init_path_and_server(path: &str, server: &str) {
         .expect("Unable set API_SERVER");
 }
 
-pub async fn write_task_input(tid: u64, data: Vec<u8>) -> Result<()> {
+pub async fn write_task_input(tid: u64, inputs: Vec<u8>, publics: Vec<u8>) -> Result<()> {
     let mut path = BASE_PATH.get().expect("Missing BASE PATH").clone();
     path.push(tid.to_string());
 
-    fs::write(path, data).await?;
+    let mut bytes = (inputs.len() as u32).to_be_bytes().to_vec();
+    bytes.extend(inputs);
+    bytes.extend(publics);
+
+    fs::write(path, bytes).await?;
     Ok(())
 }
 
@@ -29,6 +33,21 @@ pub async fn read_task_input(tid: u64) -> Result<Vec<u8>> {
 
     let bytes = fs::read(path).await?;
     Ok(bytes)
+}
+
+pub async fn parse_task_input(data: Vec<u8>) -> Result<(Vec<u8>, Vec<u8>)> {
+    let mut inputs_len_bytes = [0u8; 4];
+    inputs_len_bytes.copy_from_slice(&data[0..4]);
+    let inputs_len = u32::from_be_bytes(inputs_len_bytes) as usize;
+    if data.len() < inputs_len + 4 {
+        return Err(anyhow!("Invalid proof length"));
+    }
+
+    let raw_data = &data[4..];
+    let inputs = raw_data[..inputs_len].to_vec();
+    let publics = raw_data[inputs_len..].to_vec();
+
+    Ok((inputs, publics))
 }
 
 pub async fn remove_task_input(tid: u64) -> Result<()> {

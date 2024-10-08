@@ -42,7 +42,8 @@ struct CreateTask {
     prover: Address,
     player: Address,
     fee: U256,
-    data: Bytes,
+    inputs: Bytes,
+    publics: Bytes,
 }
 
 #[derive(Clone, Debug, EthEvent)]
@@ -225,7 +226,7 @@ impl Scan {
                     let ct = <CreateTask as EthEvent>::decode_log(&log.into())?;
                     let tid = ct.id.as_u64();
                     info!("[Scan] fetch new CreateTask: {}", tid);
-                    Ok(ServiceMessage::CreateTask(tid, ct.prover, ct.data.to_vec()))
+                    Ok(ServiceMessage::CreateTask(tid, ct.prover, ct.inputs.to_vec(), ct.publics.to_vec()))
                 }
                 EventType::AcceptTask => {
                     let at = <AcceptTask as EthEvent>::decode_log(&log.into())?;
