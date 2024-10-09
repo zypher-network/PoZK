@@ -29,18 +29,7 @@ export const contractAddress: Record<ChainId, IContractList> = {
       Prover: "0x548FF8E93575D24B03d3869038924E47DA0c8c8c",
       Task: "0x1034E9e24d0baF5329C3cb8E7887c8a4bc488Ce0",
       Controller: "0xB7779c7af4727A1312fF0d99a0869F155d2F7753",
-  },
-  [ChainId.MAINNET]: {
-      Addresses: "",
-      Token: "",
-      Vesting: "",
-      Epoch: "",
-      Stake: "",
-      Reward: "",
-      Prover: "",
-      Task: "",
-      Controller: "",
-  },
+  }
 };
 export const gamesList = {
   [ChainId.TESTNET]: {
@@ -48,15 +37,8 @@ export const gamesList = {
       address: "0x5b92b011513f9aaf8f6541003dc088625e7438e8=" as Address,
       version: "1",
     },
-  },
-  [ChainId.MAINNET]: {
-    game1: {
-      address: "0x5b92b011513f9aaf8f6541003dc088625e7438e8=" as Address,
-      version: "1",
-    },
-  },
+  }
 };
 export const ChainRpcUrls: Record<ChainId, string[]> = {
   [ChainId.TESTNET]: ["https://linea-mainnet-zytron.zypher.game/"],
-  [ChainId.MAINNET]: ["https://linea-mainnet-zytron.zypher.game/"],
 };

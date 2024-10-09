@@ -56,7 +56,6 @@ const zytronMainnet = /*#__PURE__*/ defineChain({
 export const projectId = "bc467c124a7a7a8ce06a41ef40b1b842";
 const ChainList = {
   [ChainId.TESTNET]: zytronMainnet,
-  [ChainId.MAINNET]: zytronMainnet,
 };
 export const chain = ChainList[CHAINID];
 export const wagmiConfig = defaultWagmiConfig({
