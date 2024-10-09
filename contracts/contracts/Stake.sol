@@ -39,6 +39,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// @notice Unit struct about ZK test
     struct ZkTest {
+        address payer;
         address miner;
         address prover;
         uint256 amount;
@@ -105,6 +106,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// @notice Emit when pass the miner test
     event MinerTestSubmit(uint256 id, uint256 submitAt);
+
+    /// @notice Emit when cancel the miner test
+    event MinerTestCancel(uint256 id);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -178,7 +182,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(msg.sender, address(this), amount);
 
         ProverStaking storage gs = proversStaking[prover];
 
@@ -287,6 +291,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param prover the prover address
     /// @param amount the new staking amount
     function minerStakeFor(address miner, address prover, uint256 amount) public {
+        // transfer from payer(msg.sender)
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(msg.sender, address(this), amount);
+
         IEpoch e = IEpoch(IAddresses(addresses).get(Contracts.Epoch));
         NetworkMode enm = e.networkMode();
 
@@ -299,8 +306,11 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
             // check already pass the test
             Staking memory sm = proversStaking[prover].miners[miner];
             if (sm.value == 0 && sm.newValue == 0) {
+                require(amount >= minStakeAmount, "S03");
+
                 // do test
                 ZkTest storage test = tests[nextTestId];
+                test.payer = msg.sender;
                 test.miner = miner;
                 test.prover = prover;
                 test.amount = amount;
@@ -322,6 +332,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         require(IEpoch(IAddresses(addresses).get(Contracts.Epoch)).isDao(msg.sender), "E02");
 
         ZkTest storage test = tests[id];
+        require(test.amount != 0, "S96");
         test.publics = publics;
 
         uint256 overtime = IProver(IAddresses(addresses).get(Contracts.Prover)).overtime(test.prover);
@@ -340,6 +351,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         testsResults[hash] = id;
 
         ZkTest storage test = tests[id];
+        require(test.amount != 0, "S96");
 
         // check overtime
         if (test.overAt < block.timestamp) {
@@ -358,6 +370,21 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         emit MinerTestSubmit(id, block.timestamp);
 
         _minerStakeFor(test.miner, test.prover, test.amount);
+
+        delete tests[id];
+    }
+
+    /// @notice Miner cancel the proof of the test
+    /// @param id the test id
+    function minerTestCancel(uint256 id) external {
+        ZkTest storage test = tests[id];
+        require(test.amount != 0 && test.miner == msg.sender, "S96");
+
+        // transfer amount to payer
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(test.payer, test.amount);
+        delete tests[id];
+
+        emit MinerTestCancel(id);
     }
 
     /// @notice Stake by someone for the miner (Private)
@@ -366,9 +393,6 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param amount the new staking amount
     function _minerStakeFor(address miner, address prover, uint256 amount) private {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
-
-        // transfer from account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(miner, address(this), amount);
 
         ProverStaking storage gs = proversStaking[prover];
 
@@ -520,7 +544,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(player, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(player, address(this), amount);
 
         // add to staking
         Staking storage sp = playersStaking[player];

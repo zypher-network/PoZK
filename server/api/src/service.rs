@@ -185,7 +185,7 @@ async fn upload_proof(
     // 0. check task is miner test or task by tid
     if sid.starts_with("m-") {
         // Miner test
-        let s: Vec<&str> = sid.split(' ').collect();
+        let s: Vec<&str> = sid.split('-').collect();
         if s.len() != 3 {
             return;
         }

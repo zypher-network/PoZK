@@ -12,7 +12,7 @@ async function attachContract(name) {
 }
 
 function sleep() {
-  let waiting = 20000; // 20s
+  let waiting = 10000; // 20s
   if (network.name == "localhost") {
     waiting = 1000;
   }
