@@ -1,9 +1,12 @@
 import { Address } from "viem";
 
 export enum ChainId {
-  TESTNET = "19546",
+  TESTNET = "9901", // "19546", // zytron testnet
+  MAINNET = "9901" // zytron mainnet
 }
-export const CHAINID = ChainId.TESTNET;
+
+export const CHAINID = ChainId.TESTNET; // default network
+
 type IContractList = {
   Addresses: Address;
   Token: Address;
@@ -17,25 +20,43 @@ type IContractList = {
 };
 export const contractAddress: Record<ChainId, IContractList> = {
   [ChainId.TESTNET]: {
-      Addresses: "0x5b92b011513F9aAF8F6541003DC088625E7438e8",
-      Token: "0x3b942aEbA931c3350E49F4f54ED5Af943cdd86C2",
-      Vesting: "0x47732f366aded920b5b96F7f220812b3a49EB66E",
-      Epoch: "0x0235f8aA167D848Fa20CA39B5F02C4092D616105",
-      Stake: "0xa7cF188836aa197015685F2F868bf470db5E66cE",
-      Reward: "0x63d57BdfF1176AB682CE93C289624f2C315810BB",
-      Prover: "0x075A3517b1350bFFEBC5F15dF034B6856c7B483A",
-      Task: "0xA72C3013A345522057005F0e034a8440f8D7a4aC",
-      Controller: "0x40c55B01A9272746AF60A9623f1F7Ceb91eF3AB7",
+      Addresses: "0xfE8595EdE3DA06936f14C14eE7A475490E33a59d",
+      Token: "0x07cb9813aEa7678B70D7Ae418A7d8680E432ea2e",
+      Vesting: "0x81DB6405eDb330D4cBe4B2279397A5677010bD65",
+      Epoch: "0x5393205CdAb1C4f45B045F10c07B29bFf2339b81",
+      Stake: "0xa8c392Fd78fd61292529864873cD42309881903f",
+      Reward: "0x93CF679371fCca140275fd5b974487c87c5bAAAb",
+      Prover: "0x548FF8E93575D24B03d3869038924E47DA0c8c8c",
+      Task: "0x1034E9e24d0baF5329C3cb8E7887c8a4bc488Ce0",
+      Controller: "0xB7779c7af4727A1312fF0d99a0869F155d2F7753",
+  },
+  [ChainId.MAINNET]: {
+      Addresses: "",
+      Token: "",
+      Vesting: "",
+      Epoch: "",
+      Stake: "",
+      Reward: "",
+      Prover: "",
+      Task: "",
+      Controller: "",
   },
 };
 export const gamesList = {
   [ChainId.TESTNET]: {
     game1: {
-      address: "0xd64b51e6f5db063c9532bfc5f9f3472265771827" as Address,
+      address: "0x5b92b011513f9aaf8f6541003dc088625e7438e8=" as Address,
+      version: "1",
+    },
+  },
+  [ChainId.MAINNET]: {
+    game1: {
+      address: "0x5b92b011513f9aaf8f6541003dc088625e7438e8=" as Address,
       version: "1",
     },
   },
 };
 export const ChainRpcUrls: Record<ChainId, string[]> = {
-  [ChainId.TESTNET]: ["https://linea-testnet-zytron.zypher.game/"],
+  [ChainId.TESTNET]: ["https://linea-mainnet-zytron.zypher.game/"],
+  [ChainId.MAINNET]: ["https://linea-mainnet-zytron.zypher.game/"],
 };
