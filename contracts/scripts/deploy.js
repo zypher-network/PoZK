@@ -38,9 +38,13 @@ async function deployContractWithProxy(name, params=[]) {
   const contract = await upgrades.deployProxy(Factory, params);
   await contract.waitForDeployment();
   const address = await contract.getAddress();
-  console.log(`${name} address: ${address} from ${block}`);
+  console.log(`${name} address: ${address}, startBlock: ${block}`);
 
-  return [address, block];
+  if (network.name == "localhost") {
+    return [address, 0];
+  } else {
+    return [address, block];
+  }
 }
 
 async function deployContract(name, params=[]) {
@@ -48,9 +52,13 @@ async function deployContract(name, params=[]) {
   const Factory = await ethers.getContractFactory(name);
   const contract = await Factory.deploy(...params);
   const address = await contract.getAddress();
-  console.log(`${name} address: ${address} from ${block}`);
+  console.log(`${name} address: ${address}, startBlock: ${block}`);
 
-  return [address, block];
+  if (network.name == "localhost") {
+    return [address, 0];
+  } else {
+    return [address, block];
+  }
 }
 
 const ONE_TOKEN = 1000000000000000000n;
@@ -86,8 +94,9 @@ async function deployL2() {
 
 async function deploy() {
   const [token, token_s] = await deployContract("Token", [5000000000n * ONE_TOKEN]); // 5,000,000,000 TOEKN for mine
-  //const tokenContract = await attachContract("Token");
-  //const token = await tokenContract.getAddress();
+  // const [tokenContract, token_s] = await attachContract("Token");
+  // const token = await tokenContract.getAddress();
+  // console.log(`Token address: ${token}, startBlock: ${token_s}`);
 
   const [addresses, addresses_s] = await deployContractWithProxy("Addresses", []);
   const [vesting, vesting_s] = await deployContractWithProxy("Vesting", [addresses, 1000000n * ONE_TOKEN]);

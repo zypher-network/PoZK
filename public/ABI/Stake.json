@@ -37,14 +37,14 @@
       {
         "indexed": false,
         "internalType": "address[]",
-        "name": "account",
+        "name": "accounts",
         "type": "address[]"
       },
       {
         "indexed": false,
-        "internalType": "bool",
-        "name": "ok",
-        "type": "bool"
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
       }
     ],
     "name": "AddAllowlist",
@@ -162,7 +162,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "miner",
+        "name": "account",
         "type": "address"
       },
       {
@@ -190,7 +190,51 @@
         "type": "bytes"
       }
     ],
-    "name": "MinerTest",
+    "name": "MinerTestCreate",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      }
+    ],
+    "name": "MinerTestRequire",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "submitAt",
+        "type": "uint256"
+      }
+    ],
+    "name": "MinerTestSubmit",
     "type": "event"
   },
   {
@@ -297,24 +341,18 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
-        "name": "id",
+        "name": "amount",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "miner",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "prover",
-        "type": "address"
       }
     ],
-    "name": "RequireMinerTest",
+    "name": "SubAllowlist",
     "type": "event"
   },
   {
@@ -325,9 +363,9 @@
         "type": "address[]"
       },
       {
-        "internalType": "bool",
-        "name": "ok",
-        "type": "bool"
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
       }
     ],
     "name": "addAllowlist",
@@ -364,9 +402,9 @@
     "name": "allowlist",
     "outputs": [
       {
-        "internalType": "bool",
+        "internalType": "uint256",
         "name": "",
-        "type": "bool"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -587,6 +625,29 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "minerTransferStaking",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

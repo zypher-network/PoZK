@@ -68,9 +68,9 @@ struct ApproveProver {
 }
 
 #[derive(Clone, Debug, EthEvent)]
-struct MinerTest {
+struct MinerTestCreate {
     id: U256,
-    miner: Address,
+    account: Address,
     prover: Address,
     overtime: U256,
     inputs: Bytes,
@@ -94,7 +94,7 @@ impl Scan {
         let create_task = CreateTask::signature();
         let accept_task = AcceptTask::signature();
         let approve_prover = ApproveProver::signature();
-        let miner_test = MinerTest::signature();
+        let miner_test = MinerTestCreate::signature();
 
         let mut events = HashMap::new();
         events.insert(create_task, EventType::CreateTask);
@@ -269,8 +269,8 @@ impl Scan {
                     )))
                 }
                 EventType::MinerTest => {
-                    let mt = <MinerTest as EthEvent>::decode_log(&log.into())?;
-                    let is_me = mt.miner == self.miner;
+                    let mt = <MinerTestCreate as EthEvent>::decode_log(&log.into())?;
+                    let is_me = mt.account == self.miner;
                     if is_me {
                         let id = mt.id.as_u64();
                         let overtime = mt.overtime.as_u64();

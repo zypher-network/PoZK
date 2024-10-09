@@ -5,9 +5,10 @@ async function attachContract(name) {
   const filename = `../public/networks.json`;
   const obj = JSON.parse(readFileSync(filename, 'utf8'));
   const address = obj[network.name][name]["address"];
+  const block = obj[network.name][name]["startBlock"];
 
   const C = await ethers.getContractFactory(name);
-  return await C.attach(address);
+  return [await C.attach(address), block];
 }
 
 function sleep() {

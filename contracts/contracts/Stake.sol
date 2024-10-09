@@ -65,7 +65,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     mapping(address => Staking) private unstakings;
 
     /// @notice Store all miner allowlist
-    mapping(address => bool) public allowlist;
+    mapping(address => uint256) public allowlist;
 
     /// @notice The id of next test, start from 1
     uint256 private nextTestId;
@@ -92,13 +92,19 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     event ClaimUnstaking(address account, uint256 amount);
 
     /// @notice Emit when add new account to miner allowlist
-    event AddAllowlist(address[] account, bool ok);
+    event AddAllowlist(address[] accounts, uint256[] amounts);
+
+    /// @notice Emit when add account used the allowlist amounts
+    event SubAllowlist(address account, uint256 amount);
 
     /// @notice Emit when miner need do a test
-    event RequireMinerTest(uint256 id, address miner, address prover);
+    event MinerTestRequire(uint256 id, address account, address prover);
 
     /// @notice Emit when test have been created and start
-    event MinerTest(uint256 id, address miner, address prover, uint256 overtime, bytes inputs, bytes publics);
+    event MinerTestCreate(uint256 id, address account, address prover, uint256 overtime, bytes inputs, bytes publics);
+
+    /// @notice Emit when pass the miner test
+    event MinerTestSubmit(uint256 id, uint256 submitAt);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -124,13 +130,13 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// @notice Add allowlist accounts (multiple)
     /// @param accounts the accounts
-    /// @param ok the true or false
-    function addAllowlist(address[] calldata accounts, bool ok) external onlyOwner {
+    /// @param amounts the true or false
+    function addAllowlist(address[] calldata accounts, uint256[] calldata amounts) external onlyOwner {
         for(uint i = 0; i < accounts.length; i++) {
-            allowlist[accounts[i]] = ok;
+            allowlist[accounts[i]] += amounts[i];
         }
 
-        emit AddAllowlist(accounts, ok);
+        emit AddAllowlist(accounts, amounts);
     }
 
     /// --------------- Prover --------------- ///
@@ -286,25 +292,26 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
         // check network mode & allowlist
         if (enm == NetworkMode.Allowlist) {
-            require(allowlist[msg.sender], "E01");
+            require(allowlist[miner] > 0, "E01");
+            allowlist[miner] -= amount;
+            emit SubAllowlist(miner, amount);
         } else if (enm == NetworkMode.Permissioned) {
             // check already pass the test
             Staking memory sm = proversStaking[prover].miners[miner];
-            if (sm.value > 0 || sm.newValue > 0) {
-                _minerStakeFor(miner, prover, amount);
-            } else {
+            if (sm.value == 0 && sm.newValue == 0) {
                 // do test
                 ZkTest storage test = tests[nextTestId];
                 test.miner = miner;
                 test.prover = prover;
                 test.amount = amount;
 
-                emit RequireMinerTest(nextTestId, miner, prover);
+                emit MinerTestRequire(nextTestId, miner, prover);
                 nextTestId++;
+                return;
             }
-        } else {
-            _minerStakeFor(miner, prover, amount);
         }
+
+        _minerStakeFor(miner, prover, amount);
     }
 
     /// @notice DAO create the test
@@ -320,7 +327,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         uint256 overtime = IProver(IAddresses(addresses).get(Contracts.Prover)).overtime(test.prover);
         test.overAt = overtime + block.timestamp;
 
-        emit MinerTest(id, test.miner, test.prover, test.overAt, inputs, publics);
+        emit MinerTestCreate(id, test.miner, test.prover, test.overAt, inputs, publics);
     }
 
     /// @notice Miner submit the proof of the test
@@ -337,7 +344,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         // check overtime
         if (test.overAt < block.timestamp) {
             if (autoNew) {
-                emit RequireMinerTest(id, test.miner, test.prover);
+                emit MinerTestRequire(id, test.miner, test.prover);
                 return;
             } else {
                 revert("S98");
@@ -347,6 +354,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         // check zk verifier
         address verifier = IProver(IAddresses(addresses).get(Contracts.Prover)).verifier(test.prover);
         require(IVerifier(verifier).verify(test.publics, proof), "S99");
+
+        emit MinerTestSubmit(id, block.timestamp);
 
         _minerStakeFor(test.miner, test.prover, test.amount);
     }
@@ -415,6 +424,58 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         st.newValue -= amount;
 
         emit MinerStakeChange(st.newEpoch, prover, msg.sender, -int256(amount), sm.newValue, st.newValue);
+    }
+
+    /// @notice Miner can transfer staking from one prover to another without unclaim lock time
+    /// @param from the from prover address
+    /// @param to the to prover address
+    /// @param amount the staking amount
+    function minerTransferStaking(address from, address to, uint256 amount) external {
+        address miner = msg.sender;
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+
+        // sub from staking
+        ProverStaking storage gsf = proversStaking[from];
+        Staking storage smf = gsf.miners[miner];
+        if (currentEpoch >= smf.newEpoch) {
+            smf.value = smf.newValue;
+            smf.newEpoch = currentEpoch + 1;
+        }
+        require(smf.newValue >= amount, "S01");
+
+        // remove from staking
+        smf.newValue -= amount;
+        require(smf.newValue == 0 || smf.newValue >= minStakeAmount, "S04");
+
+        // remove from total staking
+        Staking storage stf = gsf.minerTotal;
+        if (currentEpoch >= stf.newEpoch) {
+            stf.value = stf.newValue;
+            stf.newEpoch = currentEpoch + 1;
+        }
+        stf.newValue -= amount;
+
+        emit MinerStakeChange(stf.newEpoch, from, miner, -int256(amount), smf.newValue, stf.newValue);
+
+        // add to staking
+        ProverStaking storage gst = proversStaking[to];
+        Staking storage smt = gst.miners[miner];
+        if (currentEpoch >= smt.newEpoch) {
+            smt.value = smt.newValue;
+            smt.newEpoch = currentEpoch + 1;
+        }
+        smt.newValue += amount;
+        require(smt.newValue >= minStakeAmount, "S03");
+
+        // add to total staking
+        Staking storage stt = gst.minerTotal;
+        if (currentEpoch >= stt.newEpoch) {
+            stt.value = stt.newValue;
+            stt.newEpoch = currentEpoch + 1;
+        }
+        stt.newValue += amount;
+
+        emit MinerStakeChange(stt.newEpoch, to, miner, int256(amount), smt.newValue, stt.newValue);
     }
 
     /// --------------- Player --------------- ///
