@@ -8,13 +8,13 @@ const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
 
 async function updateEpochPeriod() {
-  const c = await attachContract("Epoch");
-  await c.setPeriod(600); // 10s
-  // await c.getAndUpdate();
+  const [c, _c] = await attachContract("Epoch");
+  // await c.setPeriod(600); // 10min
+  await c.getAndUpdate();
 }
 
 async function updateMinStaking() {
-  const c = await attachContract("Stake");
+  const [c, _c] = await attachContract("Stake");
   await c.setMinStakeAmount(1000000000000000000000n); // 1000
 }
 
