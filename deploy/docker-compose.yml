@@ -18,7 +18,7 @@ services:
       - --endpoints=https://linea-mainnet-zytron.zypher.game
       - --network=testnet
       # - --config=/usr/pozk/config.toml # advance configure, default is none
-      # - --base_path=/usr/pozk # change host base path for docker use, default is /usr/pozk
+      # - --base-path=/usr/pozk # change host base path for docker use, default is /usr/pozk
       # - --server=http://pozk-miner:9098 # the pozk-miner server with default networks: pozk
       # - --docker-proxy=xxx # if need use docker proxy server
       # - --zero-gas=xxx # if need other zero gas server uri, default is zytron 0 gas service

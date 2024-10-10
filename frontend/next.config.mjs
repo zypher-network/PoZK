@@ -7,7 +7,7 @@ const nextConfig = {
     return [
       {
         source: "/api/controllers",
-        destination: "http://localhost:9098/api/controllers",
+        destination: "/api/controllers",
         permanent: false,
       },
     ];

@@ -41,7 +41,7 @@ jobs:
         with:
           context: .
           file: ./frontend/Dockerfile
-          platforms: amd64,arm64
+          platforms: amd64
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/pozk-frontend:${{ env.VERSION }}
           push: true
 
