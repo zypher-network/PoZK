@@ -7,18 +7,15 @@ import {
   createContext,
   memo,
   useCallback,
-  useLayoutEffect,
-  useMemo,
   useState,
 } from "react";
-import { useAccount } from "wagmi";
 
 interface SessionContextValue {
   account: string | undefined;
   hasToken: boolean;
   getToken: () => string | undefined;
   setToken: (token: string) => void;
-  setAccount: () => void;
+  setAccount: (address: string, chainId: number) => void;
   deleteToken: () => void;
   loginOut: () => void;
 }
@@ -30,7 +27,6 @@ export const SessionContext = createContext<SessionContextValue | undefined>(
 const SessionProvider = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const route = useRouter();
-  const { address, chainId } = useAccount();
   const [hasToken, setHasToken] = useState(
     SessionManager.getSession() !== undefined
   );
@@ -41,17 +37,16 @@ const SessionProvider = ({ children }: { children: React.ReactNode }) => {
     SessionManager.setSession(token);
     setHasToken(true);
   }, []);
-  const setAccount = useCallback(() => {
+  const setAccount = (address: string, chainId: number) => {
     SessionManager.setAccount(`${address}${chainId}`);
     _setAccount(`${address}${chainId}`);
     setHasToken(true);
-  }, [address, chainId]);
+  };
   const deleteToken = useCallback(() => {
     SessionManager.deleteSession();
     setHasToken(false);
   }, []);
   const loginOut = useCallback(async () => {
-    console.log("99999999999999999999999999999999");
     deleteToken();
     setHasToken(false);
     await sleep(0.2);

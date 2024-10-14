@@ -7,6 +7,7 @@ type ProveContainer = {
   image: string;
   name: string;
   prover: string;
+  tag: string;
 }
 
 class PoZK {
@@ -85,7 +86,6 @@ class PoZK {
         overtime: Number(overtime),
       };
       const response = await api.post(`${this.endpoints.prover.pull}`, req) as any;
-      console.log(response)
     } catch (error) {
       this.handleError(error as Error, '');
     }

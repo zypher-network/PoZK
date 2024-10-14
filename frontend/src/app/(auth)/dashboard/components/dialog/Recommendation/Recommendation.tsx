@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { memo, useCallback, useState } from "react";
+import { Fragment, memo, useCallback, useState } from "react";
 import Download from "@/components/icon/download.svg";
 import Warn from "@/components/icon/warn.svg";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { Address } from "viem";
 import { useFailedRoute } from "@/components/hooks/useFailedRoute";
 import useProverStore from "@/components/state/proverStore";
 import { useAccount } from "wagmi";
+import sleep from "@/lib/sleep";
+import Loading from '@/components/icon/loading.svg';
 
 const Recommendation = ({ image, tag, name, overtime }: { image: Address; tag: string, name: string, overtime: string }) => {
   const [open, setOpen] = useState(false);
@@ -21,10 +23,19 @@ const Recommendation = ({ image, tag, name, overtime }: { image: Address; tag: s
   const FailedRoute = useFailedRoute();
   const [loading, setLoading] = useState(false);
   const refetch = useProverStore(state => state.fetchUserProvers);
+
   const download = useCallback(async () => {
     setLoading(true);
     try {
       await pozk.pullProve(image, tag, name, overtime);
+      let isDownloadCompleted = false;
+      while (!isDownloadCompleted) {
+        const containers = await pozk.getProverContainers(1);
+        isDownloadCompleted = containers.some(container => [container.prover.toLowerCase(), container.tag].join('-') === [image.toLowerCase(), `v${tag}`].join('-'));
+        if (!isDownloadCompleted) {
+          await sleep(3);
+        }
+      }
       address && await refetch();
       setOpen(false);
     } catch (error) {
@@ -32,6 +43,7 @@ const Recommendation = ({ image, tag, name, overtime }: { image: Address; tag: s
     }
     setLoading(false);
   }, [image, tag, name, address]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -75,8 +87,16 @@ const Recommendation = ({ image, tag, name, overtime }: { image: Address; tag: s
             disabled={loading}
             onClick={download}
           >
-            <Download className="stroke-0A1223 mr-[8px]" />
-            Download
+            {loading ? (
+              <div className="flex items-center justify-center animate-spin">
+                <Loading className='scale-y-[-1]' height={'24px'} width={'24px'} /> 
+              </div>
+            ) : (
+              <Fragment>
+                <Download className="stroke-0A1223 mr-[8px]" />
+                Download
+              </Fragment>
+            )}
           </Button>
         </div>
       </DialogContent>

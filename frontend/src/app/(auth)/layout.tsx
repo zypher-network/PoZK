@@ -12,7 +12,7 @@ export default function RootLayout({
 }>) {
   useInitSubgraph();
   useGetUserBalance();
-  const hasAuth = useAuth();
+  const [hasAuth] = useAuth();
   if (!hasAuth) {
     return (
       <div className="grid place-items-center animate-pulse p-4">Loading</div>

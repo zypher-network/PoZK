@@ -118,11 +118,11 @@ const ControllerTable = () => {
                     Set Controller
                   </DropdownMenuItem>
                 ) : null}
-                <DropdownMenuItem
+                {/* <DropdownMenuItem
                   onClick={() => controllerHandler("delete", item)}
                 >
                   Delete Controller
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem
                   onClick={() => controllerHandler("export", item)}
                 >

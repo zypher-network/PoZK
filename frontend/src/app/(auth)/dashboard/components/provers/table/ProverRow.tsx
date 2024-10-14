@@ -44,7 +44,7 @@ const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prove
       <TableCell>{new BigNumberJs(stakingAmount).div(BM18).toFormat()}</TableCell>
       <TableCell>{data?.tasks?.length ?? '--'}</TableCell>
       <TableCell className="justify-end gap-2">
-        {new BigNumberJs(stakingAmount).gt(0) && !running && (
+        {!running && (
           <Recommendation
             name={name}
             image={prover}

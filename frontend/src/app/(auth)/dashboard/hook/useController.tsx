@@ -10,6 +10,7 @@ import { evmWallet } from "@/web3/wallet";
 import { useFailedRoute } from "@/components/hooks/useFailedRoute";
 import pozk from "@/services/pozk";
 import useControllerStore from "@/components/state/controllerStore";
+import { useAccount } from "wagmi";
 const useGetData = () => {
   const Failed = useFailedRoute();
   const [controllerList, setControllerList] = useRecoilState(ControllerList);
@@ -68,18 +69,28 @@ export const usePostController = () => {
   const { toast } = useToast();
   const refetch = useControllerStore(state => state.fetch);
   const Failed = useFailedRoute();
+  const { address } = useAccount();
   const contract = useMemo(() => {
     return ControllerContract();
   }, []);
   const contractAdd = useCallback(
     async (controller: Address) => {
-      const contractRes = await contract.writeContractMethod("add", [
+      await contract.writeContractMethod("add", [
         controller,
       ]);
-      console.log({ contractRes });
-      getData();
     },
     [contract, getData]
+  );
+
+  const contractCheck = useCallback(
+    async (controller: Address) => {
+      const isController = await contract.readContractData("check", [
+        address,
+        controller,
+      ]);
+      return isController;
+    },
+    [contract, address]
   );
 
   const newController = useCallback(async () => {
@@ -92,6 +103,7 @@ export const usePostController = () => {
           variant: "success",
         });
         refetch(1);
+        getData();
       } else {
         throw Error("Controller new Error");
       }
@@ -107,12 +119,21 @@ export const usePostController = () => {
         });
         if (res.controller) {
           const controller = evmWallet.getAccount(secretKey);
-          await contractAdd(controller);
+          const isController = await contractCheck(controller);
+          if (isController) {
+            await api.post(
+              `/api/controllers/${controller}`,
+              undefined
+            );
+          } else {
+            await contractAdd(controller);
+          }
           toast({
             title: "Add New Secret Key Success",
             variant: "success",
           });
           refetch(1);
+          getData();
         } else {
           throw Error(res ?? "Controller add Error");
         }
@@ -147,9 +168,11 @@ export const usePostController = () => {
     },
     []
   );
+
   const deleteController = useCallback((): boolean => {
     return false;
   }, []);
+
   const exportController = useCallback(
     async (address: Address): Promise<[boolean, string]> => {
       try {

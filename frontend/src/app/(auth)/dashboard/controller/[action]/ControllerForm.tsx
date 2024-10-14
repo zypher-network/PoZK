@@ -82,7 +82,7 @@ const ControllerForm = ({ action }: { action?: IAction }) => {
             <FormItem>
               <FormLabel className="leading-[40px]">Controller</FormLabel>
               <FormControl>
-                <Input placeholder="Controller" {...field} />
+                <Input placeholder="Controller Private Key" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

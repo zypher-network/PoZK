@@ -27,7 +27,7 @@ const useProverStore = create<ProverStore>((set) => ({
         ...prover,
         name: proverName.toString(),
         containers: containers
-          .filter(container => container.prover.toLowerCase() === [prover.id.toLowerCase(), `v${prover.version}`].join('-'))
+          .filter(container => [container.prover.toLowerCase(), container.tag].join('-') === [prover.id.toLowerCase(), `v${prover.version}`].join('-'))
           .map(container => ({
             id: container.image,
             running: true,

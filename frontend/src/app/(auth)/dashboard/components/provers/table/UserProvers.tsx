@@ -43,7 +43,7 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
           <TableBody>
             <TableRow>
               <TableCell
-                colSpan={2}
+                colSpan={6}
                 className="h-[16px] bg-transparent"
               ></TableCell>
             </TableRow>

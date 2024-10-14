@@ -7,6 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 
 const useAuth = () => {
   const [hasAuth, setHasAuth] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
   const Failed = useFailedRoute();
   const { account, hasToken, loginOut } = useSession();
   const { address, isConnected } = useAccount();
@@ -21,8 +22,11 @@ const useAuth = () => {
     try {
       await fetch(1);
       setHasAuth(true);
+      setIsCompleted(true);
     } catch (error) {
+      setIsCompleted(true);
       Failed(error);
+      loginOut();
     }
   }
 
@@ -30,11 +34,12 @@ const useAuth = () => {
     if (hasToken && isConnected && isSameAccount) {
       handleInit();
     } else {
+      setIsCompleted(true);
       loginOut();
     }
   }, [hasToken, isConnected, isSameAccount]);
 
-  return hasAuth;
+  return [hasAuth, isCompleted];
 }
 
 export default useAuth;
