@@ -58,6 +58,7 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
                     created={container.created}
                     overtime={prover.overtime}
                     version={prover.version}
+                    needUpgrade={container.needUpgrade}
                   />
                 )) :
                 <ProverRow

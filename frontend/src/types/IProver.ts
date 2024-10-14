@@ -35,6 +35,7 @@ export type UserConatiner = {
   id: string;
   running: boolean;
   created: string;
+  needUpgrade: boolean;
 }
 
 export type GQLProver = {

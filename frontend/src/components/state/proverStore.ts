@@ -27,10 +27,11 @@ const useProverStore = create<ProverStore>((set) => ({
         ...prover,
         name: proverName.toString(),
         containers: containers
-          .filter(container => [container.prover.toLowerCase(), container.tag].join('-') === [prover.id.toLowerCase(), `v${prover.version}`].join('-'))
+          .filter(container => container.prover.toLowerCase() === prover.id.toLowerCase())
           .map(container => ({
             id: container.image,
             running: true,
+            needUpgrade: container.tag != `v${prover.version}`,
             created: new Date(container.created * 1000).toLocaleDateString("en-US"),
           })),
       })

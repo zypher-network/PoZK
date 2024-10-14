@@ -17,7 +17,7 @@ import { useAccount } from "wagmi";
 import sleep from "@/lib/sleep";
 import Loading from '@/components/icon/loading.svg';
 
-const Recommendation = ({ image, tag, name, overtime }: { image: Address; tag: string, name: string, overtime: string }) => {
+const Recommendation = ({ image, tag, name, overtime, needUpgrade }: { image: Address; tag: string, name: string, overtime: string, needUpgrade: boolean }) => {
   const [open, setOpen] = useState(false);
   const { address } = useAccount();
   const FailedRoute = useFailedRoute();
@@ -88,13 +88,16 @@ const Recommendation = ({ image, tag, name, overtime }: { image: Address; tag: s
             onClick={download}
           >
             {loading ? (
-              <div className="flex items-center justify-center animate-spin">
-                <Loading className='scale-y-[-1]' height={'24px'} width={'24px'} /> 
-              </div>
+              <Fragment>
+                <div className="flex items-center justify-center animate-spin mr-[8px]">
+                  <Loading className='scale-y-[-1]' height={'20px'} width={'20px'} /> 
+                </div>
+                Downloading...
+              </Fragment>
             ) : (
               <Fragment>
                 <Download className="stroke-0A1223 mr-[8px]" />
-                Download
+                {needUpgrade ? 'Upgrade' : 'Download'}
               </Fragment>
             )}
           </Button>

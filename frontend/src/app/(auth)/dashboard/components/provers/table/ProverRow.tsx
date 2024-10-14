@@ -29,9 +29,10 @@ interface IProverRow {
   prover: Address;
   version: string;
   overtime: string;
+  needUpgrade?: boolean;
 }
 
-const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prover, version, overtime }) => {
+const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prover, version, overtime, needUpgrade = false }) => {
   const { setStakeItemHandler } = usePostStake();
   const { address } = useAccount();
   const { data } = useQuery(GET_TASKS, { variables: { address: address?.toLowerCase() ?? '', prover: prover.toLowerCase() }, skip: !address })
@@ -50,14 +51,9 @@ const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prove
             image={prover}
             tag={version}
             overtime={overtime}
+            needUpgrade={needUpgrade}
           />
         )}
-        {/* <Button
-          variant="outline"
-          className="border-[#e78a09] text-[#e78a09] text-[16px] py-0 px-4 h-8"
-        >
-          Delete
-        </Button> */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
