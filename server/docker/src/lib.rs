@@ -134,6 +134,19 @@ impl DockerManager {
         Ok(container_id)
     }
 
+    /// list all images
+    pub async fn list(&self) -> Result<HashMap<String, String>> {
+        let data = self
+            .docker
+            .list_images::<String>(None)
+            .await?
+            .iter()
+            .map(|d| (d.id.clone(), d.repo_tags.join(" ")))
+            .collect();
+
+        Ok(data)
+    }
+
     /// remove image
     pub async fn remove(&self, image: &str) -> Result<()> {
         let remove_list = self.docker.remove_image(image, None, None).await?;

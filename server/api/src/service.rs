@@ -9,8 +9,11 @@ use pozk_utils::{remove_task_input, write_task_input, ServiceMessage};
 use std::sync::Arc;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
+use crate::metrics::MetricsMessage;
+
 pub struct MainService {
     pool_sender: UnboundedSender<PoolMessage>,
+    metrics_sender: UnboundedSender<MetricsMessage>,
     service_receiver: UnboundedReceiver<ServiceMessage>,
     db: Arc<ReDB>,
     docker: Arc<DockerManager>,
@@ -19,12 +22,14 @@ pub struct MainService {
 impl MainService {
     pub fn new(
         pool_sender: UnboundedSender<PoolMessage>,
+        metrics_sender: UnboundedSender<MetricsMessage>,
         service_receiver: UnboundedReceiver<ServiceMessage>,
         db: Arc<ReDB>,
         docker: Arc<DockerManager>,
     ) -> Self {
         Self {
             pool_sender,
+            metrics_sender,
             service_receiver,
             db,
             docker,
@@ -155,8 +160,12 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
 
             // 2. update pool signer
             app.pool_sender
-                .send(PoolMessage::ChangeController(wallet))
+                .send(PoolMessage::ChangeController(wallet.clone()))
                 .expect("Missing pool");
+
+            app.metrics_sender
+                .send(MetricsMessage::ChangeController(wallet))
+                .expect("Missing metrics");
         }
         ServiceMessage::MinerTest(id, prover, overtime, inputs, publics) => {
             // 1. check prover in local

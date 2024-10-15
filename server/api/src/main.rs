@@ -3,10 +3,12 @@ extern crate tracing;
 
 mod app;
 mod config;
+mod metrics;
 mod service;
 
 use app::App;
 use config::ApiConfig;
+use metrics::{MetricsMessage, MetricsService};
 use service::MainService;
 
 use anyhow::Result;
@@ -106,16 +108,35 @@ async fn main() -> Result<()> {
         Arc::new(dm)
     };
 
+    // start metrics service
+    let metrics_sender = MetricsService::new(
+        &args.network,
+        args.miner.clone(),
+        db.clone(),
+        docker.clone(),
+    )?
+    .run();
+
     // setup controller
-    let controller = if let Some(addr) = db.get::<MainController>(MainController::to_key())? {
-        LocalWallet::from(
-            db.get::<Controller>(Controller::to_key(&addr.controller))?
-                .unwrap()
-                .singing_key,
-        )
-    } else {
-        DEFAULT_WALLET.parse::<LocalWallet>()?
-    };
+    let (controller, ready) =
+        if let Some(addr) = db.get::<MainController>(MainController::to_key())? {
+            (
+                LocalWallet::from(
+                    db.get::<Controller>(Controller::to_key(&addr.controller))?
+                        .unwrap()
+                        .singing_key,
+                ),
+                true,
+            )
+        } else {
+            (DEFAULT_WALLET.parse::<LocalWallet>()?, false)
+        };
+
+    if ready {
+        metrics_sender
+            .send(MetricsMessage::ChangeController(controller.clone()))
+            .unwrap();
+    }
 
     let (service_sender, service_receiver) = new_service_channel();
 
@@ -129,7 +150,7 @@ async fn main() -> Result<()> {
     App::new(&co.api_config, db.clone(), service_sender)?.run();
 
     // setup main service
-    MainService::new(pool_sender, service_receiver, db, docker).run();
+    MainService::new(pool_sender, metrics_sender, service_receiver, db, docker).run();
 
     tokio::signal::ctrl_c().await.unwrap();
 

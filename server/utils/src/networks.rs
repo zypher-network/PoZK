@@ -46,6 +46,14 @@ pub fn contract_address(network: &str, name: &str) -> Result<(Address, u64)> {
     Ok((address, start as u64))
 }
 
+pub fn pozk_metrics_url(network: &str) -> Result<String> {
+    match network {
+        "localhost" | "testnet" => Ok("".to_owned()),
+        "mainnet" => Ok("".to_owned()),
+        _ => Err(anyhow!("Invalid network")),
+    }
+}
+
 pub type DefaultProvider = Provider<Http>;
 
 pub fn new_providers(rpcs: &[String]) -> Vec<Arc<DefaultProvider>> {
@@ -68,10 +76,28 @@ pub async fn new_signer(
     Ok(Arc::new(signer))
 }
 
-pub async fn zero_gas<S: Signer>(uri: &str, _tx: TypedTransaction, _wallet: &S) -> Result<()> {
+pub async fn zero_gas<S: Signer>(uri: &str, tx: TypedTransaction, wallet: &S) -> Result<()> {
+    let owner = wallet.address();
+    let wallet = tx.from().unwrap();
+    let to = tx.to_addr().unwrap();
+    let data = tx.data().unwrap();
+    let value = tx.value().unwrap();
+
+    // TODO signature
+    let v = "";
+    let r = "";
+    let s = "";
+
     let client = reqwest::Client::new();
     let data = json!({
-        "": ""
+        "wallet": format!("{:?}", wallet),
+        "to": format!("{:?}", to),
+        "data": format!("0x{}", hex::encode(data.to_vec())),
+        "value": value.to_string(),
+        "v": v,
+        "r": r,
+        "s": s,
+        "owner": format!("{:?}", owner),
     });
     let _ = client.post(uri).json(&data).send().await?;
 

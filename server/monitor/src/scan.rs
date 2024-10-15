@@ -276,7 +276,11 @@ impl Scan {
                         let overtime = mt.overtime.as_u64();
                         info!("[Scan] fetch new miner test: {} - {}", id, mt.prover);
                         Ok(Some(ServiceMessage::MinerTest(
-                            id, mt.prover, overtime, mt.inputs.to_vec(), mt.publics.to_vec()
+                            id,
+                            mt.prover,
+                            overtime,
+                            mt.inputs.to_vec(),
+                            mt.publics.to_vec(),
                         )))
                     } else {
                         Ok(None)

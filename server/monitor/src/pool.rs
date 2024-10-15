@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use ethers::prelude::*;
-use pozk_utils::{new_providers, new_signer, zero_gas, DefaultSigner, Task, Stake};
+use pozk_utils::{new_providers, new_signer, zero_gas, DefaultSigner, Stake, Task};
 use std::sync::Arc;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
