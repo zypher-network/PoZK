@@ -79,9 +79,7 @@ impl DockerManager {
             };
 
             if i_repo_tag == &repo_tag {
-                let split = image.id.split(":").collect::<Vec<_>>();
-                let id = split.get(1).unwrap().to_string();
-                return Ok(id);
+                return Ok(image_id(&image.id));
             }
         }
 
@@ -141,7 +139,7 @@ impl DockerManager {
             .list_images::<String>(None)
             .await?
             .iter()
-            .map(|d| (d.id.clone(), d.repo_tags.join(" ")))
+            .map(|d| (image_id(&d.id), d.repo_tags.join(" ")))
             .collect();
 
         Ok(data)
@@ -170,5 +168,15 @@ impl DockerManager {
 
         self.docker.stop_container(container, op).await?;
         Ok(())
+    }
+}
+
+#[inline]
+fn image_id(id: &str) -> String {
+    let split = id.split(":").collect::<Vec<_>>();
+    if split.len() < 2 {
+        id.to_owned()
+    } else {
+        split[1].to_owned()
     }
 }

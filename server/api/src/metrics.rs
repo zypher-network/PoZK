@@ -171,6 +171,9 @@ impl MetricsService {
                 data.extend(data1)
             }
         }
+        if data.is_empty() {
+            return Ok(());
+        }
 
         let mut provers = vec![];
         let mut sign_provers = vec![];
@@ -179,21 +182,19 @@ impl MetricsService {
             if images.contains_key(&p.image) {
                 let prover = format!("{:?}", p.prover);
                 provers.push(json!({
-                    "address": prover,
+                    "prover": prover,
                     "version": p.tag,
                 }));
                 sign_provers.push(prover);
             }
         }
+        let message = sign_provers.join(" ");
 
         let timestamp = Utc::now().timestamp();
         sign_provers.push(timestamp.to_string());
 
         let signature = if let Some(wallet) = &self.wallet {
-            wallet
-                .sign_message(sign_provers.join(" "))
-                .await?
-                .to_string()
+            wallet.sign_message(message).await?.to_string()
         } else {
             return Ok(());
         };
