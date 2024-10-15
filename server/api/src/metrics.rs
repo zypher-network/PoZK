@@ -22,14 +22,14 @@ pub enum MetricsMessage {
 }
 
 pub struct MetricsService {
-    address: String,
+    miner: String,
     wallet: Option<LocalWallet>,
     db: Arc<ReDB>,
     docker: Arc<DockerManager>,
     os: String,
     gpu: String,
     cpu: u64,
-    memory: f64,
+    memory: String,
     client: Client,
     url: String,
 }
@@ -42,7 +42,7 @@ enum InnerFuture {
 impl MetricsService {
     pub fn new(
         network: &str,
-        address: String,
+        miner: String,
         db: Arc<ReDB>,
         docker: Arc<DockerManager>,
     ) -> Result<Self> {
@@ -52,13 +52,16 @@ impl MetricsService {
         let mut sys = System::new();
         sys.refresh_all();
         let cpu = sys.cpus().len() as u64;
-        let memory = (sys.total_memory() * 100 / 1073741824) as f64 / 100f64; // GB
+        let memory = format!(
+            "{} GB",
+            (sys.total_memory() * 100 / 1073741824) as f32 / 100f32
+        ); // GB
 
         let client = reqwest::Client::new();
         let url = pozk_metrics_url(network)?;
 
         Ok(Self {
-            address,
+            miner,
             db,
             docker,
             os,
@@ -115,7 +118,7 @@ impl MetricsService {
 
             let message = format!(
                 "{}{}{}{}{}{}{}{}",
-                self.address,
+                self.miner,
                 controller,
                 PROXY_VERSION,
                 self.os,
@@ -131,20 +134,20 @@ impl MetricsService {
         };
 
         let data = json!({
-            "address": self.address,
+            "miner": self.miner,
             "controller": controller,
             "version": PROXY_VERSION,
-            "system_name": self.os,
+            "os": self.os,
             "gpu": self.gpu,
             "cpu": self.cpu,
-            "mem_space": self.memory,
+            "memory": self.memory,
             "timestamp": timestamp,
             "signature": signature,
         });
 
         let _ = self
             .client
-            .post(format!("{}/miner/info", self.url))
+            .post(format!("{}/miners", self.url))
             .json(&data)
             .send()
             .await?;
@@ -196,7 +199,7 @@ impl MetricsService {
         };
 
         let data = json!({
-            "address": self.address,
+            "miner": self.miner,
             "provers": provers,
             "timestamp": timestamp,
             "signature": signature,
@@ -204,7 +207,7 @@ impl MetricsService {
 
         let _ = self
             .client
-            .post(format!("{}/miner/healthy", self.url))
+            .post(format!("{}/provers", self.url))
             .json(&data)
             .send()
             .await?;
