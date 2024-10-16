@@ -17,7 +17,7 @@ use ethers::prelude::*;
 use pozk_db::{Controller, DbConfig, MainController, ReDB};
 use pozk_docker::DockerManager;
 use pozk_monitor::{MonitorConfig, Pool, Scan};
-use pozk_utils::{init_path_and_server, new_service_channel};
+use pozk_utils::{init_path_and_server, new_service_channel, pozk_rpc_url, pozk_zero_gas_url};
 use serde::Deserialize;
 use std::{fs, path::PathBuf, sync::Arc};
 
@@ -27,9 +27,13 @@ const DEFAULT_WALLET: &str = "00000000000000000000000000000000000000000000000000
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Command {
-    /// Config file for advance features
+    /// Network type, includes: localhost | testnet | mainnet
     #[arg(short, long)]
-    config: Option<String>,
+    network: String,
+
+    /// Miner account, e.g. 0x00000000000000000000000000000000000000
+    #[arg(short, long)]
+    miner: String,
 
     /// base path for pozk, e.g. /usr/pozk(default), /home/ubuntu/pozk
     #[arg(short, long, default_value = "/usr/pozk")]
@@ -39,17 +43,9 @@ struct Command {
     #[arg(short, long, default_value = "http://pozk-miner:9098")]
     server: String,
 
-    /// Miner account, e.g. 0x00000000000000000000000000000000000000
-    #[arg(short, long)]
-    miner: String,
-
     /// RPC endpoint to listen and submit tx with chain
     #[arg(short, long)]
-    endpoints: String,
-
-    /// Network type, includes: localhost | testnet | mainnet
-    #[arg(short, long)]
-    network: String,
+    endpoints: Option<String>,
 
     /// Download docker image proxy (Optional), e.g. docker.registry.cyou
     #[arg(short, long)]
@@ -58,6 +54,10 @@ struct Command {
     /// Use 0 gas service to send tx (Optional).
     #[arg(short, long)]
     zero_gas: Option<String>,
+
+    /// Config file for advance features
+    #[arg(short, long)]
+    config: Option<String>,
 }
 
 #[derive(Args, Debug, Deserialize, Default)]
@@ -73,7 +73,12 @@ struct Config {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
+    setup().await.unwrap();
+    error!("=== Stopped the miner service ===");
+}
+
+async fn setup() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     let args = Command::parse();
@@ -85,11 +90,15 @@ async fn main() -> Result<()> {
         Config::default()
     };
 
+    // check params
+    let endpoints = args.endpoints.unwrap_or(pozk_rpc_url(&args.network)?);
+    let zero_gas = args.zero_gas.unwrap_or(pozk_zero_gas_url(&args.network)?);
+
     // update contract address
     co.monitor_config.network = args.network.clone();
-    co.monitor_config.endpoints = args.endpoints.clone();
+    co.monitor_config.endpoints = endpoints;
     co.monitor_config.miner = args.miner.clone();
-    co.monitor_config.zero_gas = args.zero_gas.clone();
+    co.monitor_config.zero_gas = zero_gas;
     co.api_config.miner = args.miner.clone();
 
     // setup base path
@@ -152,7 +161,7 @@ async fn main() -> Result<()> {
     // setup main service
     MainService::new(pool_sender, metrics_sender, service_receiver, db, docker).run();
 
-    tokio::signal::ctrl_c().await.unwrap();
+    tokio::signal::ctrl_c().await?;
 
     Ok(())
 }

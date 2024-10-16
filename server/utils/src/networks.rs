@@ -54,6 +54,23 @@ pub fn pozk_metrics_url(network: &str) -> Result<String> {
     }
 }
 
+pub fn pozk_rpc_url(network: &str) -> Result<String> {
+    match network {
+        "localhost" => Ok("http://localhost:8545".to_owned()),
+        "testnet" => Ok("https://rpc.zypher.network".to_owned()),
+        "mainnet" => Ok("https://rpc.zypher.network".to_owned()),
+        _ => Err(anyhow!("Invalid network")),
+    }
+}
+
+pub fn pozk_zero_gas_url(network: &str) -> Result<String> {
+    match network {
+        "testnet" => Ok("https://zytron-linea-mainnet-0gas.zypher.game".to_owned()),
+        "mainnet" => Ok("https://zytron-linea-mainnet-0gas.zypher.game".to_owned()),
+        _ => Err(anyhow!("Invalid network")),
+    }
+}
+
 pub type DefaultProvider = Provider<Http>;
 
 pub fn new_providers(rpcs: &[String]) -> Vec<Arc<DefaultProvider>> {
@@ -74,6 +91,12 @@ pub async fn new_signer(
 ) -> Result<Arc<DefaultSigner>> {
     let signer = SignerMiddleware::new_with_provider_chain(provider, wallet).await?;
     Ok(Arc::new(signer))
+}
+
+pub async fn check_zero_gas(_uri: &str, _miner: Address) -> Result<()> {
+    // TODO
+
+    Err(anyhow!("Not implemented"))
 }
 
 pub async fn zero_gas<S: Signer>(uri: &str, tx: TypedTransaction, wallet: &S) -> Result<()> {
@@ -99,7 +122,12 @@ pub async fn zero_gas<S: Signer>(uri: &str, tx: TypedTransaction, wallet: &S) ->
         "s": s,
         "owner": format!("{:?}", owner),
     });
-    let _ = client.post(uri).json(&data).send().await?;
+    let res = client.post(uri).json(&data).send().await?;
 
-    todo!()
+    // check res status
+    if res.status() != 200 {
+        Err(anyhow!("Send tx failed!"))
+    } else {
+        Ok(())
+    }
 }

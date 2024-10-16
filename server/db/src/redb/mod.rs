@@ -7,7 +7,7 @@ pub use prover::Prover;
 pub use scan::ScanBlock;
 pub use task::Task;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
 use std::{fs, path::PathBuf};
 
@@ -36,10 +36,10 @@ impl ReDB {
                 fs::remove_dir_all(path)?;
             }
         }
-        fs::create_dir_all(path)?;
+        fs::create_dir_all(path).map_err(|e| anyhow!("Path {:?}: {}", path, e))?;
 
         let db_path = path.join("db.redb");
-        let db = Database::create(db_path)?;
+        let db = Database::create(db_path).map_err(|e| anyhow!("Path {:?}: {}", path, e))?;
 
         // init all tables
         let txn = db.begin_write()?;
