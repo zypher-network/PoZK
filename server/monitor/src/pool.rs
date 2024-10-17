@@ -43,7 +43,8 @@ enum InnerFuture {
 }
 
 impl Pool {
-    pub async fn new(cfg: &MonitorConfig, wallet: LocalWallet) -> Result<Self> {
+    pub async fn new(cfg: &MonitorConfig, wallet: LocalWallet, ready: bool) -> Result<Self> {
+        let wallet_address = wallet.address();
         let providers = new_providers(&cfg.endpoints());
         if providers.is_empty() {
             return Err(anyhow!("No providers"));
@@ -63,7 +64,7 @@ impl Pool {
         let zero_gas = cfg.zero_gas.clone();
         let zero_gas_wallet = AAWallet::new(Address::zero(), signer);
 
-        Ok(Self {
+        let mut pool = Self {
             wallet,
             task,
             stake,
@@ -74,7 +75,14 @@ impl Pool {
             zero_gas_wallet,
             zero_gas_working: false,
             zero_gas_nonce: 0,
-        })
+        };
+
+        if ready {
+            info!("[Pool] set controller to: {}", wallet_address);
+            pool.check().await;
+        }
+
+        Ok(pool)
     }
 
     pub fn run(self) -> UnboundedSender<PoolMessage> {
@@ -123,12 +131,16 @@ impl Pool {
             if aa == Address::zero() {
                 // create zero gas wallet
                 if let Ok(new_aa) = create_zero_gas(&self.zero_gas, self.wallet.address()).await {
+                    info!("[Pool] 0 gas wallet fetched: {}", aa);
                     self.zero_gas_wallet = self.zero_gas_wallet.at(new_aa).into();
                     self.reset_nonce().await;
 
                     // check aa is valid controller
                     if self.verify(new_aa).await {
+                        info!("[Pool] 0 gas wallet actived");
                         self.zero_gas_working = true;
+                    } else {
+                        warn!("[Pool] 0 gas wallet not set to controller");
                     }
                 }
             } else {
@@ -153,6 +165,8 @@ impl Pool {
     async fn handle(&mut self, msg: PoolMessage) {
         match msg {
             PoolMessage::ChangeController(wallet) => {
+                info!("[Pool] changed controller to: {}", wallet.address());
+
                 // change controller account
                 let task_address = self.task.address();
                 let stake_address = self.stake.address();
