@@ -132,6 +132,8 @@ impl Scan {
                 } else {
                     start_block = Some(db_start.block);
                 }
+            } else {
+                start_block = None; // first run, use latest block
             }
 
             loop {
