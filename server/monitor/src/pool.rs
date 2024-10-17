@@ -133,7 +133,7 @@ impl Pool {
                 // create zero gas wallet
                 match create_zero_gas(&self.zero_gas, self.wallet.address()).await {
                     Ok(new_aa) => {
-                        info!("[Pool] 0 gas wallet fetched: {}", aa);
+                        info!("[Pool] 0 gas wallet fetched: {}", new_aa);
                         self.zero_gas_wallet = self.zero_gas_wallet.at(new_aa).into();
                         self.reset_nonce().await;
 
