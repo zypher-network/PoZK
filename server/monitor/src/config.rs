@@ -24,7 +24,7 @@ pub struct MonitorConfig {
     #[clap(
         long,
         help = "`monitor`: delay for network rollback, e.g. 1",
-        default_value = "1"
+        default_value = "0"
     )]
     pub delay: u64,
 
@@ -63,8 +63,8 @@ impl Default for MonitorConfig {
             network: "mainnet".to_owned(),
             endpoints: "".to_owned(),
             miner: String::new(),
-            delay: 1,
-            step: 100,
+            delay: 0,
+            step: 200,
             from: None,
             task_address: None,
             prover_address: None,

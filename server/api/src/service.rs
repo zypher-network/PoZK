@@ -249,6 +249,7 @@ async fn upload_proof(
 
             break;
         } else {
+            let _ = remove_task_input(&sid).await;
             break;
         }
     }
