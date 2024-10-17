@@ -150,7 +150,9 @@ async fn setup() -> Result<()> {
     let (service_sender, service_receiver) = new_service_channel();
 
     // setup monitor
-    let pool_sender = Pool::new(&co.monitor_config, controller, ready).await?.run();
+    let pool_sender = Pool::new(&co.monitor_config, controller, ready)
+        .await?
+        .run();
     Scan::new(co.monitor_config, service_sender.clone(), db.clone())
         .await?
         .run();

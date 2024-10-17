@@ -125,22 +125,28 @@ impl Pool {
         if !self.zero_gas.is_empty()
             && check_zero_gas(&self.zero_gas, self.wallet.address())
                 .await
+                .map_err(|e| info!("[Pool] 0 gas check error: {}", e))
                 .is_ok()
         {
             let aa = self.zero_gas_wallet.address();
             if aa == Address::zero() {
                 // create zero gas wallet
-                if let Ok(new_aa) = create_zero_gas(&self.zero_gas, self.wallet.address()).await {
-                    info!("[Pool] 0 gas wallet fetched: {}", aa);
-                    self.zero_gas_wallet = self.zero_gas_wallet.at(new_aa).into();
-                    self.reset_nonce().await;
+                match create_zero_gas(&self.zero_gas, self.wallet.address()).await {
+                    Ok(new_aa) => {
+                        info!("[Pool] 0 gas wallet fetched: {}", aa);
+                        self.zero_gas_wallet = self.zero_gas_wallet.at(new_aa).into();
+                        self.reset_nonce().await;
 
-                    // check aa is valid controller
-                    if self.verify(new_aa).await {
-                        info!("[Pool] 0 gas wallet actived");
-                        self.zero_gas_working = true;
-                    } else {
-                        warn!("[Pool] 0 gas wallet not set to controller");
+                        // check aa is valid controller
+                        if self.verify(new_aa).await {
+                            info!("[Pool] 0 gas wallet actived");
+                            self.zero_gas_working = true;
+                        } else {
+                            warn!("[Pool] 0 gas wallet not set to controller");
+                        }
+                    }
+                    Err(e) => {
+                        info!("[Pool] 0 gas create error: {}", e);
                     }
                 }
             } else {
