@@ -44,10 +44,12 @@ const ZeroGasStatus: React.FC<IZeroGasStatus> = ({ address }) => {
   const addAAWallet = async () => {
     try {
       setChecking(true);
-      console.log('-- aaWallet:', aaWallet);
-      await contract.writeContractMethod("add", [
-        aaWallet,
-      ]);
+      const result = await zeroGas.createAAWallet(address);
+      if (result) {
+        await contract.writeContractMethod("add", [
+          result.data.wallet,
+        ]);
+      }
       checkSbt();
     } catch (error) {
       toast({
