@@ -5,7 +5,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import Image from "next/image";
 import { memo, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import useEpochStore from "@/components/state/epochStore";
@@ -65,7 +64,7 @@ const Claim = () => {
             Collect
           </Button>
         </div>
-        <Image
+        <img
           className="absolute top-[40px] left-0 w-full"
           src="/rewards/claim_bg.png"
           alt="dashboard"

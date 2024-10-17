@@ -2,12 +2,13 @@
 import { useLayoutEffect } from "react";
 // import { useRecoilValue } from "recoil";
 import { useShallow } from 'zustand/react/shallow'
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import useControllerStore from "@/components/state/controllerStore";
 // import { ControllerList } from "../state/dashboardState";
 
 export const useControllerRouter = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const store = useControllerStore(
     useShallow(state => ({
       fetching: state.fetching,
@@ -16,7 +17,6 @@ export const useControllerRouter = () => {
     }))
   );
   // const controllerList = useRecoilValue(ControllerList);
-  const pathname = usePathname();
   // console.log({ controllerList });
   useLayoutEffect(() => {
     if (!store.fetching) {

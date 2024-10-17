@@ -1,6 +1,5 @@
 "use client";
 import { memo, useMemo, useState } from "react";
-import Image from "next/image";
 import Wifi from "@/components/icon/wifi.svg";
 import Copy from "@/components/icon/copy.svg";
 import { useToast } from "@/components/ui/use-toast";
@@ -79,7 +78,7 @@ const Banner = () => {
             <Item key={v.label} isLast={index === 2} item={v} />
           ))}
         </ul>
-        <Image
+        <img
           className="absolute bottom-0 right-0"
           src="/dashboard/banner_earning.png"
           width={180}

@@ -45,9 +45,9 @@ const FormSchema = z.object({
 const FormComp = () => {
   const params = useParams();
   const Title = useMemo(() => {
-    const action = params.action.toString();
+    const action = params.action?.toString() ?? '';
     return `${action.charAt(0).toUpperCase()}${action.slice(1)} Device`;
-  }, [params.action]);
+  }, [params]);
   const { address } = useAccount();
   const gameConfig = useRecoilValue(GameConfig);
   const form = useForm<z.infer<typeof FormSchema>>({

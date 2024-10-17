@@ -39,13 +39,13 @@ const zytronMainnet = /*#__PURE__*/ defineChain({
     },
     rpcUrls: {
         default: {
-            http: ['https://linea-mainnet-zytron.zypher.game'],
+            http: ['https://rpc.zypher.network'],
         },
     },
     blockExplorers: {
         default: {
             name: 'Blockscout',
-            url: 'https://linea-mainnet-zytron-blockscout.zypher.game',
+            url: 'https://explorer.zypher.network',
         },
     },
     mainnetSourceId,
@@ -55,7 +55,7 @@ const zytronMainnet = /*#__PURE__*/ defineChain({
 // Get your projectId on https://cloud.walletconnect.com
 export const projectId = "bc467c124a7a7a8ce06a41ef40b1b842";
 const ChainList = {
-  [ChainId.TESTNET]: zytronMainnet,
+  [ChainId.MAINNET]: zytronMainnet,
 };
 export const chain = ChainList[CHAINID];
 export const wagmiConfig = defaultWagmiConfig({

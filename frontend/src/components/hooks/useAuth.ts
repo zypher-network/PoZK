@@ -1,3 +1,4 @@
+'use client'
 import { useAccount } from "wagmi";
 import { useSession } from "./useSession";
 import { useLayoutEffect, useMemo, useState } from "react";

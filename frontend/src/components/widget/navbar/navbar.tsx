@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { appName } from "@/constants/constants";
 import NavItems from "./nav-items";
 import { memo, useMemo } from "react";
@@ -63,7 +62,7 @@ const Navbar = () => {
   return (
     <div className="overflow-show pl-[48px] pt-[48px]">
       <Link href="/">
-        <Image src="/nav/logo_dark.png" width={185} height={40} alt={appName} />
+        <img src="/nav/logo_dark.png" width={185} height={40} alt={appName} />
       </Link>
       <nav className="pt-[48px] flex gap-[40px] flex-col">
         <NavItems navItems={navigation} />

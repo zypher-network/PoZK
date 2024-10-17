@@ -41,6 +41,7 @@ import { IAction } from "@/types/IAction";
 import { useToast } from "@/components/ui/use-toast";
 import useControllerStore from "@/components/state/controllerStore";
 import { useShallow } from "zustand/react/shallow";
+import ZeroGasStatus from "./ZeroGasStatus";
 
 const ControllerTable = () => {
   const { toast } = useToast();
@@ -70,7 +71,7 @@ const ControllerTable = () => {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) =>
-          row.getValue("status") === "on" ? <p className="text-[#26d962]">{row.getValue("status")}</p> : <p className="text-sm text-[#9e9e9e]">{row.getValue("status")}</p>
+          row.getValue("status") === "on" ? <p className="text-[#26d962]">{row.getValue("status")}</p> : <p className="text-[#9e9e9e]">{row.getValue("status")}</p>
       },
       {
         accessorKey: "address",
@@ -88,8 +89,15 @@ const ControllerTable = () => {
           );
         },
         cell: ({ row }) => (
-          <div className="lowercase">{row.getValue("address")}</div>
+          <div className="lowercase text-sm">{row.getValue("address")}</div>
         ),
+      },
+      {
+        id: "zero-gas",
+        header: "0 gas",
+        cell: ({ row }) => (
+          <ZeroGasStatus address={row.getValue('address')} />
+        )
       },
       {
         id: "actions",
@@ -178,7 +186,7 @@ const ControllerTable = () => {
           <TableBody>
             <TableRow>
               <TableCell
-                colSpan={3}
+                colSpan={4}
                 className="h-[16px] bg-transparent"
               ></TableCell>
             </TableRow>

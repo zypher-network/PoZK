@@ -5,7 +5,6 @@ import { useCallback } from "react";
 import { useSetRecoilState } from "recoil";
 import { FailedRoute } from "../state/globalState";
 import { usePathname, useRouter } from "next/navigation";
-import api from "@/lib/fetch";
 import { useSession } from "./useSession";
 
 export const useFailedRoute = () => {

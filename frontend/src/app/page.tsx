@@ -1,13 +1,12 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import cx from 'classnames';
 import { useLayoutEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { evmWallet } from "@/web3/wallet";
 import { useSession } from "@/components/hooks/useSession";
 import { useToast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
 import { appName } from "@/constants/constants";
 import sleep from "@/lib/sleep";
 import { useRecoilState } from "recoil";
@@ -78,7 +77,7 @@ export default function Home() {
     <div className={cx('w-full h-[800px] flex items-center justify-center', { 'opacity-30 pointer-events-none': !isCompleted })}>
       <div className="flex items-center justify-center flex-col max-w-lg w-full space-y-8 p-14 shadow-lg rounded-lg bg-slate-800">
         <Link href="/">
-          <Image
+          <img
             src="/nav/logo_dark.png"
             width={185}
             height={40}

@@ -15,8 +15,8 @@ const ControllerPage = () => {
   const params = useParams();
   const { newController } = usePostController();
   const Action = useMemo(() => {
-    return params.action.toString() as IAction;
-  }, [params.action]);
+    return params.action?.toString() as IAction ?? '';
+  }, [params]);
   const Title = useMemo(() => {
     return `${Action.charAt(0).toUpperCase()}${Action.slice(1)} Controller`;
   }, [Action]);

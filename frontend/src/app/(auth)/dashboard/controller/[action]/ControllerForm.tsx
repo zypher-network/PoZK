@@ -34,9 +34,10 @@ const FormSchema = z.object({
 const ControllerForm = ({ action }: { action?: IAction }) => {
   const [loading, setLoading] = useState(false);
   const params = useParams();
+
   const { addController, setController } = usePostController();
   const Action = useMemo(() => {
-    return action ?? (params.action.toString() as IAction);
+    return action ?? (params.action?.toString() as IAction ?? '');
   }, [action, params.action]);
 
   const form = useForm<z.infer<typeof FormSchema>>({

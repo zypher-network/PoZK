@@ -1,5 +1,4 @@
 "use client";
-import api from "@/lib/fetch";
 import SessionManager from "@/lib/session/SessionManager";
 import sleep from "@/lib/sleep";
 import { usePathname, useRouter } from "next/navigation";
@@ -25,8 +24,8 @@ export const SessionContext = createContext<SessionContextValue | undefined>(
 );
 
 const SessionProvider = ({ children }: { children: React.ReactNode }) => {
-  const pathname = usePathname();
   const route = useRouter();
+  const pathname = usePathname();
   const [hasToken, setHasToken] = useState(
     SessionManager.getSession() !== undefined
   );
@@ -50,21 +49,10 @@ const SessionProvider = ({ children }: { children: React.ReactNode }) => {
     deleteToken();
     setHasToken(false);
     await sleep(0.2);
+    console.log('---- logout');
     pathname !== "/" && route.push("/");
   }, [pathname]);
-  // const nowAccount = useMemo(() => {
-  //   return `${address}${chainId}`;
-  // }, [address, chainId]);
-  // useLayoutEffect(() => {
-  //   // console.log({ nowAccount, account });
-  //   if (
-  //     nowAccount === "undefinedundefined" ||
-  //     (nowAccount.toLowerCase() !== account?.toLowerCase() &&
-  //       account !== "undefinedundefined")
-  //   ) {
-  //     loginOut();
-  //   }
-  // }, [nowAccount, account, loginOut]);
+
   return (
     <SessionContext.Provider
       value={{

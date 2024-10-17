@@ -5,7 +5,7 @@ export enum ChainId {
   MAINNET = "9901" // zytron mainnet
 }
 
-export const CHAINID = ChainId.TESTNET; // default network
+export const CHAINID = ChainId.MAINNET; // default network
 
 type IContractList = {
   Addresses: Address;
@@ -19,7 +19,7 @@ type IContractList = {
   Controller: Address;
 };
 export const contractAddress: Record<ChainId, IContractList> = {
-  [ChainId.TESTNET]: {
+  [ChainId.MAINNET]: {
       Addresses: "0xfE8595EdE3DA06936f14C14eE7A475490E33a59d",
       Token: "0x07cb9813aEa7678B70D7Ae418A7d8680E432ea2e",
       Vesting: "0x81DB6405eDb330D4cBe4B2279397A5677010bD65",
@@ -32,7 +32,7 @@ export const contractAddress: Record<ChainId, IContractList> = {
   }
 };
 export const gamesList = {
-  [ChainId.TESTNET]: {
+  [ChainId.MAINNET]: {
     game1: {
       address: "0x5b92b011513f9aaf8f6541003dc088625e7438e8=" as Address,
       version: "1",
@@ -40,5 +40,5 @@ export const gamesList = {
   }
 };
 export const ChainRpcUrls: Record<ChainId, string[]> = {
-  [ChainId.TESTNET]: ["https://linea-mainnet-zytron.zypher.game/"],
+  [ChainId.MAINNET]: ["https://rpc.zypher.network/"],
 };
