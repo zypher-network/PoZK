@@ -1,6 +1,10 @@
 use anyhow::{anyhow, Result};
+use async_recursion::async_recursion;
 use ethers::prelude::*;
-use pozk_utils::{check_zero_gas, new_providers, new_signer, zero_gas, DefaultSigner, Stake, Task};
+use pozk_utils::{
+    check_zero_gas, create_zero_gas, new_providers, new_signer, zero_gas, AAWallet, Controller,
+    DefaultProvider, DefaultSigner, Stake, Task,
+};
 use std::sync::Arc;
 use tokio::{
     select,
@@ -24,9 +28,13 @@ pub struct Pool {
     wallet: LocalWallet,
     task: Task<DefaultSigner>,
     stake: Stake<DefaultSigner>,
+    controller: Controller<DefaultProvider>,
     miner: Address,
+    chain: u64,
     zero_gas: String,
     zero_gas_working: bool,
+    zero_gas_wallet: AAWallet<DefaultSigner>,
+    zero_gas_nonce: u64,
 }
 
 enum InnerFuture {
@@ -40,25 +48,32 @@ impl Pool {
         if providers.is_empty() {
             return Err(anyhow!("No providers"));
         }
+        let chain = providers[0].get_chainid().await?.as_u64();
 
         let (task_address, _start) = cfg.task_address()?;
         let (stake_address, _start) = cfg.stake_address()?;
+        let (controller_address, _start) = cfg.controller_address()?;
 
         let signer = new_signer(providers[0].clone(), wallet.clone()).await?;
         let task = Task::new(task_address, signer.clone());
-        let stake = Stake::new(stake_address, signer);
+        let stake = Stake::new(stake_address, signer.clone());
+        let controller = Controller::new(controller_address, providers[0].clone());
 
         let miner = cfg.miner()?;
         let zero_gas = cfg.zero_gas.clone();
-        let zero_gas_working = false;
+        let zero_gas_wallet = AAWallet::new(Address::zero(), signer);
 
         Ok(Self {
             wallet,
             task,
             stake,
             miner,
+            controller,
+            chain,
             zero_gas,
-            zero_gas_working,
+            zero_gas_wallet,
+            zero_gas_working: false,
+            zero_gas_nonce: 0,
         })
     }
 
@@ -88,11 +103,50 @@ impl Pool {
         }
     }
 
+    /// verify controller (or 0 gas wallet) is valid controller to miner
+    async fn verify(&self, account: Address) -> bool {
+        if let Ok(res) = self.controller.check(self.miner, account).await {
+            res
+        } else {
+            false
+        }
+    }
+
+    /// check zero gas is working or not
     async fn check(&mut self) {
-        if !self.zero_gas.is_empty() && check_zero_gas(&self.zero_gas, self.miner).await.is_ok() {
-            self.zero_gas_working = true;
+        if !self.zero_gas.is_empty()
+            && check_zero_gas(&self.zero_gas, self.wallet.address())
+                .await
+                .is_ok()
+        {
+            let aa = self.zero_gas_wallet.address();
+            if aa == Address::zero() {
+                // create zero gas wallet
+                if let Ok(new_aa) = create_zero_gas(&self.zero_gas, self.wallet.address()).await {
+                    self.zero_gas_wallet = self.zero_gas_wallet.at(new_aa).into();
+                    self.reset_nonce().await;
+
+                    // check aa is valid controller
+                    if self.verify(new_aa).await {
+                        self.zero_gas_working = true;
+                    }
+                }
+            } else {
+                if !self.zero_gas_working {
+                    if self.verify(aa).await {
+                        self.zero_gas_working = true;
+                    }
+                }
+            }
         } else {
             self.zero_gas_working = false;
+        }
+    }
+
+    /// reset zero gas nonce, sync with chain
+    async fn reset_nonce(&mut self) {
+        if let Ok(nonce) = self.zero_gas_wallet.nonce().await {
+            self.zero_gas_nonce = nonce.as_u64();
         }
     }
 
@@ -107,6 +161,7 @@ impl Pool {
                 self.task = Task::new(task_address, signer.clone());
                 self.stake = Stake::new(stake_address, signer);
                 self.wallet = wallet;
+                self.check().await;
             }
             PoolMessage::AcceptTask(tid) => {
                 let gas_price = self
@@ -121,7 +176,7 @@ impl Pool {
                     .task
                     .accept(U256::from(tid), self.miner)
                     .gas_price(extra_gas);
-                self.send(func).await;
+                self.send(func, true).await;
             }
             PoolMessage::SubmitTask(tid, proof) => {
                 let gas_price = self
@@ -136,7 +191,7 @@ impl Pool {
                     .task
                     .submit(U256::from(tid), proof.into())
                     .gas_price(extra_gas);
-                self.send(func).await;
+                self.send(func, true).await;
             }
             PoolMessage::SubmitMinerTest(tid, proof) => {
                 let gas_price = self
@@ -151,18 +206,46 @@ impl Pool {
                     .stake
                     .miner_test_submit(U256::from(tid), true, proof.into())
                     .gas_price(extra_gas);
-                self.send(func).await;
+                self.send(func, true).await;
             }
         }
     }
 
-    async fn send(&self, func: FunctionCall<Arc<DefaultSigner>, DefaultSigner, ()>) {
+    #[async_recursion]
+    async fn send(
+        &mut self,
+        func: FunctionCall<Arc<DefaultSigner>, DefaultSigner, ()>,
+        reset: bool,
+    ) {
         if self.zero_gas_working {
-            if zero_gas(&self.zero_gas, func.tx.clone(), &self.wallet)
-                .await
-                .is_ok()
+            match zero_gas(
+                &self.zero_gas,
+                func.tx.clone(),
+                self.chain,
+                self.zero_gas_wallet.address(),
+                self.zero_gas_nonce,
+                &self.wallet,
+            )
+            .await
             {
-                return;
+                Ok(Some(txhash)) => {
+                    info!("[Pool] 0 gas Tx submitted, tx: {}", txhash);
+                    self.zero_gas_nonce += 1;
+                    return;
+                }
+                Ok(None) => {
+                    info!("[Pool] 0 gas Tx failed, nonce: {}", self.zero_gas_nonce);
+                    if reset {
+                        let old_nonce = self.zero_gas_nonce;
+                        self.reset_nonce().await;
+                        if old_nonce != self.zero_gas_nonce {
+                            return self.send(func, false).await;
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("{}", e);
+                }
             }
         }
 

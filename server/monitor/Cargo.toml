@@ -14,6 +14,7 @@ pozk-db.workspace = true
 pozk-utils.workspace = true
 
 anyhow.workspace = true
+async-recursion.workspace = true
 clap.workspace = true
 ethers.workspace = true
 serde.workspace = true

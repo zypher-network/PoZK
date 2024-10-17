@@ -52,6 +52,9 @@ pub struct MonitorConfig {
 
     #[clap(long, help = "`monitor`: special stake contract (Optional)")]
     pub stake_address: Option<String>,
+
+    #[clap(long, help = "`monitor`: special controller contract (Optional)")]
+    pub controller_address: Option<String>,
 }
 
 impl Default for MonitorConfig {
@@ -66,6 +69,7 @@ impl Default for MonitorConfig {
             task_address: None,
             prover_address: None,
             stake_address: None,
+            controller_address: None,
             zero_gas: "".to_owned(),
         }
     }
@@ -120,6 +124,22 @@ impl MonitorConfig {
             Ok((a, self.from))
         } else {
             let (a, f) = contract_address(&self.network, "Prover")?;
+
+            if self.from.is_none() {
+                Ok((a, Some(f)))
+            } else {
+                Ok((a, self.from))
+            }
+        }
+    }
+
+    pub fn controller_address(&self) -> Result<(Address, Option<u64>)> {
+        if let Some(t) = &self.controller_address {
+            let a: Address = t.parse()?;
+
+            Ok((a, self.from))
+        } else {
+            let (a, f) = contract_address(&self.network, "Controller")?;
 
             if self.from.is_none() {
                 Ok((a, Some(f)))

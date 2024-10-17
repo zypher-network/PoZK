@@ -21,6 +21,7 @@ pozk-monitor = { version = "0.1", path = "./monitor" }
 pozk-utils = { version = "0.1", path = "./utils" }
 
 anyhow = { version = "1.0", features = ["backtrace"] }
+async-recursion = "1.1"
 async-trait = "0.1"
 axum = "0.7"
 bollard = { version = "0.17", features = ["chrono"] }
