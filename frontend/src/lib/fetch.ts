@@ -20,7 +20,8 @@ async function fetcher<T>(url: string, options: FetchOptions = {}): Promise<T> {
   }
   // console.log({ useUrl });
   const response = await fetch(
-    `${options.useUrl ? "/api" : API_BASE_URL}${url}`,
+    `${options.useUrl ? "/api" : window.location.origin}${url}`,
+    // `${options.useUrl ? "/api" : API_BASE_URL}${url}`,
     {
       ...fetchOptions,
       headers,

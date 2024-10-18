@@ -3,13 +3,14 @@ import { useShallow } from 'zustand/react/shallow';
 
 import useProverStore from '@/components/state/proverStore';
 import Loading from '@/components/icon/loading.svg';
-import Market from './table/Market';
 import UserProvers from './table/UserProvers';
 import useSubgraphStore from '@/components/state/subgraphStore';
+import useSortProvers from '@/components/hooks/useSortProvers';
 
 const Provers: React.FC = () => {
   const { data } = useSubgraphStore(state => state.provers);
-  const { fetching, fetchUserProvers, provers } = useProverStore(useShallow(state => ({
+  const provers = useSortProvers();
+  const { fetching, fetchUserProvers } = useProverStore(useShallow(state => ({
     fetching: state.fetching,
     fetchUserProvers: state.fetchUserProvers,
     provers: state.provers,
@@ -28,7 +29,7 @@ const Provers: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            <Market provers={provers} />
+            {/* <Market provers={provers} /> */}
             <UserProvers provers={provers} />
           </div>
         )

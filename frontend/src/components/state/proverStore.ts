@@ -36,6 +36,7 @@ const useProverStore = create<ProverStore>((set) => ({
           })),
       })
     }
+    provers.sort((x, y) => x.containers.length > y.containers.length ? -1 : 1);
     set({ fetching: false, provers: provers });
   },
 }))

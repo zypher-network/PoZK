@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  // output: "export", //out
+  // output: 'standalone',
+  output: "export", //out
+  distDir: "web-app",
 
   async redirects() {
     return [

@@ -74,7 +74,7 @@ const ZeroGasStatus: React.FC<IZeroGasStatus> = ({ address }) => {
     }
     if (hasSbt) {
       return (
-        <div className="py-1 cursor-pointer px-3 rounded text-sm bg-[#674dff]" onClick={addAAWallet}>Enable</div>
+        <div className="py-1 cursor-pointer px-3 rounded text-sm bg-[#674dff]" onClick={addAAWallet}>Set</div>
       );
     }
     return <p className="text-[#9e9e9e]">{'off'}</p>;

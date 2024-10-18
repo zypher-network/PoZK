@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ProverRow from "./ProverRow";
 import { UserProver } from "@/types/IProver";
-import useSubgraphStore from "@/components/state/subgraphStore";
+import ControllerBtn from "../../controllerBtn/controllerBtn";
 
 interface IUserProvers {
   provers: UserProver[];
@@ -18,6 +18,7 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
       "Time Connected",
       "Staking Amount",
       "Total Tasks",
+      "Is Miner",
       "Action", // delete
     ];
   }, []);
@@ -25,7 +26,12 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
   return (
     <>
       <Card>
-        <CardTitle>Your Provers</CardTitle>
+        <div className="flex items-center justify-between pb-2">
+          <CardTitle>
+            Your Provers
+          </CardTitle>
+          <ControllerBtn />
+        </div>
         <Table>
           <TableHeader>
             <TableRow className="border-[#1F2D4E]">
@@ -43,7 +49,7 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
           <TableBody>
             <TableRow>
               <TableCell
-                colSpan={6}
+                colSpan={7}
                 className="h-[16px] bg-transparent"
               ></TableCell>
             </TableRow>

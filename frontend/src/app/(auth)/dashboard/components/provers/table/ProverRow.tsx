@@ -21,6 +21,8 @@ import useGetMinerStaking from "@/components/hooks/useGetMinerStaking";
 import { useQuery } from "@apollo/client";
 import { GET_TASKS } from "@/components/queries/tasks";
 import { useAccount } from "wagmi";
+import useBalanceStore from "@/components/state/balanceStore";
+import { useMemo } from "react";
 
 interface IProverRow {
   name: string;
@@ -34,9 +36,46 @@ interface IProverRow {
 
 const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prover, version, overtime, needUpgrade = false }) => {
   const { setStakeItemHandler } = usePostStake();
+  const minStake = useBalanceStore(state => state.minStake);
   const { address } = useAccount();
   const { data } = useQuery(GET_TASKS, { variables: { address: address?.toLowerCase() ?? '', prover: prover.toLowerCase() }, skip: !address })
   const stakingAmount = useGetMinerStaking(prover);
+  const isMiner = useMemo(() => new BigNumberJs(stakingAmount).div(BM18).gte(minStake.format), [stakingAmount, minStake.format])
+
+  const renderAction = () => {
+    if (running) {
+      if (isMiner) {
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <DotsHorizontalIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => setStakeItemHandler(prover, "Stake")}
+              >
+                Stake
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setStakeItemHandler(prover, "UnStake")}
+              >
+                UnStake
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      }
+      return (
+        <div className="py-1 cursor-pointer text-black px-3 rounded text-sm bg-[#82c01e]" onClick={() => setStakeItemHandler(prover, "Stake")}>Stake</div>
+      );
+    }
+    return null;
+  }
   return (
     <TableRow>
       <TableCell className="capitalize">{running ? 'Running' : 'Ping'}</TableCell>
@@ -44,6 +83,7 @@ const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prove
       <TableCell>{created ? calcDuration(new Date(created)) : '--'}</TableCell>
       <TableCell>{new BigNumberJs(stakingAmount).div(BM18).toFormat()}</TableCell>
       <TableCell>{data?.tasks?.length ?? '--'}</TableCell>
+      <TableCell>{isMiner ? "✅" : ""}</TableCell>
       <TableCell className="justify-end gap-2">
         {!running && (
           <Recommendation
@@ -54,28 +94,7 @@ const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prove
             needUpgrade={needUpgrade}
           />
         )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <DotsHorizontalIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => setStakeItemHandler(prover, "Stake")}
-            >
-              Stake
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => setStakeItemHandler(prover, "UnStake")}
-            >
-              UnStake
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {renderAction()}
       </TableCell>
     </TableRow>
   );

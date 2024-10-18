@@ -11,14 +11,14 @@ const useAuth = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const Failed = useFailedRoute();
   const { account, hasToken, loginOut } = useSession();
-  const { address, isConnected } = useAccount();
-  const { fetch, fetching } = useControllerStore(useShallow(state => ({ fetch: state.fetch, fetching: state.fetching })));
+  const { address, isConnected, isDisconnected } = useAccount();
+  const { fetch } = useControllerStore(useShallow(state => ({ fetch: state.fetch, fetching: state.fetching })));
 
   const isSameAccount = useMemo(() =>
     account?.toLowerCase().startsWith(address?.toLowerCase() ?? '') ?? false,
-    [address],
+    [address, isDisconnected],
   );
-
+  
   const handleInit = async () => {
     try {
       await fetch(1);
@@ -32,13 +32,15 @@ const useAuth = () => {
   }
 
   useLayoutEffect(() => {
-    if (hasToken && isConnected && isSameAccount) {
-      handleInit();
-    } else {
-      setIsCompleted(true);
-      loginOut();
+    if (!isDisconnected) {
+      if (isConnected && hasToken && isSameAccount) {
+        handleInit();
+      } else {
+        setIsCompleted(true);
+        loginOut();
+      }
     }
-  }, [hasToken, isConnected, isSameAccount]);
+  }, [isDisconnected, hasToken]);
 
   return [hasAuth, isCompleted];
 }
