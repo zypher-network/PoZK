@@ -224,7 +224,7 @@ impl Pool {
 
                 let func = self
                     .stake
-                    .miner_test_submit(U256::from(tid), true, proof.into())
+                    .miner_test_submit(U256::from(tid), false, proof.into())
                     .gas_price(extra_gas);
                 self.send(func, true).await;
             }
