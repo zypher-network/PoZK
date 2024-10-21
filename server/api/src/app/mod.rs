@@ -86,7 +86,6 @@ impl App {
                 .allow_origin(Any);
 
             let app = Router::new()
-                .route("/", get(auth::index))
                 .route("/login", post(auth::login))
                 .route("/tasks/:id", get(task::download).post(task::upload))
                 .nest(
@@ -104,6 +103,8 @@ impl App {
                         .route("/provers/:prover", get(prover::show).delete(prover::delete))
                         .route_layer(from_extractor::<Auth>()),
                 )
+                .route("/", get(auth::webapp))
+                .route("/*path", get(auth::webapp))
                 .layer(Extension(Arc::new(self)))
                 .layer(cors)
                 .fallback(fallback);

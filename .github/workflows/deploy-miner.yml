@@ -1,28 +1,27 @@
-name: "Deploy-frontend"
+name: "Deploy-miner"
 on:
-  push:
-    tags:
-      - 'frontend-v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'v0.0.0'
+        required: true
+      platforms:
+        description: 'amd64 (Dev) | amd64,arm64 (Prod)'
+        required: true
+        default: 'amd64'
 
 jobs:
-  build-push-frontend:
+  build-push-docker:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/frontend-v')
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 100
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract version from tag
-        id: extract_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/frontend-v}" >> $GITHUB_ENV
 
       - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
-
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -39,11 +38,14 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./frontend/Dockerfile
-          platforms: amd64
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/pozk-frontend:${{ env.VERSION }}
           push: true
+          platforms: ${{ github.event.inputs.platforms }}
+          file: ./server/Dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/pozk-miner:${{ github.event.inputs.version }}
+          build-args: RELEASE_VERSION=${{ github.event.inputs.version }}
+          ssh: default
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
