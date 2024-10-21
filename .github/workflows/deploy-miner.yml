@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'v0.0.0'
+        description: 'version: v0.0.0'
         required: true
       platforms:
         description: 'amd64 (Dev) | amd64,arm64 (Prod)'

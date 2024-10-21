@@ -1,7 +1,7 @@
 # Builder frontend
 FROM node:20-alpine AS builder1
 
-WORKDIR /build21
+WORKDIR /build1
 ADD frontend frontend
 
 WORKDIR /build1/frontend
@@ -34,7 +34,7 @@ RUN apt-get update && \
     update-ca-certificates
 
 WORKDIR /app
-COPY --from=builder1 /build1/frontend/web-app .
+COPY --from=builder1 /build1/frontend/web-app web-app
 COPY --from=builder2 /build2/server/target/release/pozk-miner .
 
 ENTRYPOINT ["./pozk-miner"]

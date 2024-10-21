@@ -6,7 +6,7 @@ networks:
 
 services:
   pozk-miner:
-    image: zyphernetwork/pozk-miner:0.0.21
+    image: zyphernetwork/pozk-miner:v0.1.0
     container_name: pozk-miner
     ports:
       - "9098:9098"
@@ -16,12 +16,3 @@ services:
     command:
       - --network=testnet
       - --miner=0x0000000000000000000000000000000000000000 # set your miner address here
-
-  pozk-frontend:
-    image: zyphernetwork/pozk-frontend:0.0.11
-    container_name: pozk-frontend
-    ports:
-      - "4000:4000"
-    environment:
-      - API_BASE_URL=http://localhost:9098
-      - NETWORK=testnet
