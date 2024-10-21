@@ -18,7 +18,7 @@ export const navigation: NavItem[] = [
   },
   {
     name: "Rewards",
-    href: "/rewards",
+    href: "/dashboard/rewards",
     description: "Rewards",
   },
   // {

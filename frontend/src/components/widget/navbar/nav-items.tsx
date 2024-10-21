@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
-import { INavName, NavItem, useLocation } from "./navbar";
+import { INavName, NavItem } from "./navbar";
 
-import { FC, memo, SVGProps, useMemo } from "react";
+import { memo, useMemo } from "react";
 import Dashboard from "@/components/icon/Dashboard.svg";
 import DashboardOn from "@/components/icon/Dashboard-on.svg";
 import Rewards from "@/components/icon/Rewards.svg";
@@ -11,6 +11,7 @@ import Referral from "@/components/icon/Referral.svg";
 import ReferralOn from "@/components/icon/Referral-on.svg";
 import Setting from "@/components/icon/Setting.svg";
 import SettingOn from "@/components/icon/Setting-on.svg";
+import { usePathname } from "next/navigation";
 
 const NavItems = ({ navItems }: { navItems: NavItem[] }) => {
   return (
@@ -23,11 +24,13 @@ const NavItems = ({ navItems }: { navItems: NavItem[] }) => {
 };
 
 const Item = ({ item }: { item: NavItem }) => {
-  const pathname = useLocation();
+  const pathname = usePathname();
   const { href, name } = item;
+  // console.log(pathname, item);
+  // const active = false;
   const active = useMemo(() => {
-    return pathname === href;
-  }, [pathname, href]);
+    return pathname === item.href;
+  }, [pathname, item]);
   return (
     <Link
       key={href + name}

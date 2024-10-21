@@ -1,13 +1,7 @@
 import { memo } from "react";
 import generateMetadata from "@/lib/generateMetadata";
-import ControllerPage from "./ControllerPage";
+import ControllerPage from "./components/ControllerPage";
 export const metadata = generateMetadata({ tit: "Setting Controller" });
-
-export async function generateStaticParams() {
-  return [
-    { action: 'add' },
-  ];
-}
 
 const ControllerAction = () => {
   return <ControllerPage />;

@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import Wallet from "@/components/icon/wallet.svg";
 import KChat from "@/components/icon/kchat.svg";
 import Gold from "@/components/icon/gold.svg";
-import { title } from "process";
 import { cn } from "@/lib/utils";
 import { useAccount } from "wagmi";
 import BigNumberJs, { BM18 } from "@/lib/BigNumberJs";
@@ -86,7 +85,7 @@ const Banner = () => {
 
   return (
     <div className="flex justify-between items-stretch gap-[24px]">
-      {rewardInfo.map((v) => <Item item={v} key={title} pending={pending} onClaim={handleClaim} />)}
+      {rewardInfo.map((v) => <Item item={v} key={v.title} pending={pending} onClaim={handleClaim} />)}
     </div>
   );
 };

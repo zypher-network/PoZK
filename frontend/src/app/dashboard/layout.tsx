@@ -5,7 +5,7 @@ import useAuth from "@/components/hooks/useAuth";
 import useGetUserBalance from "@/components/hooks/useGetUserBalance";
 import useInitSubgraph from "@/components/hooks/useInitSubgraph";
 
-export default function RootLayout({
+export default function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -13,6 +13,7 @@ export default function RootLayout({
   useInitSubgraph();
   useGetUserBalance();
   const [hasAuth] = useAuth();
+  console.log(hasAuth, '---');
   if (!hasAuth) {
     return (
       <div className="grid place-items-center animate-pulse p-4">Loading</div>

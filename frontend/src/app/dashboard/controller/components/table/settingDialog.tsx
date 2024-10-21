@@ -81,7 +81,6 @@ const SettingDialog = ({
     if (success) {
       onOpenChange(false);
     }
-    console.log('rrrrrrrr fetch');
     await refetch(1);
     setLoading(false);
   }, [action]);

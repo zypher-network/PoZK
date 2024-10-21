@@ -14,7 +14,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useParams } from "next/navigation";
-import { usePostController } from "../../hook/useController";
+import { usePostController } from "../../../hook/useController";
 import { IAction } from "@/types/IAction";
 const ethereumSecretKeyRegex = /^0x[a-fA-F0-9]{64}$/;
 const FormSchema = z.object({

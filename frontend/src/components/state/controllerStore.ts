@@ -1,4 +1,4 @@
-import { IControllerItem } from '@/app/(auth)/dashboard/state/dashboardState';
+import { IControllerItem } from '@/app/dashboard/state/dashboardState';
 import pozk from '@/services/pozk';
 import { create } from 'zustand';
 
