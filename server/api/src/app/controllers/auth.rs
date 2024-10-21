@@ -1,7 +1,7 @@
 use axum::{
-    extract::{Extension, Json, Request, Path},
-    response::{Html, IntoResponse, Redirect, Response},
-    http::header::{HeaderValue, CONTENT_TYPE, HeaderMap}
+    extract::{Extension, Json, Request},
+    http::header::{HeaderMap, HeaderValue, CONTENT_TYPE},
+    response::{IntoResponse, Redirect, Response},
 };
 use serde_json::{json, Value};
 use tokio::fs::read;
@@ -41,12 +41,10 @@ pub async fn webapp(req: Request) -> Response {
     headers.insert(CONTENT_TYPE, header_value);
 
     match read(&file_path).await {
-        Ok(content) => {
-            (headers, content).into_response()
-        }
+        Ok(content) => (headers, content).into_response(),
         Err(_) => {
             warn!("Invalid path: {}", file_path);
             Redirect::to("/").into_response()
-        },
+        }
     }
 }
