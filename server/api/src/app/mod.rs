@@ -19,7 +19,6 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
 use tower_http::cors::{Any, CorsLayer};
-use tower_http::services::ServeDir;
 
 use controllers::auth;
 use controllers::controller;
@@ -80,8 +79,6 @@ impl App {
         tokio::spawn(async move {
             let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
 
-            let static_files = ServeDir::new("web-app");
-
             // cors
             let cors = CorsLayer::new()
                 .allow_methods([Method::GET, Method::POST, Method::DELETE])
@@ -106,10 +103,8 @@ impl App {
                         .route("/provers/:prover", get(prover::show).delete(prover::delete))
                         .route_layer(from_extractor::<Auth>()),
                 )
-                .route("/dashboard", get(|| auth::webapp("dashboard")))
-                .route("/controller", get(|| auth::webapp("controller")))
-                .route("/rewards", get(|| auth::webapp("rewards"))) 
-                .nest_service("/", static_files)
+                .route("/", get(auth::webapp))
+                .route("/*path", get(auth::webapp))
                 .layer(Extension(Arc::new(self)))
                 .layer(cors)
                 .fallback(fallback);
