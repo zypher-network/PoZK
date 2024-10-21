@@ -2,8 +2,8 @@ const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
 
 // const myProver = "0x3aa5ebb10dc797cac828524e59a333d0a371443c"; // localhsot
-const myProver = "0x5b92b011513f9aaf8f6541003dc088625e7438e8";
-const myProver1 = "0xef1e764c386ec95ed233035661dd4269be8fd8e7";
+const myProver = "0x5b92b011513f9aaf8f6541003dc088625e7438e8"; // 2048
+const myProver1 = "0xef1e764c386ec95ed233035661dd4269be8fd8e7"; // cr
 const ONE_TOKEN = 10000000000000000000n;
 
 const ACCOUNT1 = new ethers.Wallet("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
@@ -30,7 +30,7 @@ async function dao() {
 
 async function prover() {
   const [c, _] = await attachContract("Prover");
-  await c.register(myProver, 5000, 1, 10, myProver);
+  await c.register(myProver, 10000, 2, 20, myProver);
   await sleep();
   await c.approve(myProver, true, true);
   console.log("Prover set ok");
@@ -179,11 +179,11 @@ async function unstake() {
 async function main() {
   //await dao();
   //await vesting();
-  //await prover();
+  await prover();
   //await stakeWithTest();
   //await stakeWithTestCreate();
   //await stakeWithTestSubmit();
-  await stakeProverAndPlayer();
+  //await stakeProverAndPlayer();
   //await stake();
   //await controller();
   //await loopTask(10);

@@ -62,13 +62,13 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     mapping(address => GameProver) private provers;
 
     /// @notice Emit when new prover register and waiting reviewing
-    event RegisterProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier);
+    event RegisterProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier, string name);
 
     /// @notice Emit when prover owner transfer to others
     event TransferProver(address prover, address owner);
 
     /// @notice Emit when the prover start upgrading and waiting reviewing, before approve, it will still use old info
-    event UpgradeProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier);
+    event UpgradeProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier, string name);
 
     /// @notice Emit when the prover is approved or reject
     event ApproveProver(address prover, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved);
@@ -98,6 +98,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     function register(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
         require(provers[prover].version.value == 0 && _version > 0, "G01");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
+        string memory name = IVerifier(_verifier).name();
 
         GameProver storage g = provers[prover];
         g.status = ProverStatus.Reviewing;
@@ -108,7 +109,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         g.verifier = ProverVerifier(_verifier, _verifier, 0);
         g.minable = false;
 
-        emit RegisterProver(prover, _work, _version, _overtime, _verifier);
+        emit RegisterProver(prover, _work, _version, _overtime, _verifier, name);
         emit TransferProver(prover, msg.sender);
     }
 
@@ -131,6 +132,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     function upgrade(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
         require(provers[prover].owner == msg.sender, "G02");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
+        string memory name = IVerifier(_verifier).name();
 
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
@@ -169,7 +171,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         g.verifier.newValue = _verifier;
         g.verifier.newEpoch = type(uint256).max;
 
-        emit UpgradeProver(prover, _work, _version, _overtime, _verifier);
+        emit UpgradeProver(prover, _work, _version, _overtime, _verifier, name);
     }
 
     /// @notice Prover owner can transfer ownership to others

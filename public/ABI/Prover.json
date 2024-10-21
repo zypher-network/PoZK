@@ -156,6 +156,12 @@
         "internalType": "address",
         "name": "verifier",
         "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
       }
     ],
     "name": "RegisterProver",
@@ -225,6 +231,12 @@
         "internalType": "address",
         "name": "verifier",
         "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
       }
     ],
     "name": "UpgradeProver",
