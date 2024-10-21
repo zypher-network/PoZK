@@ -1,13 +1,24 @@
-# Builder
-FROM rust:bullseye AS builder
+# Builder frontend
+FROM node:20-alpine AS builder1
+
+WORKDIR /build21
+ADD frontend frontend
+
+WORKDIR /build1/frontend
+RUN yarn config set network-timeout 300000
+RUN yarn install --frozen-lockfile
+RUN yarn build
+
+# Builder backend
+FROM rust:bullseye AS builder2
 RUN update-ca-certificates
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
-WORKDIR /build
+WORKDIR /build2
 ADD server server
 ADD public public
 
-WORKDIR /build/server
+WORKDIR /build2/server
 RUN cargo build --release
 
 # Final image
@@ -23,6 +34,7 @@ RUN apt-get update && \
     update-ca-certificates
 
 WORKDIR /app
-COPY --from=builder /build/server/target/release/pozk-miner .
+COPY --from=builder1 /build1/frontend/web-app .
+COPY --from=builder2 /build2/server/target/release/pozk-miner .
 
 ENTRYPOINT ["./pozk-miner"]
