@@ -1,1 +1,0 @@
-self.__SSG_MANIFEST=new Set(["\u002Fdashboard\u002Fcontroller\u002F[action]","\u002Fdashboard\u002Fsetting\u002F[action]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()
