@@ -258,6 +258,12 @@ fn generate_eip712_data(
     }
 }
 
+const PROXY_LIST_ACCOUNTS: [H160; 1] = [H160([0u8; 20])];
+
+pub fn check_task_proxy_list(signer: &Address) -> bool {
+    PROXY_LIST_ACCOUNTS.contains(signer)
+}
+
 #[tokio::test]
 async fn test_zero_gas() {
     let uri = "https://gas.zypher.network";

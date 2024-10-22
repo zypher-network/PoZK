@@ -2,15 +2,17 @@ mod controllers;
 mod extensions;
 pub use extensions::error::{Error, Result};
 
+use anyhow::anyhow;
 use axum::{
     extract::{Extension, Json},
     http::Method,
     middleware::from_extractor,
     routing::{get, post, Router},
 };
-use ethers::prelude::Address;
+use ethers::prelude::{Address, Http, Provider};
 use pozk_db::ReDB;
-use pozk_utils::ServiceMessage;
+use pozk_docker::DockerManager;
+use pozk_utils::{contract_address, DefaultProvider, ServiceMessage, Task};
 use rand::{thread_rng, Rng};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -40,15 +42,20 @@ pub struct App {
     port: u16,
     domains: Vec<String>,
     db: Arc<ReDB>,
+    docker: Arc<DockerManager>,
     sender: UnboundedSender<ServiceMessage>,
     secret: [u8; 32],
+    task: Task<DefaultProvider>,
 }
 
 impl App {
     pub fn new(
         cfg: &ApiConfig,
         db: Arc<ReDB>,
+        docker: Arc<DockerManager>,
         sender: UnboundedSender<ServiceMessage>,
+        network: &str,
+        endpoints: String,
     ) -> anyhow::Result<Self> {
         let miner: Address = cfg.miner.parse()?;
         let port = cfg.port;
@@ -65,13 +72,23 @@ impl App {
             thread_rng().gen::<[u8; 32]>()
         };
 
+        let endpoint = endpoints
+            .split(";")
+            .next()
+            .ok_or(anyhow!("Invalid endpoints"))?;
+        let provider = Provider::<Http>::try_from(endpoint)?;
+        let (task_address, _) = contract_address(network, "Task")?;
+        let task = Task::new(task_address, Arc::new(provider));
+
         Ok(Self {
             miner,
             port,
             domains,
             db,
+            docker,
             sender,
             secret,
+            task,
         })
     }
 
@@ -87,6 +104,8 @@ impl App {
 
             let app = Router::new()
                 .route("/login", post(auth::login))
+                .route("/orders", post(task::create))
+                .route("/orders/:id", post(task::track))
                 .route("/tasks/:id", get(task::download).post(task::upload))
                 .nest(
                     "/api",

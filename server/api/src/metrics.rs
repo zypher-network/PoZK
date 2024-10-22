@@ -31,6 +31,7 @@ pub struct MetricsService {
     cpu: u64,
     memory: String,
     client: Client,
+    metrics: String,
     url: String,
 }
 
@@ -45,6 +46,7 @@ impl MetricsService {
         miner: String,
         db: Arc<ReDB>,
         docker: Arc<DockerManager>,
+        url: String,
     ) -> Result<Self> {
         let os = System::long_os_version().unwrap_or("Unknow".to_owned());
         let gpu = get_gpus();
@@ -58,7 +60,7 @@ impl MetricsService {
         ); // GB
 
         let client = reqwest::Client::new();
-        let url = pozk_metrics_url(network)?;
+        let metrics = pozk_metrics_url(network)?;
 
         Ok(Self {
             miner,
@@ -69,15 +71,17 @@ impl MetricsService {
             cpu,
             memory,
             client,
+            metrics,
             url,
             wallet: None,
         })
     }
 
-    pub fn run(self) -> UnboundedSender<MetricsMessage> {
+    pub fn run(self) -> (UnboundedSender<MetricsMessage>, usize) {
+        let cpu = self.cpu as usize;
         let (sender, receiver) = unbounded_channel();
         tokio::spawn(self.listen(receiver));
-        sender
+        (sender, cpu)
     }
 
     async fn listen(mut self, mut recv: UnboundedReceiver<MetricsMessage>) {
@@ -117,7 +121,7 @@ impl MetricsService {
             let controller = format!("{:?}", wallet.address());
 
             let message = format!(
-                "{}{}{}{}{}{}{}{}",
+                "{}{}{}{}{}{}{}{}{}",
                 self.miner,
                 controller,
                 PROXY_VERSION,
@@ -125,7 +129,8 @@ impl MetricsService {
                 self.gpu,
                 self.cpu,
                 self.memory,
-                timestamp
+                self.url,
+                timestamp,
             );
             let signature = wallet.sign_message(message).await?.to_string();
             (controller, signature)
@@ -141,13 +146,14 @@ impl MetricsService {
             "gpu": self.gpu,
             "cpu": self.cpu,
             "memory": self.memory,
+            "url": self.url,
             "timestamp": timestamp,
             "signature": signature,
         });
 
         let _ = self
             .client
-            .post(format!("{}/miners", self.url))
+            .post(format!("{}/miners", self.metrics))
             .json(&data)
             .send()
             .await?;
@@ -208,7 +214,7 @@ impl MetricsService {
 
         let _ = self
             .client
-            .post(format!("{}/provers", self.url))
+            .post(format!("{}/provers", self.metrics))
             .json(&data)
             .send()
             .await?;

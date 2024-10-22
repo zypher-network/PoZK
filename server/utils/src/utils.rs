@@ -58,6 +58,24 @@ pub async fn remove_task_input(tid: &str) -> Result<()> {
     Ok(())
 }
 
+pub async fn write_task_proof(tid: &str, proof: Vec<u8>) -> Result<()> {
+    let mut path = BASE_PATH.get().expect("Missing BASE PATH").clone();
+    path.push(format!("proof-{}", tid));
+
+    fs::write(path, proof).await?;
+    Ok(())
+}
+
+pub async fn read_task_proof(tid: &str) -> Result<Vec<u8>> {
+    let mut path = BASE_PATH.get().expect("Missing BASE PATH").clone();
+    path.push(format!("proof-{}", tid));
+
+    let bytes = fs::read(&path).await?;
+    fs::remove_file(path).await?;
+
+    Ok(bytes)
+}
+
 pub fn get_task_api(tid: &str) -> String {
     let server = API_SERVER.get().expect("Missing API SERVER");
     format!("{}/tasks/{}", server, tid)

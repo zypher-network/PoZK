@@ -43,6 +43,10 @@ struct Command {
     #[arg(short, long, default_value = "http://pozk-miner:9098")]
     server: String,
 
+    /// miner service url, e.g. https://example.com
+    #[arg(short, long, default_value = "")]
+    url: String,
+
     /// RPC endpoint to listen and submit tx with chain
     #[arg(short, long)]
     endpoints: Option<String>,
@@ -54,6 +58,10 @@ struct Command {
     /// Use 0 gas service to send tx (Optional).
     #[arg(short, long)]
     zero_gas: Option<String>,
+
+    /// Parallel tasks one time (Optional).
+    #[arg(short, long)]
+    parallel: Option<usize>,
 
     /// Config file for advance features
     #[arg(short, long)]
@@ -96,7 +104,7 @@ async fn setup() -> Result<()> {
 
     // update contract address
     co.monitor_config.network = args.network.clone();
-    co.monitor_config.endpoints = endpoints;
+    co.monitor_config.endpoints = endpoints.clone();
     co.monitor_config.miner = args.miner.clone();
     co.monitor_config.zero_gas = zero_gas;
     co.api_config.miner = args.miner.clone();
@@ -118,13 +126,28 @@ async fn setup() -> Result<()> {
     };
 
     // start metrics service
-    let metrics_sender = MetricsService::new(
+    let (metrics_sender, cpu) = MetricsService::new(
         &args.network,
         args.miner.clone(),
         db.clone(),
         docker.clone(),
+        args.url.clone(),
     )?
     .run();
+
+    // calc parallel number
+    let n_cpu = if cpu < 4 { 1 } else { cpu / 4 };
+    let parallel = if let Some(p_cpu) = args.parallel {
+        if p_cpu > n_cpu {
+            warn!(
+                "Parallel number is too large, maybe dangerous, recommend: {}",
+                n_cpu
+            );
+        }
+        p_cpu
+    } else {
+        n_cpu
+    };
 
     // setup controller
     let (controller, ready) =
@@ -158,10 +181,26 @@ async fn setup() -> Result<()> {
         .run();
 
     // setup api
-    App::new(&co.api_config, db.clone(), service_sender)?.run();
+    App::new(
+        &co.api_config,
+        db.clone(),
+        docker.clone(),
+        service_sender,
+        &args.network,
+        endpoints,
+    )?
+    .run();
 
     // setup main service
-    MainService::new(pool_sender, metrics_sender, service_receiver, db, docker).run();
+    MainService::new(
+        pool_sender,
+        metrics_sender,
+        service_receiver,
+        db,
+        docker,
+        parallel,
+    )
+    .run();
 
     tokio::signal::ctrl_c().await?;
 

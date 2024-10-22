@@ -1,5 +1,8 @@
 use ethers::prelude::{Address, LocalWallet};
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::{
+    mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    oneshot::Sender,
+};
 
 pub enum ServiceMessage {
     /// tid, prover, inputs, publics
@@ -18,6 +21,8 @@ pub enum ServiceMessage {
     RemoveProver(Address),
     /// test id, prover, overtime, inputs, publics
     MinerTest(u64, Address, u64, Vec<u8>, Vec<u8>),
+    /// task from player service
+    ApiTask(String, Option<Sender<Vec<u8>>>),
 }
 
 pub fn new_service_channel() -> (

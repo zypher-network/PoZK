@@ -5,9 +5,13 @@ use pozk_db::ReDB;
 use pozk_db::{MainController, Prover, Task};
 use pozk_docker::{DockerManager, RunOption};
 use pozk_monitor::PoolMessage;
-use pozk_utils::{remove_task_input, write_task_input, ServiceMessage};
+use pozk_utils::{remove_task_input, write_task_input, write_task_proof, ServiceMessage};
+use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::{
+    mpsc::{UnboundedReceiver, UnboundedSender},
+    oneshot::Sender,
+};
 
 use crate::metrics::MetricsMessage;
 
@@ -17,6 +21,8 @@ pub struct MainService {
     service_receiver: UnboundedReceiver<ServiceMessage>,
     db: Arc<ReDB>,
     docker: Arc<DockerManager>,
+    _parallel: usize,
+    proxy_tasks: HashMap<String, Option<Sender<Vec<u8>>>>,
 }
 
 impl MainService {
@@ -26,6 +32,7 @@ impl MainService {
         service_receiver: UnboundedReceiver<ServiceMessage>,
         db: Arc<ReDB>,
         docker: Arc<DockerManager>,
+        _parallel: usize,
     ) -> Self {
         Self {
             pool_sender,
@@ -33,13 +40,15 @@ impl MainService {
             service_receiver,
             db,
             docker,
+            _parallel,
+            proxy_tasks: HashMap::new(),
         }
     }
 
     pub fn run(mut self) {
         tokio::spawn(async move {
             while let Some(msg) = self.service_receiver.recv().await {
-                if let Err(e) = handle(&self, msg).await {
+                if let Err(e) = handle(&mut self, msg).await {
                     error!("[Service] main error: {}", e);
                 }
             }
@@ -47,9 +56,11 @@ impl MainService {
     }
 }
 
-async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
+async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
     match msg {
         ServiceMessage::CreateTask(tid, prover, inputs, publics) => {
+            // TODO parallel
+
             // 1. check prover in local
             let key = Prover::to_key(&prover);
             if let Some(p) = app.db.get::<Prover>(key)? {
@@ -97,6 +108,16 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
             }
         }
         ServiceMessage::UploadProof(sid, proof) => {
+            if let Some(sender_op) = app.proxy_tasks.remove(&sid) {
+                if let Some(sender) = sender_op {
+                    let _ = sender.send(proof);
+                } else {
+                    write_task_proof(&sid, proof).await?;
+                }
+
+                return Ok(());
+            }
+
             tokio::spawn(upload_proof(
                 app.db.clone(),
                 sid,
@@ -179,6 +200,9 @@ async fn handle(app: &MainService, msg: ServiceMessage) -> Result<()> {
                 // 3. start docker container to run, TODO we can do more about cpu & memory
                 let _container = app.docker.run(&p.image, &sid, RunOption::default()).await?;
             }
+        }
+        ServiceMessage::ApiTask(sid, sender) => {
+            app.proxy_tasks.insert(sid, sender);
         }
     }
 

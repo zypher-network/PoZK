@@ -50,6 +50,9 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     /// @notice Store all tasks results
     mapping(bytes32 => uint256) private tasksResults;
 
+    /// @notice Store all proxy allow list
+    mapping(address => bool) public proxyList;
+
     /// @notice Emit when created a new task
     event CreateTask(uint256 id, address prover, address player, uint256 fee, bytes inputs, bytes publics);
 
@@ -58,6 +61,9 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
 
     /// @notice Emit when miner submit a proof for a task
     event SubmitTask(uint256 id, bytes proof);
+
+    /// @notice Emit when sent proxy task
+    event ProxyTask(uint256 id, address prover, address player, address miner);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -147,5 +153,29 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         IReward(IAddresses(addresses).get(Contracts.Reward)).work(task.prover, task.player, task.miner);
 
         delete tasks[tid];
+    }
+
+    /// @notice Set the proxy allow account
+    /// @param account the allow account
+    /// @param isOk the status
+    function setProxyList(address account, bool isOk) external onlyOwner {
+        proxyList[account] = isOk;
+    }
+
+    /// @notice Submit multiple proxy tasks
+    /// @param provers the prover list
+    /// @param players the player list
+    /// @param miners the miner list
+    function proxy(address[] calldata provers, address[] calldata players, address[] calldata miners) external {
+        // check sender in whitelist
+        require(proxyList[msg.sender], "T06");
+
+        for (uint i = 0; i < provers.length; i++) {
+            // PoZK to reward
+            IReward(IAddresses(addresses).get(Contracts.Reward)).work(provers[i], players[i], miners[i]);
+
+            emit ProxyTask(nextId, provers[i], players[i], miners[i]);
+            nextId += 1;
+        }
     }
 }
