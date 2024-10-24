@@ -43,6 +43,7 @@ export type GQLProver = {
   version: string;
   stop: boolean;
   status: number;
+  name: string;
   minable: boolean;
   overtime: string;
   id: Address;

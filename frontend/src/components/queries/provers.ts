@@ -7,6 +7,7 @@ export const GET_PROVERS = gql`
       version
       stop
       status
+      name
       minable
       overtime
       id

@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import pozk from '@/services/pozk';
 import { GQLProver, UserProver } from '@/types/IProver';
-import ContractService from '@/web3/contract/contract';
-import TokenAbi from "@/web3/contract/abi/Token.json";
 import useSubgraphStore from './subgraphStore';
 
 
@@ -21,11 +19,8 @@ const useProverStore = create<ProverStore>((set) => ({
     const containers = await pozk.getProverContainers(1);
     const rawProvers = gqlProvers || useSubgraphStore.getState().provers.data || [];
     for (const prover of rawProvers) {
-      const contract = new ContractService(prover.id, TokenAbi);
-      const proverName = await contract.readContractData('name', []);
       provers.push({
         ...prover,
-        name: proverName.toString(),
         containers: containers
           .filter(container => container.prover.toLowerCase() === prover.id.toLowerCase())
           .map(container => ({

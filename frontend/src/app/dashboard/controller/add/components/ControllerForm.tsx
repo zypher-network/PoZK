@@ -37,7 +37,7 @@ const ControllerForm = ({ action }: { action?: IAction }) => {
 
   const { addController, setController } = usePostController();
   const Action = useMemo(() => {
-    return action ?? (params.action?.toString() as IAction ?? '');
+    return 'add';
   }, [action, params.action]);
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -51,13 +51,12 @@ const ControllerForm = ({ action }: { action?: IAction }) => {
   const onSubmit = useCallback(
     async (data: z.infer<typeof FormSchema>) => {
       setLoading(true);
-
-      if (Action === "add") {
-        await addController(data.Controller as `0x${string}`);
-      }
-      if (Action === "edit") {
-        await setController(data.Controller as `0x${string}`);
-      }
+      // if (Action === "add") {
+      await addController(data.Controller as `0x${string}`);
+      // }
+      // if (Action === "edit") {
+      //   await setController(data.Controller as `0x${string}`);
+      // }
       setLoading(false);
       // if (Action === "Delete") {
       //   await deleteController(data.Controller);
