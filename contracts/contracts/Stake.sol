@@ -515,13 +515,43 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
             sm.value = sm.newValue;
             sm.newEpoch = currentEpoch + 1;
         }
-        require(sm.newValue >= amount, "S01");
+
+        uint256 stakingAmount = amount;
+        uint256 unstakingAmount = 0;
+
+        if (sm.newValue < amount) {
+            stakingAmount = sm.newValue;
+            unstakingAmount = amount - stakingAmount;
+
+            Staking storage su = unstakings[miner];
+            if (currentEpoch >= su.newEpoch) {
+                su.value += su.newValue;
+                su.newValue = 0;
+                su.newEpoch = currentEpoch + 1;
+            }
+
+            if (su.newValue < unstakingAmount) {
+                uint256 remain = unstakingAmount - su.newValue;
+                if (su.value < remain) {
+                    unstakingAmount = su.newValue + su.value;
+                    su.value = 0;
+                } else {
+                    su.value -= remain;
+                }
+
+                su.newValue = 0;
+            } else {
+                su.newValue -= unstakingAmount;
+            }
+
+            emit ClaimUnstaking(miner, unstakingAmount);
+        }
 
         // remove from miner staking
-        sm.newValue -= amount;
+        sm.newValue -= stakingAmount;
 
         // append to player unstaking
-        this.addUnstaking(player, amount);
+        this.addUnstaking(player, stakingAmount + unstakingAmount);
 
         // remove from total staking
         Staking storage st = gs.minerTotal;
@@ -529,9 +559,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
             st.value = st.newValue;
             st.newEpoch = currentEpoch + 1;
         }
-        st.newValue -= amount;
+        st.newValue -= stakingAmount;
 
-        emit MinerStakeChange(st.newEpoch, prover, miner, -int256(amount), sm.newValue, st.newValue);
+        emit MinerStakeChange(st.newEpoch, prover, miner, -int256(stakingAmount), sm.newValue, st.newValue);
     }
 
     /// --------------- Player --------------- ///

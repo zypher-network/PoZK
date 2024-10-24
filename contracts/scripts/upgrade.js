@@ -52,10 +52,12 @@ async function redeploy(name, item, params=[]) {
 }
 
 async function upgrade() {
-  //await upgradeContractWithProxy("Vesting");
+  // await upgradeContractWithProxy("Vesting");
   // await upgradeContractWithProxy("Stake");
-
+  // await upgradeContractWithProxy("Task");
   // await redeploy("Stake", 3, [1000n * ONE_TOKEN]);
+
+  // await redeploy("Task", 6, [100n * ONE_TOKEN]);
 }
 
 async function main() {

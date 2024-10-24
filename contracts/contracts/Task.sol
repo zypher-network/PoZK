@@ -72,7 +72,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     event ProxyTask(uint256 id, address prover, address player, address miner);
 
     /// @notice Emit when task into disputed
-    event DisputeTask(uint256 id, address sender, uint256 amount);
+    event DisputeTask(uint256 id, address sender, uint256 deposit);
 
     /// @notice Emit when task have beed adjudicated
     event AdjudicateTask(uint256 id, address sender, uint256 playerAmount, uint256 minerAmount, uint256 daoAmount, bool slash);

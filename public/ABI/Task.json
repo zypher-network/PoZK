@@ -166,7 +166,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "amount",
+        "name": "deposit",
         "type": "uint256"
       }
     ],
