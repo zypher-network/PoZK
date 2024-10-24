@@ -51,9 +51,58 @@
         "internalType": "uint256",
         "name": "overtime",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
       }
     ],
     "name": "AcceptTask",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "playerAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minerAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "daoAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "slash",
+        "type": "bool"
+      }
+    ],
+    "name": "AdjudicateTask",
     "type": "event"
   },
   {
@@ -97,6 +146,31 @@
       }
     ],
     "name": "CreateTask",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "DisputeTask",
     "type": "event"
   },
   {
@@ -192,9 +266,42 @@
         "internalType": "address",
         "name": "miner",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
       }
     ],
     "name": "accept",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tid",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "playerAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minerAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "slash",
+        "type": "bool"
+      }
+    ],
+    "name": "adjudicate",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -241,9 +348,40 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "tid",
+        "type": "uint256"
+      }
+    ],
+    "name": "dispute",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "disputeDeposit",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "_addresses",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_disputeDeposit",
+        "type": "uint256"
       }
     ],
     "name": "initialize",
@@ -342,6 +480,19 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "_disputeDeposit",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDisputeDeposit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "account",
         "type": "address"
@@ -373,6 +524,25 @@
     "name": "submit",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "tasksResults",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

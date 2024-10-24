@@ -199,6 +199,7 @@ async fn setup() -> Result<()> {
         db,
         docker,
         parallel,
+        args.url.clone(),
     )
     .run();
 

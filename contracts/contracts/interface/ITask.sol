@@ -4,7 +4,8 @@ pragma solidity ^0.8.20;
 enum TaskStatus {
     Over,
     Waiting,
-    Proving
+    Proving,
+    Disputing
 }
 
 interface ITask {

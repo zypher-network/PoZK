@@ -22,6 +22,7 @@ pub struct MainService {
     db: Arc<ReDB>,
     docker: Arc<DockerManager>,
     _parallel: usize,
+    url: String,
     proxy_tasks: HashMap<String, Option<Sender<Vec<u8>>>>,
 }
 
@@ -33,6 +34,7 @@ impl MainService {
         db: Arc<ReDB>,
         docker: Arc<DockerManager>,
         _parallel: usize,
+        url: String,
     ) -> Self {
         Self {
             pool_sender,
@@ -41,6 +43,7 @@ impl MainService {
             db,
             docker,
             _parallel,
+            url,
             proxy_tasks: HashMap::new(),
         }
     }
@@ -88,7 +91,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
 
                 // 5. accept task
                 app.pool_sender
-                    .send(PoolMessage::AcceptTask(tid))
+                    .send(PoolMessage::AcceptTask(tid, app.url.clone()))
                     .expect("Missing pool");
             }
         }

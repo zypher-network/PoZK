@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./interface/IAddresses.sol";
 import "./interface/IController.sol";
+import "./interface/IEpoch.sol";
 import "./interface/IProver.sol";
 import "./interface/IReward.sol";
 import "./interface/IStake.sol";
@@ -36,6 +37,8 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         uint256 overtime;
         /// @notice the proof public inputs data
         bytes publics;
+        /// @notice the dispute deposit when disputing
+        uint256 dispute;
     }
 
     /// @notice Common Addresses contract
@@ -44,11 +47,14 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     /// @notice Next task id, start from 1
     uint256 public nextId;
 
+    /// @notice the deposit for security when dispute
+    uint256 public disputeDeposit;
+
     /// @notice Store all tasks
     mapping(uint256 => GameTask) private tasks;
 
     /// @notice Store all tasks results
-    mapping(bytes32 => uint256) private tasksResults;
+    mapping(bytes32 => uint256) public tasksResults;
 
     /// @notice Store all proxy allow list
     mapping(address => bool) public proxyList;
@@ -57,7 +63,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     event CreateTask(uint256 id, address prover, address player, uint256 fee, bytes inputs, bytes publics);
 
     /// @notice Emit when miner accepted a task
-    event AcceptTask(uint256 id, address miner, uint256 overtime);
+    event AcceptTask(uint256 id, address miner, uint256 overtime, string url);
 
     /// @notice Emit when miner submit a proof for a task
     event SubmitTask(uint256 id, bytes proof);
@@ -65,11 +71,18 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     /// @notice Emit when sent proxy task
     event ProxyTask(uint256 id, address prover, address player, address miner);
 
+    /// @notice Emit when task into disputed
+    event DisputeTask(uint256 id, address sender, uint256 amount);
+
+    /// @notice Emit when task have beed adjudicated
+    event AdjudicateTask(uint256 id, address sender, uint256 playerAmount, uint256 minerAmount, uint256 daoAmount, bool slash);
+
     /// @notice Initialize
     /// @param _addresses the Addresses contract
-    function initialize(address _addresses) public initializer {
+    function initialize(address _addresses, uint256 _disputeDeposit) public initializer {
         __Ownable_init(msg.sender);
         addresses = _addresses;
+        disputeDeposit = _disputeDeposit;
         nextId = 1;
     }
 
@@ -77,6 +90,12 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     /// @param _addresses the Addresses contract
     function setAddresses(address _addresses) external onlyOwner {
         addresses = _addresses;
+    }
+
+    /// @notice Set the dispute deposit
+    /// @param _disputeDeposit the amount
+    function setDisputeDeposit(uint256 _disputeDeposit) external onlyOwner {
+        disputeDeposit = _disputeDeposit;
     }
 
     /// @notice Create new zk task of a prover
@@ -110,7 +129,8 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     /// @notice Accept a task by miner, can be called by miner or controller
     /// @param tid the task id
     /// @param miner the miner account
-    function accept(uint256 tid, address miner) external {
+    /// @param url the url which can reach the miner
+    function accept(uint256 tid, address miner, string calldata url) external {
         require(IController(IAddresses(addresses).get(Contracts.Controller)).check(miner, msg.sender), "T02");
 
         GameTask storage task = tasks[tid];
@@ -124,20 +144,19 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         task.miner = miner;
         task.overtime = block.timestamp + overtime;
 
-        emit AcceptTask(tid, miner, task.overtime);
+        emit AcceptTask(tid, miner, task.overtime, url);
     }
 
     /// @notice Submit a proof for a task, will call verifier to verify
     /// @param tid the task id
     /// @param proof the zk proof
     function submit(uint256 tid, bytes calldata proof) external {
-        bytes32 hash = keccak256(proof);
+        GameTask storage task = tasks[tid];
+        require(task.status == TaskStatus.Proving, "T05");
+
+        bytes32 hash = keccak256(abi.encode(task.publics, proof));
         require(tasksResults[hash] == 0, "T98");
         tasksResults[hash] = tid;
-
-        GameTask storage task = tasks[tid];
-
-        require(task.status == TaskStatus.Proving, "T05");
 
         // zk verifier
         address verifier = IProver(IAddresses(addresses).get(Contracts.Prover)).verifier(task.prover);
@@ -177,5 +196,64 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
             emit ProxyTask(nextId, provers[i], players[i], miners[i]);
             nextId += 1;
         }
+    }
+
+    /// @notice Dispute the task, player & miner can call this, and need deposit for security,
+    /// and DAO will check.
+    /// @param tid the task id
+    function dispute(uint256 tid) external {
+        GameTask storage task = tasks[tid];
+        require(task.status == TaskStatus.Proving, "T05");
+
+        require(
+            msg.sender == task.player ||
+            IController(IAddresses(addresses).get(Contracts.Controller)).check(task.miner, msg.sender),
+        "T07");
+
+        // transfer
+        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), disputeDeposit);
+
+        task.status == TaskStatus.Disputing;
+        task.dispute = disputeDeposit;
+
+        emit DisputeTask(tid, msg.sender, disputeDeposit);
+    }
+
+    /// @notice Adjudicate the task dispute, if playerAmount > minerAmount, player win, otherwise miner win.
+    /// @param tid the task id
+    /// @param playerAmount the amount will send to player
+    /// @param minerAmount the amount will send to miner
+    /// @param slash if need slash miner's staking to player
+    function adjudicate(uint256 tid, uint256 playerAmount, uint256 minerAmount, bool slash) external {
+        GameTask storage task = tasks[tid];
+        require(task.status == TaskStatus.Disputing, "T08");
+        require(task.dispute >= playerAmount + minerAmount, "T09");
+        require(IEpoch(IAddresses(addresses).get(Contracts.Epoch)).isDao(msg.sender), "T10");
+
+        if (playerAmount > 0) {
+            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(task.player, playerAmount);
+        }
+
+        if (minerAmount > 0) {
+            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(task.miner, minerAmount);
+        }
+
+        uint256 daoAmount = task.dispute - playerAmount - minerAmount;
+        if (daoAmount > 0) {
+            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(msg.sender, daoAmount);
+        }
+
+        if (playerAmount > minerAmount && slash) {
+            // slash miner staking amount to player
+            IStake(IAddresses(addresses).get(Contracts.Stake)).minerSlashStaking(task.miner, task.prover, task.player, task.dispute);
+        }
+
+        if (minerAmount > playerAmount) {
+            // give miner reward directly, and player change to dao
+            IReward(IAddresses(addresses).get(Contracts.Reward)).work(task.prover, msg.sender, task.miner);
+        }
+
+        delete tasks[tid];
+        emit AdjudicateTask(tid, msg.sender, playerAmount, minerAmount, daoAmount, slash);
     }
 }

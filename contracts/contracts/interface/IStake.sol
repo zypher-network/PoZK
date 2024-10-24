@@ -17,6 +17,9 @@ interface IStake {
     // check account is miner or not
     function isMiner(address prover, address account) external view returns (bool);
 
+    /// get miner staking
+    function minerSlashStaking(address miner, address prover, address player, uint256 amount) external;
+
     /// get total player staking
     function playerTotalStaking() external view returns (uint256);
 

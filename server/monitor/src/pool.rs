@@ -19,7 +19,7 @@ const EXTRA_GAS: u64 = 10; // extra 10%
 
 pub enum PoolMessage {
     ChangeController(LocalWallet),
-    AcceptTask(u64),
+    AcceptTask(u64, String),
     SubmitTask(u64, Vec<u8>),
     SubmitMinerTest(u64, Vec<u8>),
 }
@@ -183,7 +183,7 @@ impl Pool {
                 self.wallet = wallet;
                 self.check().await;
             }
-            PoolMessage::AcceptTask(tid) => {
+            PoolMessage::AcceptTask(tid, url) => {
                 let gas_price = self
                     .task
                     .client_ref()
@@ -194,7 +194,7 @@ impl Pool {
 
                 let func = self
                     .task
-                    .accept(U256::from(tid), self.miner)
+                    .accept(U256::from(tid), self.miner, url)
                     .gas_price(extra_gas);
                 self.send(func, true).await;
             }

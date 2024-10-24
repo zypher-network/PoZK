@@ -502,6 +502,38 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         emit MinerStakeChange(stt.newEpoch, to, miner, int256(amount), smt.newValue, stt.newValue);
     }
 
+    function minerSlashStaking(address miner, address prover, address player, uint256 amount) external {
+        require(msg.sender == IAddresses(addresses).get(Contracts.Task), "S10");
+
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+
+        ProverStaking storage gs = proversStaking[prover];
+        Staking storage sm = gs.miners[msg.sender];
+
+        // update new staking
+        if (currentEpoch >= sm.newEpoch) {
+            sm.value = sm.newValue;
+            sm.newEpoch = currentEpoch + 1;
+        }
+        require(sm.newValue >= amount, "S01");
+
+        // remove from miner staking
+        sm.newValue -= amount;
+
+        // append to player unstaking
+        this.addUnstaking(player, amount);
+
+        // remove from total staking
+        Staking storage st = gs.minerTotal;
+        if (currentEpoch >= st.newEpoch) {
+            st.value = st.newValue;
+            st.newEpoch = currentEpoch + 1;
+        }
+        st.newValue -= amount;
+
+        emit MinerStakeChange(st.newEpoch, prover, miner, -int256(amount), sm.newValue, st.newValue);
+    }
+
     /// --------------- Player --------------- ///
 
     /// @notice Get total player staking

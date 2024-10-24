@@ -52,6 +52,7 @@ struct AcceptTask {
     id: U256,
     miner: Address,
     overtime: U256,
+    url: String,
 }
 
 #[derive(Clone, Debug, EthEvent)]
