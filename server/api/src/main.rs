@@ -188,6 +188,7 @@ async fn setup() -> Result<()> {
         service_sender,
         &args.network,
         endpoints,
+        args.url.clone(),
     )?
     .run();
 

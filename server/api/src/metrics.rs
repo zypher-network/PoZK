@@ -1,5 +1,3 @@
-use serde_json::json;
-
 use anyhow::Result;
 use chrono::Utc;
 use ethers::prelude::*;
@@ -7,6 +5,7 @@ use pozk_db::{Prover, ReDB};
 use pozk_docker::DockerManager;
 use pozk_utils::pozk_metrics_url;
 use reqwest::Client;
+use serde_json::{json, Value};
 use std::sync::Arc;
 use sysinfo::System;
 use tokio::{
@@ -15,7 +14,7 @@ use tokio::{
     time::sleep,
 };
 
-const PROXY_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const PROXY_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub enum MetricsMessage {
     ChangeController(LocalWallet),
@@ -167,37 +166,10 @@ impl MetricsService {
             return Ok(());
         }
 
-        let images = self.docker.list().await?;
-
-        let (mut data, total) = self.db.list::<Prover>(0, 10)?;
-        if total > 10 {
-            let page = (total as f32 / 10f32).ceil() as usize;
-            for i in 1..page {
-                let (data1, _) = self.db.list::<Prover>(i * 10, 10)?;
-                data.extend(data1)
-            }
-        }
-        if data.is_empty() {
+        let (provers, message) = list_provers(&self.docker, &self.db).await?;
+        if provers.is_empty() {
             return Ok(());
         }
-
-        let mut provers = vec![];
-        let mut sign_provers = vec![];
-        for p in data {
-            // check image
-            if images.contains_key(&p.image) {
-                let prover = format!("{:?}", p.prover);
-                provers.push(json!({
-                    "prover": prover,
-                    "version": p.tag,
-                }));
-                sign_provers.push(prover);
-            }
-        }
-        let message = sign_provers.join(" ");
-
-        let timestamp = Utc::now().timestamp();
-        sign_provers.push(timestamp.to_string());
 
         let signature = if let Some(wallet) = &self.wallet {
             wallet.sign_message(message).await?.to_string()
@@ -208,7 +180,7 @@ impl MetricsService {
         let data = json!({
             "miner": self.miner,
             "provers": provers,
-            "timestamp": timestamp,
+            "timestamp": Utc::now().timestamp(),
             "signature": signature,
         });
 
@@ -221,6 +193,42 @@ impl MetricsService {
 
         Ok(())
     }
+}
+
+pub async fn list_provers(
+    docker: &Arc<DockerManager>,
+    db: &Arc<ReDB>,
+) -> Result<(Vec<Value>, String)> {
+    let images = docker.list().await?;
+
+    let (mut data, total) = db.list::<Prover>(0, 10)?;
+    if total > 10 {
+        let page = (total as f32 / 10f32).ceil() as usize;
+        for i in 1..page {
+            let (data1, _) = db.list::<Prover>(i * 10, 10)?;
+            data.extend(data1)
+        }
+    }
+    if data.is_empty() {
+        return Ok((vec![], "".to_owned()));
+    }
+
+    let mut provers = vec![];
+    let mut sign_provers = vec![];
+    for p in data {
+        // check image
+        if images.contains_key(&p.image) {
+            let prover = format!("{:?}", p.prover);
+            provers.push(json!({
+                "prover": prover,
+                "version": p.tag,
+            }));
+            sign_provers.push(prover);
+        }
+    }
+    let message = sign_provers.join(" ");
+
+    Ok((provers, message))
 }
 
 fn get_gpus() -> String {

@@ -77,6 +77,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @notice Store all tests results
     mapping(bytes32 => uint256) private testsResults;
 
+    /// @notice Store all testing
+    mapping(address => mapping(address => uint256)) private testing;
+
     /// @notice Emit when prover staking change
     event ProverStakeChange(uint256 epoch, address prover, address account, int256 changed, uint256 staking, uint256 total);
 
@@ -308,15 +311,21 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
             if (sm.value == 0 && sm.newValue == 0) {
                 require(amount >= minStakeAmount, "S03");
 
+                uint256 testId = testing[prover][miner];
+                if (testId == 0) {
+                    testId = nextTestId;
+                    testing[prover][miner] = testId;
+                    nextTestId++;
+                }
+
                 // do test
-                ZkTest storage test = tests[nextTestId];
+                ZkTest storage test = tests[testId];
                 test.payer = msg.sender;
                 test.miner = miner;
                 test.prover = prover;
-                test.amount = amount;
+                test.amount += amount;
 
-                emit MinerTestRequire(nextTestId, miner, prover);
-                nextTestId++;
+                emit MinerTestRequire(testId, miner, prover);
                 return;
             }
         }
@@ -372,6 +381,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         _minerStakeFor(test.miner, test.prover, test.amount);
 
         delete tests[id];
+        delete testing[test.prover][test.miner];
     }
 
     /// @notice Miner cancel the proof of the test

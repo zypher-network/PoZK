@@ -3,11 +3,13 @@ use axum::{
     http::header::{HeaderMap, HeaderValue, CONTENT_TYPE},
     response::{IntoResponse, Redirect, Response},
 };
+use pozk_db::MainController;
 use serde_json::{json, Value};
 use tokio::fs::read;
 
 use crate::app::extensions::auth::Erc4361Payload;
 use crate::app::{AppContext, Result};
+use crate::metrics::{list_provers, PROXY_VERSION};
 
 pub async fn login(
     Extension(app): Extension<AppContext>,
@@ -18,6 +20,23 @@ pub async fn login(
         .await?;
 
     Ok(Json(json!({ "token": token })))
+}
+
+pub async fn health(Extension(app): Extension<AppContext>) -> Result<Json<Value>> {
+    let controller = app
+        .db
+        .get::<MainController>(MainController::to_key())?
+        .map(|c| format!("{:?}", c.controller));
+
+    let (provers, _) = list_provers(&app.docker, &app.db).await?;
+
+    Ok(Json(json!({
+        "miner": format!("{:?}", app.miner),
+        "controller": controller,
+        "version": PROXY_VERSION,
+        "url": app.url,
+        "provers": provers
+    })))
 }
 
 pub async fn webapp(req: Request) -> Response {

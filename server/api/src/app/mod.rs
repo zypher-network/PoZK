@@ -46,6 +46,7 @@ pub struct App {
     sender: UnboundedSender<ServiceMessage>,
     secret: [u8; 32],
     task: Task<DefaultProvider>,
+    url: String,
 }
 
 impl App {
@@ -56,6 +57,7 @@ impl App {
         sender: UnboundedSender<ServiceMessage>,
         network: &str,
         endpoints: String,
+        url: String,
     ) -> anyhow::Result<Self> {
         let miner: Address = cfg.miner.parse()?;
         let port = cfg.port;
@@ -89,6 +91,7 @@ impl App {
             sender,
             secret,
             task,
+            url,
         })
     }
 
@@ -104,6 +107,7 @@ impl App {
 
             let app = Router::new()
                 .route("/login", post(auth::login))
+                .route("/health", get(auth::health))
                 .route("/orders", post(task::create))
                 .route("/orders/:id", post(task::track))
                 .route("/tasks/:id", get(task::download).post(task::upload))
