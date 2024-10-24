@@ -26,8 +26,8 @@ export const contractAddress: Record<ChainId, IContractList> = {
       Epoch: "0x5393205CdAb1C4f45B045F10c07B29bFf2339b81",
       Stake: "0xa8c392Fd78fd61292529864873cD42309881903f",
       Reward: "0x93CF679371fCca140275fd5b974487c87c5bAAAb",
-      Prover: "0x548FF8E93575D24B03d3869038924E47DA0c8c8c",
-      Task: "0x1034E9e24d0baF5329C3cb8E7887c8a4bc488Ce0",
+      Prover: "0x7937D8A26F867Ec563dC324Aca279Ce41e2eBDb9",
+      Task: "0xcc8240470F63D0b8055bf03f44D8817dAfCa0DB7",
       Controller: "0xB7779c7af4727A1312fF0d99a0869F155d2F7753",
   }
 };
