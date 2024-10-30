@@ -1,16 +1,20 @@
 "use client";
 import Link from "next/link";
 import { INavName, NavItem } from "./navbar";
+import cx from 'classnames';
 
 import { memo, useMemo } from "react";
-import Dashboard from "@/components/icon/Dashboard.svg";
-import DashboardOn from "@/components/icon/Dashboard-on.svg";
-import Rewards from "@/components/icon/Rewards.svg";
-import RewardsOn from "@/components/icon/Rewards-on.svg";
+import Dashboard from "@/components/icon/dashboard-default.svg";
+import DashboardOn from "@/components/icon/dashboard-active.svg";
+import Rewards from "@/components/icon/rewards-default.svg";
+import RewardsOn from "@/components/icon/rewards-active.svg";
+import MinerGame from '@/components/icon/miner-game-default.svg';
+import MinerGameOn from '@/components/icon/miner-game-active.svg';
 import Referral from "@/components/icon/Referral.svg";
 import ReferralOn from "@/components/icon/Referral-on.svg";
 import Setting from "@/components/icon/Setting.svg";
 import SettingOn from "@/components/icon/Setting-on.svg";
+
 import { usePathname } from "next/navigation";
 
 const NavItems = ({ navItems }: { navItems: NavItem[] }) => {
@@ -35,16 +39,18 @@ const Item = ({ item }: { item: NavItem }) => {
     <Link
       key={href + name}
       href={href}
-      className="w-full items-center justify-start flex gap-[16px]"
+      className={cx(
+        'w-full items-center justify-start flex gap-[16px] text-xl',
+        {
+          'text-white font-semibold': active,
+          'text-[#626977] font-light hover:text-white': !active,
+        }
+      )}
     >
       <div className="w-[36px]">
         <MemoizedNavIcon name={name} active={active} />
       </div>
-      <p
-        className={`${
-          active ? "text-white font-semibold" : "text-[#626977] font-normal"
-        }`}
-      >
+      <p>
         {name}
       </p>
     </Link>
@@ -74,6 +80,11 @@ const NavIcon = ({ name, active }: { name: INavName; active: boolean }) => {
         return <SettingOn />;
       }
       return <Setting />;
+    case "Miner Game":
+      if (active) {
+        return <MinerGameOn />
+      }
+      return <MinerGame />
     default:
       return <Dashboard />;
   }

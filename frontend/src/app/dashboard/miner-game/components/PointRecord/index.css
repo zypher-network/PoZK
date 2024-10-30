@@ -1,0 +1,11 @@
+.records::-webkit-scrollbar {
+  width: 4px; /* 滾動條的寬度 */
+}
+.records::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px; /* 圓角 */
+}
+.records::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3); /* 滑塊顏色 */
+  border-radius: 2px; /* 圓角 */
+}
