@@ -111,8 +111,12 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
             IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), fee);
         }
 
-        // check prover is valid
-        require(IProver(IAddresses(addresses).get(Contracts.Prover)).isProver(prover), "T01");
+        // check prover is valid and permission
+        IProver iprover = IProver(IAddresses(addresses).get(Contracts.Prover));
+        require(iprover.isProver(prover), "T01");
+        if (IVerifier(iprover.verifier(prover)).permission()) {
+            require(msg.sender == prover, "T11");
+        }
 
         GameTask storage task = tasks[nextId];
         task.prover = prover;
