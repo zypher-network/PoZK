@@ -99,11 +99,12 @@ pub async fn update(
         .db
         .get::<Controller>(key)?
         .ok_or(Error::Invalid(1103, "Invalid address".to_owned()))?;
+    let sk_bytes = c.singing_key.to_bytes().as_slice().to_vec();
 
     app.sender
         .send(ServiceMessage::ChangeController(LocalWallet::from(
             c.singing_key,
-        )))
+        ), sk_bytes))
         .expect("Service sender invalid");
 
     Ok(success())

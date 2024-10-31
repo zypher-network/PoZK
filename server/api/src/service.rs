@@ -14,10 +14,12 @@ use tokio::sync::{
 };
 
 use crate::metrics::MetricsMessage;
+use crate::p2p::P2pMessage;
 
 pub struct MainService {
     pool_sender: UnboundedSender<PoolMessage>,
     metrics_sender: UnboundedSender<MetricsMessage>,
+    p2p_sender: UnboundedSender<P2pMessage>,
     service_receiver: UnboundedReceiver<ServiceMessage>,
     db: Arc<ReDB>,
     docker: Arc<DockerManager>,
@@ -30,6 +32,7 @@ impl MainService {
     pub fn new(
         pool_sender: UnboundedSender<PoolMessage>,
         metrics_sender: UnboundedSender<MetricsMessage>,
+        p2p_sender: UnboundedSender<P2pMessage>,
         service_receiver: UnboundedReceiver<ServiceMessage>,
         db: Arc<ReDB>,
         docker: Arc<DockerManager>,
@@ -39,6 +42,7 @@ impl MainService {
         Self {
             pool_sender,
             metrics_sender,
+            p2p_sender,
             service_receiver,
             db,
             docker,
@@ -175,7 +179,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 app.docker.remove(&p.image).await?;
             }
         }
-        ServiceMessage::ChangeController(wallet) => {
+        ServiceMessage::ChangeController(wallet, sk) => {
             // 1. update controller in db
             let c = MainController {
                 controller: wallet.address(),
@@ -188,8 +192,12 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 .expect("Missing pool");
 
             app.metrics_sender
-                .send(MetricsMessage::ChangeController(wallet))
+                .send(MetricsMessage::ChangeController(wallet.clone()))
                 .expect("Missing metrics");
+
+            app.p2p_sender
+                .send(P2pMessage::ChangeController(sk))
+                .expect("Missing p2p");
         }
         ServiceMessage::MinerTest(id, prover, overtime, inputs, publics) => {
             // 1. check prover in local

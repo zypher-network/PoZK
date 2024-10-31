@@ -17,8 +17,9 @@ pozk-utils.workspace = true
 
 anyhow.workspace = true
 axum.workspace = true
-clap.workspace = true
+chamomile.workspace = true
 chrono.workspace = true
+clap.workspace = true
 ethers.workspace = true
 hex.workspace = true
 jsonwebtoken.workspace = true

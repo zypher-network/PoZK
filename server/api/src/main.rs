@@ -5,11 +5,13 @@ mod app;
 mod config;
 mod metrics;
 mod service;
+mod p2p;
 
 use app::App;
 use config::ApiConfig;
 use metrics::{MetricsMessage, MetricsService};
 use service::MainService;
+use p2p::P2pService;
 
 use anyhow::Result;
 use clap::{Args, Parser};
@@ -111,11 +113,11 @@ async fn setup() -> Result<()> {
 
     // setup base path
     init_path_and_server(&args.base_path, &args.server);
+    let base_path = PathBuf::from(&args.base_path);
 
     // setup database
     let db = {
-        let db_path = PathBuf::from(&args.base_path);
-        let db = ReDB::new(&db_path, co.db_config.auto_remove)?;
+        let db = ReDB::new(&base_path, co.db_config.auto_remove)?;
         Arc::new(db)
     };
 
@@ -134,6 +136,8 @@ async fn setup() -> Result<()> {
         args.url.clone(),
     )?
     .run();
+
+    let p2p_sender = P2pService::new(base_path, db.clone(), docker.clone()).run();
 
     // calc parallel number
     let n_cpu = if cpu < 4 { 1 } else { cpu / 4 };
@@ -168,6 +172,7 @@ async fn setup() -> Result<()> {
         metrics_sender
             .send(MetricsMessage::ChangeController(controller.clone()))
             .unwrap();
+        p2p_sender.send(P2pMessage::ChangeController(controller.clone())).unwrap();
     }
 
     let (service_sender, service_receiver) = new_service_channel();
@@ -186,6 +191,7 @@ async fn setup() -> Result<()> {
         db.clone(),
         docker.clone(),
         service_sender,
+        p2p_sender.clone(),
         &args.network,
         endpoints,
         args.url.clone(),
@@ -196,6 +202,7 @@ async fn setup() -> Result<()> {
     MainService::new(
         pool_sender,
         metrics_sender,
+        p2p_sender,
         service_receiver,
         db,
         docker,
