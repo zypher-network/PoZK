@@ -119,6 +119,11 @@ const StakeForm = ({ item }: { item: UserProver }) => {
                   }}
                 />
               </FormControl>
+              {stakeItem && stakeItem.key === 'UnStake' ? (
+                <div className="absolute top-[53px] right-3 py-1 cursor-pointer text-white px-3 rounded text-sm bg-primary" onClick={() => setAmount(new BigNumberJs(stakingAmount).div(BM18).toString(10))}>
+                  MAX
+                </div>
+              ) : null}
               <FormMessage />
             </FormItem>
           )}

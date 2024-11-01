@@ -63,6 +63,7 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
                     prover.containers.map(container => (
                       <ProverRow
                         key={container.id}
+                        stop={prover.stop}
                         prover={prover.id}
                         running={container.running}
                         name={prover.name}
@@ -74,6 +75,7 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
                     )) :
                     <ProverRow
                       key={prover.id}
+                      stop={prover.stop}
                       prover={prover.id}
                       name={prover.name}
                       created={''}

@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 
 export const GET_PROVERS = gql`
   query MyQuery {
-    provers(where: {stop: false}) {
+    provers {
       work
       version
       stop
