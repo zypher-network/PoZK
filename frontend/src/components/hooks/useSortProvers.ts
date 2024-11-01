@@ -8,7 +8,13 @@ const useSortProvers = () => {
   const getStakingAmount = (prover: string) => {
     return data.find(staking => staking.prover === prover)?.newAmount ?? '0';
   }
-  return provers.slice().sort((x, y) => new BigNumberJs(getStakingAmount(x.id)).gt(getStakingAmount(y.id)) ? -1 : 1);
+  return provers.slice()
+    .sort((x, y) => {
+      if (x.stop === y.stop) {
+        return new BigNumberJs(getStakingAmount(y.id)).minus(getStakingAmount(x.id)).toNumber()
+      }
+      return x.stop ? -1 : 1;
+    });
 }
 
 export default useSortProvers;
