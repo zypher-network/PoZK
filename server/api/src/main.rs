@@ -185,7 +185,7 @@ async fn setup() -> Result<()> {
         &co.api_config,
         db.clone(),
         docker.clone(),
-        service_sender,
+        service_sender.clone(),
         &args.network,
         endpoints,
         args.url.clone(),
@@ -202,7 +202,7 @@ async fn setup() -> Result<()> {
         parallel,
         args.url.clone(),
     )
-    .run();
+    .run(service_sender);
 
     tokio::signal::ctrl_c().await?;
 

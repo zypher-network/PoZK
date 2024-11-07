@@ -270,8 +270,13 @@ impl Scan {
                 EventType::AcceptTask => {
                     let at = <AcceptTask as EthEvent>::decode_log(&log.into())?;
                     let is_me = at.miner == self.miner;
+                    let overtime = at.overtime.as_u64() as i64;
                     info!("[Scan] fetch new AcceptTask: {}", is_me);
-                    Ok(Some(ServiceMessage::AcceptTask(at.id.as_u64(), is_me)))
+                    Ok(Some(ServiceMessage::AcceptTask(
+                        at.id.as_u64(),
+                        overtime,
+                        is_me,
+                    )))
                 }
                 EventType::ApproveProver => {
                     let ap = <ApproveProver as EthEvent>::decode_log(&log.into())?;
@@ -295,7 +300,7 @@ impl Scan {
                     let is_me = mt.account == self.miner;
                     if is_me {
                         let id = mt.id.as_u64();
-                        let overtime = mt.overtime.as_u64();
+                        let overtime = mt.overtime.as_u64() as i64;
                         info!("[Scan] fetch new miner test: {} - {}", id, mt.prover);
                         Ok(Some(ServiceMessage::MinerTest(
                             id,

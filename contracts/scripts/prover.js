@@ -16,8 +16,12 @@ const ONE_TOKEN = 10000000000000000000n;
 // const myVerifier = "0x407441d85e8F54772f84Ac1f47570C7Cf6Dac080";
 
 // Shuffle52
-const myProver = "0x6558c36b5736466c472231A26A4B47512Bd936Da";
-const myVerifier = "0xc90459cB8a9Ab5EFCd5aEe271f3F343DA4a3eDBE";
+// const myProver = "0x6558c36b5736466c472231A26A4B47512Bd936Da";
+// const myVerifier = "0xc90459cB8a9Ab5EFCd5aEe271f3F343DA4a3eDBE";
+
+// const myProver = "0xb216af68a82538ff12edc8ac9eec3e91eaa54e9e";
+const myProver = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
+const myVerifier = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
 
 async function registerProver() {
   const [c, _] = await attachContract("Prover");
@@ -46,8 +50,8 @@ async function stopProver() {
 }
 
 async function main() {
-  await registerProver();
-  //await stakeProver();
+  //await registerProver();
+  await stakeProver();
   //await stopProver();
 }
 

@@ -11,9 +11,9 @@ pub struct Task {
     pub tid: u64,
     pub prover: Address,
     pub created: i64,
-    pub over: bool,
+    pub overtime: i64,
     pub is_me: bool,
-    pub accepted: bool,
+    pub over: bool,
     pub container: String,
 }
 

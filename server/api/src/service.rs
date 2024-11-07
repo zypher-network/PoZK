@@ -1,19 +1,30 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chrono::prelude::*;
-use ethers::prelude::Signer;
+use ethers::prelude::{Address, Signer};
 use pozk_db::ReDB;
 use pozk_db::{MainController, Prover, Task};
 use pozk_docker::{DockerManager, RunOption};
 use pozk_monitor::PoolMessage;
 use pozk_utils::{remove_task_input, write_task_input, write_task_proof, ServiceMessage};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::Arc;
-use tokio::sync::{
-    mpsc::{UnboundedReceiver, UnboundedSender},
-    oneshot::Sender,
+use std::time::Duration;
+use tokio::{
+    sync::{
+        mpsc::{UnboundedReceiver, UnboundedSender},
+        oneshot::Sender,
+    },
+    time::sleep,
 };
 
 use crate::metrics::MetricsMessage;
+
+struct WaitingTask {
+    image: String,
+    prover: Address,
+    inputs: Vec<u8>,
+    publics: Vec<u8>,
+}
 
 pub struct MainService {
     pool_sender: UnboundedSender<PoolMessage>,
@@ -21,9 +32,16 @@ pub struct MainService {
     service_receiver: UnboundedReceiver<ServiceMessage>,
     db: Arc<ReDB>,
     docker: Arc<DockerManager>,
-    _parallel: usize,
     url: String,
-    proxy_tasks: HashMap<String, Option<Sender<Vec<u8>>>>,
+    task_parallel: usize,
+    /// task from API and not limit by parallel
+    task_proxy: HashMap<String, Option<Sender<Vec<u8>>>>,
+    /// task send to this pool when already a task running
+    task_onchain: BTreeMap<u64, WaitingTask>,
+    /// task need to accept if possible
+    task_pending: VecDeque<u64>,
+    /// running task with container, will check times, sid => (tid, created, overtime)
+    task_working: HashMap<String, (u64, i64, i64)>,
 }
 
 impl MainService {
@@ -33,7 +51,7 @@ impl MainService {
         service_receiver: UnboundedReceiver<ServiceMessage>,
         db: Arc<ReDB>,
         docker: Arc<DockerManager>,
-        _parallel: usize,
+        task_parallel: usize,
         url: String,
     ) -> Self {
         Self {
@@ -42,13 +60,25 @@ impl MainService {
             service_receiver,
             db,
             docker,
-            _parallel,
             url,
-            proxy_tasks: HashMap::new(),
+            task_parallel,
+            task_proxy: HashMap::new(),
+            task_onchain: BTreeMap::new(),
+            task_pending: VecDeque::new(),
+            task_working: HashMap::new(),
         }
     }
 
-    pub fn run(mut self) {
+    pub fn run(mut self, sender: UnboundedSender<ServiceMessage>) {
+        tokio::spawn(async move {
+            loop {
+                sleep(Duration::from_secs(13)).await; // 13s
+                sender
+                    .send(ServiceMessage::TaskHeartbeat)
+                    .expect("Missing service");
+            }
+        });
+
         tokio::spawn(async move {
             while let Some(msg) = self.service_receiver.recv().await {
                 if let Err(e) = handle(&mut self, msg).await {
@@ -62,56 +92,74 @@ impl MainService {
 async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
     match msg {
         ServiceMessage::CreateTask(tid, prover, inputs, publics) => {
-            // TODO parallel
-
             // 1. check prover in local
             let key = Prover::to_key(&prover);
             if let Some(p) = app.db.get::<Prover>(key)? {
-                let sid = tid.to_string();
-
-                // 2. write data to file
-                write_task_input(&sid, inputs, publics).await?;
-
-                // 3. start docker container to run, TODO we can do more about cpu & memory
-                let container = app.docker.run(&p.image, &sid, RunOption::default()).await?;
-
-                // 4. save task to db
-                let created = Utc::now().timestamp();
-                let t = Task {
+                // 2. insert to waiting list
+                app.task_onchain.insert(
                     tid,
-                    prover,
-                    created,
-                    container,
-                    over: false,
-                    is_me: false,
-                    accepted: false,
-                };
+                    WaitingTask {
+                        image: p.image,
+                        prover,
+                        inputs,
+                        publics,
+                    },
+                );
 
-                app.db.add(&t)?;
+                // 3. parallel
+                if app.task_parallel == 0 {
+                    app.task_pending.push_back(tid);
+                    return Ok(());
+                }
 
-                // 5. accept task
+                // 4. accept task
                 app.pool_sender
                     .send(PoolMessage::AcceptTask(tid, app.url.clone()))
                     .expect("Missing pool");
             }
         }
-        ServiceMessage::AcceptTask(tid, is_me) => {
-            // 1. save task status in db
-            let key = Task::to_key(tid);
-            if let Some(mut t) = app.db.get::<Task>(&key)? {
-                t.accepted = true;
-                t.is_me = is_me;
-                if !is_me {
-                    t.over = true;
-                    // 2. stop task
-                    let _ = app.docker.stop(&t.container).await;
-                }
+        ServiceMessage::AcceptTask(tid, overtime, is_me) => {
+            // 0. Cleanup waiting list
+            if let Some(pos) = app.task_pending.iter().position(|x| *x == tid) {
+                app.task_pending.remove(pos);
+            }
+            let task = app.task_onchain.remove(&tid).ok_or(anyhow!("No task"))?;
+            if !is_me {
+                return Ok(());
+            }
 
-                app.db.add(&t)?;
+            // 1. save task to db
+            let sid = tid.to_string();
+
+            // 2. write data to file
+            write_task_input(&sid, task.inputs, task.publics).await?;
+
+            // 3. start docker container to run, TODO we can do more about cpu & memory
+            let container = app
+                .docker
+                .run(&task.image, &sid, RunOption::default())
+                .await?;
+
+            // 4. save task to db
+            let created = Utc::now().timestamp();
+            let t = Task {
+                tid,
+                prover: task.prover,
+                created,
+                overtime,
+                container,
+                is_me: true,
+                over: false,
+            };
+            app.db.add(&t)?;
+
+            app.task_working.insert(sid, (tid, created, overtime));
+            if app.task_parallel > 0 {
+                app.task_parallel -= 1;
             }
         }
         ServiceMessage::UploadProof(sid, proof) => {
-            if let Some(sender_op) = app.proxy_tasks.remove(&sid) {
+            if let Some(sender_op) = app.task_proxy.remove(&sid) {
                 if let Some(sender) = sender_op {
                     let _ = sender.send(proof);
                 } else {
@@ -119,6 +167,17 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 }
 
                 return Ok(());
+            }
+
+            // remove task/minertest
+            let _ = app.task_working.remove(&sid);
+            app.task_parallel += 1;
+
+            // check if has some task need accept
+            if let Some(tid) = app.task_pending.pop_front() {
+                app.pool_sender
+                    .send(PoolMessage::AcceptTask(tid, app.url.clone()))
+                    .expect("Missing pool");
             }
 
             tokio::spawn(upload_proof(
@@ -202,10 +261,31 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
 
                 // 3. start docker container to run, TODO we can do more about cpu & memory
                 let _container = app.docker.run(&p.image, &sid, RunOption::default()).await?;
+
+                app.task_working
+                    .insert(sid, (0, Utc::now().timestamp(), overtime));
+                if app.task_parallel > 0 {
+                    app.task_parallel -= 1;
+                }
             }
         }
         ServiceMessage::ApiTask(sid, sender) => {
-            app.proxy_tasks.insert(sid, sender);
+            app.task_proxy.insert(sid, sender);
+        }
+        ServiceMessage::TaskHeartbeat => {
+            let now = Utc::now().timestamp();
+            let mut clean = vec![];
+            for (sid, (_, created, overtime)) in app.task_working.iter() {
+                let interval = overtime - created;
+                let maxtime = interval * 2 + created;
+                if now > maxtime {
+                    clean.push(sid.clone());
+                }
+            }
+            for i in clean {
+                app.task_working.remove(&i);
+                app.task_parallel += 1;
+            }
         }
     }
 
@@ -218,7 +298,10 @@ async fn upload_proof(
     proof: Vec<u8>,
     pool_sender: UnboundedSender<PoolMessage>,
 ) {
-    // 0. check task is miner test or task by tid
+    // 0. cleanup task input
+    let _ = remove_task_input(&sid).await;
+
+    // 1. check task is miner test or task by tid
     if sid.starts_with("m-") {
         // Miner test
         let s: Vec<&str> = sid.split('-').collect();
@@ -237,47 +320,19 @@ async fn upload_proof(
                 .expect("Missing pool");
         }
 
-        let _ = remove_task_input(&sid).await;
         return;
     }
 
     let tid: u64 = sid.parse().unwrap_or(0);
 
-    // 1. check task is me from db
-    let key = Task::to_key(tid);
-    let mut max_times = 100;
+    // 2. submit to chain
+    pool_sender
+        .send(PoolMessage::SubmitTask(tid, proof))
+        .expect("Missing pool");
 
-    loop {
-        if let Ok(Some(mut t)) = db.get::<Task>(&key) {
-            if t.accepted {
-                if t.is_me {
-                    // 2. if is_me, send tx
-                    pool_sender
-                        .send(PoolMessage::SubmitTask(tid, proof))
-                        .expect("Missing pool");
-                }
-            } else {
-                max_times -= 1;
-                if max_times == 0 {
-                    break; // over 200s
-                }
-
-                // sleep
-                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                continue;
-            }
-
-            // 3. update in db
-            t.over = true;
-            let _ = db.add(&t);
-
-            // 4. remove task input from disk
-            let _ = remove_task_input(&sid).await;
-
-            break;
-        } else {
-            let _ = remove_task_input(&sid).await;
-            break;
-        }
+    // 3. update in db
+    if let Ok(Some(mut t)) = db.get::<Task>(&Task::to_key(tid)) {
+        t.over = true;
+        let _ = db.add(&t);
     }
 }

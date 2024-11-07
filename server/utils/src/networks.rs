@@ -147,6 +147,7 @@ pub async fn zero_gas<S: Signer>(
 ) -> Result<Option<String>> {
     let owner = format!("{:?}", wallet.address());
     let from = format!("{:?}", aa);
+
     let to = format!("{:?}", tx.to_addr().unwrap());
     let value = tx.value().unwrap_or(&U256::zero()).encode_hex();
     let data = format!("0x{}", hex::encode(tx.data().unwrap().to_vec()));

@@ -7,8 +7,8 @@ use tokio::sync::{
 pub enum ServiceMessage {
     /// tid, prover, inputs, publics
     CreateTask(u64, Address, Vec<u8>, Vec<u8>),
-    /// tid, is_me
-    AcceptTask(u64, bool),
+    /// tid, overtime, is_me
+    AcceptTask(u64, i64, bool),
     /// prover, version, overtime
     ApproveProver(Address, u64, u64),
     /// tid, proof
@@ -20,9 +20,11 @@ pub enum ServiceMessage {
     /// remove prover
     RemoveProver(Address),
     /// test id, prover, overtime, inputs, publics
-    MinerTest(u64, Address, u64, Vec<u8>, Vec<u8>),
+    MinerTest(u64, Address, i64, Vec<u8>, Vec<u8>),
     /// task from player service
     ApiTask(String, Option<Sender<Vec<u8>>>),
+    /// Heartbeat for cleanup task
+    TaskHeartbeat,
 }
 
 pub fn new_service_channel() -> (
