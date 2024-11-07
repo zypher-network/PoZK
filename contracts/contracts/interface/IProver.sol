@@ -20,4 +20,6 @@ interface IProver {
     function overtime(address prover) external view returns (uint256);
 
     function verifier(address prover) external view returns (address);
+
+    function owner(address prover) external view returns (address);
 }

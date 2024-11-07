@@ -39,9 +39,12 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
         uint256 totalMinerReward;
         uint256 totalPlayerReward;
+        uint256 totalMinerExtraReward;
+        uint256 totalPlayerExtraReward;
 
         uint256 unclaimReward;
         uint256 unclaimLabor;
+        address extraRewardToken;
 
         mapping(address => StakerLabor) minerLabor;
         mapping(address => StakerLabor) playerLabor;
@@ -62,6 +65,24 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         mapping(address => ProverPool) proverPools;
         mapping(address => RunningProver) minerUnclaimedProvers;
         mapping(address => RunningProver) playerUnclaimedProvers;
+    }
+
+    /// @notice The extra prover reward struct
+    struct ExtraProverReward {
+        /// the token address of this reward
+        address token;
+        /// the end of the reward time
+        uint256 to;
+        /// the total reward of every epoch
+        uint256 reward;
+        /// total reward, if not used, prover owner can claim
+        uint256 remain;
+        /// current epoch
+        uint256 current;
+        /// current reward token address
+        address currentToken;
+        /// current epoch reward
+        uint256 currentReward;
     }
 
     /// @notice Common Addresses contract
@@ -97,6 +118,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     /// @notice The player max games number when reach minerMaxPer
     uint256 public playerMaxNum;
 
+    /// @notice The extra prover rewards by game, it will distribute with main token
+    mapping(address => ExtraProverReward) private extraProverRewards;
+
     /// @notice Emitted when update the alpha for cobb-douglas function
     event Alpha(int256 alphaNumerator, int256 alphaDenominator);
 
@@ -120,6 +144,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
     /// @notice Emitted when collect reward (stake) from pool
     event PlayerCollect(uint256 epoch, address prover, address player, uint256 amount);
+
+    /// @notice Emitted when deposit extra reward token for miner
+    event DepositExtraProverRewards(address prover, uint256 from, uint256 to, address token, uint256 amount);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -297,8 +324,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         RunningProver storage rgm = ep.minerUnclaimedProvers[miner];
 
         uint256 labor = gp.minerLabor[miner].working;
-        uint256 amount = _cobbDouglas(
+        (uint256 amount, uint256 extraAmount) = _doubleCobbDouglas(
             gp.totalMinerReward,
+            gp.totalMinerExtraReward,
             labor,
             gp.totalWorking / 2,
             gp.minerLabor[miner].staking,
@@ -312,6 +340,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             address stake = IAddresses(addresses).get(Contracts.Stake);
             IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(stake, amount);
             IStake(stake).addUnstaking(miner, amount);
+        }
+
+        if (extraAmount > 0) {
+            IERC20(gp.extraRewardToken).transfer(miner, extraAmount);
         }
 
         // clear unclaim prover
@@ -355,8 +387,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         RunningProver storage rgp = ep.playerUnclaimedProvers[player];
 
         uint256 labor = gp.playerLabor[player].working;
-        uint256 amount = _cobbDouglas(
+        (uint256 amount, uint256 extraAmount) = _doubleCobbDouglas(
             gp.totalPlayerReward,
+            gp.totalPlayerExtraReward,
             labor,
             gp.totalWorking / 2,
             gp.playerLabor[player].staking,
@@ -370,6 +403,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             address stake = IAddresses(addresses).get(Contracts.Stake);
             IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(stake, amount);
             IStake(stake).addUnstaking(player, amount);
+        }
+
+        if (extraAmount > 0) {
+            IERC20(gp.extraRewardToken).transfer(player, extraAmount);
         }
 
         // clear unclaim prover
@@ -429,6 +466,63 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         }
     }
 
+    /// @notice Prover/Game owner can deposit extra rewards for miner & player. Only support one token in epoch.
+    /// @param prover the prover
+    /// @param to the end epoch
+    /// @param token the token address
+    /// @param amount the token amount
+    function depositExtraProverRewards(address prover, uint256 to, address token, uint256 amount) external {
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+        require(to > currentEpoch + 1, "R04");
+
+        ExtraProverReward storage epr = extraProverRewards[prover];
+
+        // check reward is empty or expired, only prover owner can set reward token address
+        if (epr.token == address(0) || epr.to <= currentEpoch) {
+            address owner = IProver(IAddresses(addresses).get(Contracts.Prover)).owner(prover);
+            require(owner == msg.sender, "R05");
+
+            epr.currentToken = epr.token;
+            epr.token = token;
+        }
+
+        IERC20(epr.token).transferFrom(msg.sender, address(this), amount);
+
+        epr.current = currentEpoch;
+        epr.currentReward = epr.reward;
+
+        // accumulate amount to reward
+        if (epr.to > currentEpoch) {
+            // remain + new
+            epr.remain += amount;
+        } else {
+            epr.remain = amount;
+        }
+        epr.reward = epr.remain / (to - currentEpoch);
+        epr.to = to;
+
+        emit DepositExtraProverRewards(prover, currentEpoch, to, token, epr.reward);
+    }
+
+    /// @notice Prover/Game owner can claim expired extra rewards
+    /// @param prover the prover
+    function claimExtraProverRewards(address prover) external {
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+        address owner = IProver(IAddresses(addresses).get(Contracts.Prover)).owner(prover);
+        require(owner != address(0), "R06");
+
+        ExtraProverReward storage epr = extraProverRewards[prover];
+        if (currentEpoch > epr.current && epr.currentReward > 0) {
+            IERC20(epr.currentToken).transfer(owner, epr.currentReward);
+            epr.currentReward = 0;
+        }
+
+        if (currentEpoch > epr.to && epr.remain > 0) {
+            IERC20(epr.currentToken).transfer(owner, epr.remain);
+            epr.remain = 0;
+        }
+    }
+
     /// @notice private function about claim reward
     /// @param epoch the epoch height
     /// @param prover the prover address
@@ -443,8 +537,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             address vestingAddress = IAddresses(addresses).get(Contracts.Vesting);
             IVesting vesting = IVesting(vestingAddress);
 
-            uint256 amount = _cobbDouglas(
+            (uint256 amount,) = _doubleCobbDouglas(
                 vesting.mine(epoch),
+                0,
                 gm.work(prover),
                 gm.totalWork(),
                 gp.totalStaking,
@@ -452,6 +547,19 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
                 alphaNumerator,
                 alphaDenominator
             );
+
+            // extra token reward
+            uint256 extraAmount = 0;
+            ExtraProverReward storage epr = extraProverRewards[prover];
+            if (epr.current == epoch) {
+                extraAmount = epr.currentReward;
+                gp.extraRewardToken = epr.currentToken;
+                epr.currentReward = 0;
+            } else if (epr.to >= epoch) {
+                extraAmount = epr.reward;
+                gp.extraRewardToken = epr.token;
+                epr.remain -= extraAmount;
+            }
 
             // release epoch amount token to contract
             gp.unclaimReward = amount;
@@ -469,6 +577,11 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             }
             gp.totalMinerReward = amount * y / 100;
             gp.totalPlayerReward = amount - gp.totalMinerReward;
+
+            if (extraAmount > 0) {
+                gp.totalMinerExtraReward = extraAmount * y / 100;
+                gp.totalPlayerExtraReward = extraAmount - gp.totalMinerExtraReward;
+            }
         }
     }
 
@@ -506,23 +619,24 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     /// and fixed-point math easily overflows with multiplication,
     /// we will choose the following if `stakeRatio > feeRatio`:
     /// `reward * stakeRatio / e^(alpha * (ln(stakeRatio / feeRatio)))`
-    function _cobbDouglas(
-        uint256 reward,
+    function _doubleCobbDouglas(
+        uint256 reward1,
+        uint256 reward2,
         uint256 myLabor,
         uint256 totalLabor,
         uint256 myStake,
         uint256 totalStake,
         int256 numerator,
         int256 denominator
-    ) private pure returns (uint256) {
+    ) private pure returns (uint256, uint256) {
         if (myStake == totalStake || myLabor == totalLabor) {
-            return reward;
+            return (reward1, reward2);
         }
 
         int256 feeRatio = FixedMath.toFixed(myLabor, totalLabor);
         int256 stakeRatio = FixedMath.toFixed(myStake, totalStake);
         if (feeRatio == 0 || stakeRatio == 0) {
-            return 0;
+            return (0, 0);
         }
 
         // Compute
@@ -542,6 +656,6 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // depending on the choice we made earlier.
         n = feeRatio <= stakeRatio ? FixedMath.mul(stakeRatio, n) : FixedMath.div(stakeRatio, n);
         // Multiply the above with reward.
-        return FixedMath.uintMul(n, reward);
+        return (FixedMath.uintMul(n, reward1), FixedMath.uintMul(n, reward2));
     }
 }

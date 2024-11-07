@@ -271,7 +271,9 @@ async fn test_zero_gas() {
     let account: Address = "0x5Ef51c9f449DB7Be2f0c636C6C137e65B8B96B9B"
         .parse()
         .unwrap();
+    let wallet: Address = "0x4e3111334ba387ddf000966cde24db35245fdc59".parse().unwrap();
     assert!(check_zero_gas(uri, account).await.is_ok());
+    assert_eq!(create_zero_gas(uri, account).await.unwrap(), wallet);
 
     let account2: Address = "0x1Ef51c9f449DB7Be2f0c636C6C137e65B8B96B9B"
         .parse()

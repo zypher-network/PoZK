@@ -176,13 +176,13 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
 
     /// @notice Prover owner can transfer ownership to others
     /// @param prover the prover
-    /// @param owner the new owner account
-    function transferProverOwner(address prover, address owner) external {
+    /// @param _owner the new owner account
+    function transferProverOwner(address prover, address _owner) external {
         require(provers[prover].owner == msg.sender, "G02");
 
-        provers[prover].owner = owner;
+        provers[prover].owner = _owner;
 
-        emit TransferProver(prover, owner);
+        emit TransferProver(prover, _owner);
     }
 
     /// @notice DAO can approve or reject the prover register and upgrade, if approve, it will works in next epoch
@@ -319,5 +319,12 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         } else {
             return v.value;
         }
+    }
+
+    /// notice Get a prover owner
+    /// @param prover the prover
+    /// @return the owner account of the prover
+    function owner(address prover) external view returns (address) {
+        return provers[prover].owner;
     }
 }
