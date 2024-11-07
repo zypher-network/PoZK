@@ -14,7 +14,7 @@ use tokio::{
 
 use crate::MonitorConfig;
 
-const GAS_PRICE: u64 = 1_000_000_000; // 1 GWEI
+const GAS_PRICE: u64 = 1_000_000; // 0.001 GWEI
 const EXTRA_GAS: u64 = 10; // extra 10%
 
 pub enum PoolMessage {
