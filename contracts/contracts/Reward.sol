@@ -28,6 +28,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
     /// @notice The struct of prover pool
     struct ProverPool {
+        /// the prover PoZK
+        uint256 pozk;
+
         /// miner + player work (double)
         uint256 totalWorking;
 
@@ -61,6 +64,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     /// @notice The struct of the epoch status
     struct EpochPool {
         uint256 unclaim;
+        uint256 totalPozk;
         uint256 totalProverStaking;
         mapping(address => ProverPool) proverPools;
         mapping(address => RunningProver) minerUnclaimedProvers;
@@ -265,6 +269,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             ep.unclaim += 1;
             ep.totalProverStaking += proverStaking;
             gp.totalStaking = proverStaking;
+
+            IProver p = IProver(IAddresses(addresses).get(Contracts.Prover));
+            gp.pozk = p.work(prover);
+            ep.totalPozk += gp.pozk;
         }
 
         gp.totalWorking += 2;
@@ -533,15 +541,14 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // check or collect prover total reward,
         // and release epoch token to reward
         if (gp.totalMinerReward == 0 && gp.totalPlayerReward == 0) {
-            IProver gm = IProver(IAddresses(addresses).get(Contracts.Prover));
             address vestingAddress = IAddresses(addresses).get(Contracts.Vesting);
             IVesting vesting = IVesting(vestingAddress);
 
             (uint256 amount,) = _doubleCobbDouglas(
                 vesting.mine(epoch),
                 0,
-                gm.work(prover),
-                gm.totalWork(),
+                gp.pozk,
+                ep.totalPozk,
                 gp.totalStaking,
                 ep.totalProverStaking,
                 alphaNumerator,
@@ -629,15 +636,16 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         int256 numerator,
         int256 denominator
     ) private pure returns (uint256, uint256) {
+        if (myStake == 0 || totalStake == 0 || myLabor == 0 || totalLabor == 0) {
+            return (0, 0);
+        }
+
         if (myStake == totalStake || myLabor == totalLabor) {
             return (reward1, reward2);
         }
 
         int256 feeRatio = FixedMath.toFixed(myLabor, totalLabor);
         int256 stakeRatio = FixedMath.toFixed(myStake, totalStake);
-        if (feeRatio == 0 || stakeRatio == 0) {
-            return (0, 0);
-        }
 
         // Compute
         // `e^(alpha * ln(feeRatio/stakeRatio))` if feeRatio <= stakeRatio
@@ -658,4 +666,39 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // Multiply the above with reward.
         return (FixedMath.uintMul(n, reward1), FixedMath.uintMul(n, reward2));
     }
+
+    /* function viewProverStatus(uint256 epoch, address prover) external view returns (uint256, uint256, uint256, uint256) { */
+    /*     IProver gm = IProver(IAddresses(addresses).get(Contracts.Prover)); */
+    /*     EpochPool storage ep = pools[epoch]; */
+    /*     ProverPool storage gp = ep.proverPools[prover]; */
+
+    /*     return ( */
+    /*         gm.work(prover), */
+    /*         gm.totalWork(), */
+    /*         gp.totalStaking, */
+    /*         ep.totalProverStaking */
+    /*     ); */
+    /* } */
+
+    /* function viewMinerStatus(uint256 epoch, address prover, address miner) external view returns (uint256, uint256, uint256, uint256) { */
+    /*     ProverPool storage gp = pools[epoch].proverPools[prover]; */
+
+    /*     return ( */
+    /*         gp.minerLabor[miner].working, */
+    /*         gp.totalWorking / 2, */
+    /*         gp.minerLabor[miner].staking, */
+    /*         gp.totalMinerStaking */
+    /*     ); */
+    /* } */
+
+    /* function viewPlayerStatus(uint256 epoch, address prover, address player) external view returns (uint256, uint256, uint256, uint256) { */
+    /*     ProverPool storage gp = pools[epoch].proverPools[prover]; */
+
+    /*     return ( */
+    /*         gp.playerLabor[player].working, */
+    /*         gp.totalWorking / 2, */
+    /*         gp.playerLabor[player].staking, */
+    /*         gp.totalPlayerStaking */
+    /*     ); */
+    /* } */
 }

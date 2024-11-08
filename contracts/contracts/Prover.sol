@@ -103,7 +103,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         GameProver storage g = provers[prover];
         g.status = ProverStatus.Reviewing;
         g.owner = msg.sender;
-        g.work = ProverWork(_work, _work, 0);
+        g.work = ProverWork(0, _work, 0);
         g.version = ProverWork(_version, _version, 0);
         g.overtime = ProverWork(_overtime, _overtime, 0);
         g.verifier = ProverVerifier(_verifier, _verifier, 0);

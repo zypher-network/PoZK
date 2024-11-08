@@ -143,13 +143,13 @@ async function loopTask(times) {
   console.log("Set epoch period to 2s");
   for(var i = 0; i < times; i++) {
     let account = accounts[i % 4];
-    await c.connect(account).create(myProver, account, 0, "0x");
+    await c.connect(account).create(myProver, account, 0, "0x", "0x");
     //await sleep();
     await c.connect(account).accept(tid, account);
-    //await c.accept(i, account);
+    //await c.accept(i, account, "");
     //await sleep();
-    await c.connect(account).submit(tid, "0x", "0x");
-    //await c.submit(i, "0x", "0x");
+    await c.connect(account).submit(tid, "0x");
+    //await c.submit(i, "0x");
     //await sleep();
     tid += 1n;
     console.log("Next tid:", tid);
