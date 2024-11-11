@@ -52,7 +52,7 @@ async function redeploy(name, item, params=[]) {
 }
 
 async function upgrade() {
-  await upgradeContractWithProxy("Task");
+  await upgradeContractWithProxy("Reward");
   // await upgradeContractWithProxy("Vesting");
   // await upgradeContractWithProxy("Stake");
   // await upgradeContractWithProxy("Task");

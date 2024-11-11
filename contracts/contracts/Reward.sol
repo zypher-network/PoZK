@@ -46,7 +46,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         uint256 totalPlayerExtraReward;
 
         uint256 unclaimReward;
-        uint256 unclaimLabor;
+        uint256 unclaimMinerLabor;
+        uint256 unclaimPlayerLabor;
+        uint256 unclaimExtra;
         address extraRewardToken;
 
         mapping(address => StakerLabor) minerLabor;
@@ -75,18 +77,8 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     struct ExtraProverReward {
         /// the token address of this reward
         address token;
-        /// the end of the reward time
-        uint256 to;
-        /// the total reward of every epoch
-        uint256 reward;
         /// total reward, if not used, prover owner can claim
         uint256 remain;
-        /// current epoch
-        uint256 current;
-        /// current reward token address
-        address currentToken;
-        /// current epoch reward
-        uint256 currentReward;
     }
 
     /// @notice Common Addresses contract
@@ -123,7 +115,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     uint256 public playerMaxNum;
 
     /// @notice The extra prover rewards by game, it will distribute with main token
-    mapping(address => ExtraProverReward) private extraProverRewards;
+    mapping(address => mapping(uint256 => ExtraProverReward)) public extraProverRewards;
 
     /// @notice Emitted when update the alpha for cobb-douglas function
     event Alpha(int256 alphaNumerator, int256 alphaDenominator);
@@ -150,7 +142,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     event PlayerCollect(uint256 epoch, address prover, address player, uint256 amount);
 
     /// @notice Emitted when deposit extra reward token for miner
-    event DepositExtraProverRewards(address prover, uint256 from, uint256 to, address token, uint256 amount);
+    event DepositExtraProverRewards(address prover, uint256 epoch, address token, uint256 amount);
+
+    /// @notice Emitted when claimed unused extra reward token
+    event ClaimExtraProverRewards(address prover, uint256 epoch, uint256 remain);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -266,6 +261,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // prover first has reward in this epoch
         if (gp.totalWorking == 0) {
             uint256 proverStaking = s.proverTotalStaking(prover);
+            if (proverStaking == 0) {
+                return;
+            }
+
             ep.unclaim += 1;
             ep.totalProverStaking += proverStaking;
             gp.totalStaking = proverStaking;
@@ -274,24 +273,31 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             gp.pozk = p.work(prover);
             ep.totalPozk += gp.pozk;
         }
-
         gp.totalWorking += 2;
-        gp.unclaimLabor += 2;
 
+        // add labor to miner
         if (gp.minerLabor[miner].working == 0) {
             uint256 minerStaking = s.minerStaking(prover, miner);
             gp.minerLabor[miner].staking = minerStaking;
             gp.totalMinerStaking += minerStaking;
         }
+        if (gp.minerLabor[miner].staking > 0) {
+            gp.unclaimMinerLabor += 1;
+        }
         gp.minerLabor[miner].working += 1;
 
+        // add labor to player
         if (gp.playerLabor[player].working == 0) {
             uint256 playerStaking = s.playerStaking(player);
             gp.playerLabor[player].staking = playerStaking;
             gp.totalPlayerStaking += playerStaking;
         }
+        if (gp.playerLabor[player].staking > 0) {
+            gp.unclaimPlayerLabor += 1;
+        }
         gp.playerLabor[player].working += 1;
 
+        // add unclaim list
         if (rgm.index[prover] == 0) {
             if (rgm.unclaim == 0) {
                 rgm.provers.push(address(0));
@@ -354,6 +360,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             IERC20(gp.extraRewardToken).transfer(miner, extraAmount);
         }
 
+        if (gp.minerLabor[miner].staking > 0) {
+            gp.unclaimMinerLabor -= labor;
+        }
+
         // clear unclaim prover
         uint index = rgm.index[prover];
         address lastProver = rgm.provers[rgm.unclaim];
@@ -369,8 +379,8 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             delete gp.minerLabor[miner];
         }
 
-        gp.unclaimLabor -= labor;
         gp.unclaimReward -= amount;
+        gp.unclaimExtra -= extraAmount;
 
         _clearPool(epoch, prover);
 
@@ -417,6 +427,10 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             IERC20(gp.extraRewardToken).transfer(player, extraAmount);
         }
 
+        if (gp.playerLabor[player].staking > 0) {
+            gp.unclaimPlayerLabor -= labor;
+        }
+
         // clear unclaim prover
         uint index = rgp.index[prover];
         address lastProver = rgp.provers[rgp.unclaim];
@@ -432,8 +446,8 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             delete gp.playerLabor[player];
         }
 
-        gp.unclaimLabor -= labor;
         gp.unclaimReward -= amount;
+        gp.unclaimExtra -= extraAmount;
 
         _clearPool(epoch, prover);
 
@@ -476,59 +490,47 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
     /// @notice Prover/Game owner can deposit extra rewards for miner & player. Only support one token in epoch.
     /// @param prover the prover
-    /// @param to the end epoch
+    /// @param epoch the reward epoch
     /// @param token the token address
     /// @param amount the token amount
-    function depositExtraProverRewards(address prover, uint256 to, address token, uint256 amount) external {
+    function depositExtraProverRewards(address prover, uint256 epoch, address token, uint256 amount) external {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
-        require(to > currentEpoch + 1, "R04");
+        require(epoch >= currentEpoch, "R04");
 
-        ExtraProverReward storage epr = extraProverRewards[prover];
+        ExtraProverReward storage epr = extraProverRewards[prover][epoch];
 
         // check reward is empty or expired, only prover owner can set reward token address
-        if (epr.token == address(0) || epr.to <= currentEpoch) {
+        if (epr.token == address(0)) {
             address owner = IProver(IAddresses(addresses).get(Contracts.Prover)).owner(prover);
             require(owner == msg.sender, "R05");
-
-            epr.currentToken = epr.token;
             epr.token = token;
         }
 
         IERC20(epr.token).transferFrom(msg.sender, address(this), amount);
+        epr.remain += amount;
 
-        epr.current = currentEpoch;
-        epr.currentReward = epr.reward;
-
-        // accumulate amount to reward
-        if (epr.to > currentEpoch) {
-            // remain + new
-            epr.remain += amount;
-        } else {
-            epr.remain = amount;
-        }
-        epr.reward = epr.remain / (to - currentEpoch);
-        epr.to = to;
-
-        emit DepositExtraProverRewards(prover, currentEpoch, to, token, epr.reward);
+        emit DepositExtraProverRewards(prover, epoch, token, amount);
     }
 
     /// @notice Prover/Game owner can claim expired extra rewards
     /// @param prover the prover
-    function claimExtraProverRewards(address prover) external {
-        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+    /// @param epoch the epoch
+    function claimExtraProverRewards(address prover, uint256 epoch) external {
+       uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+        require(currentEpoch > epoch, "R06");
+
+        ExtraProverReward storage epr = extraProverRewards[prover][epoch];
+        require(epr.remain > 0, "R07");
+
+        // check epoch had been claimed
+        ProverPool storage gp = pools[epoch].proverPools[prover];
+        require(gp.unclaimMinerLabor == 0 && gp.unclaimPlayerLabor == 0, "R08");
+
         address owner = IProver(IAddresses(addresses).get(Contracts.Prover)).owner(prover);
-        require(owner != address(0), "R06");
+        IERC20(epr.token).transfer(owner, epr.remain);
+        emit ClaimExtraProverRewards(prover, epoch, epr.remain);
 
-        ExtraProverReward storage epr = extraProverRewards[prover];
-        if (currentEpoch > epr.current && epr.currentReward > 0) {
-            IERC20(epr.currentToken).transfer(owner, epr.currentReward);
-            epr.currentReward = 0;
-        }
-
-        if (currentEpoch > epr.to && epr.remain > 0) {
-            IERC20(epr.currentToken).transfer(owner, epr.remain);
-            epr.remain = 0;
-        }
+        delete extraProverRewards[prover][epoch];
     }
 
     /// @notice private function about claim reward
@@ -555,22 +557,15 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
                 alphaDenominator
             );
 
-            // extra token reward
-            uint256 extraAmount = 0;
-            ExtraProverReward storage epr = extraProverRewards[prover];
-            if (epr.current == epoch) {
-                extraAmount = epr.currentReward;
-                gp.extraRewardToken = epr.currentToken;
-                epr.currentReward = 0;
-            } else if (epr.to >= epoch) {
-                extraAmount = epr.reward;
-                gp.extraRewardToken = epr.token;
-                epr.remain -= extraAmount;
-            }
-
             // release epoch amount token to contract
-            gp.unclaimReward = amount;
             IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(vestingAddress, address(this), amount);
+            gp.unclaimReward = amount;
+
+            // extra token reward
+            ExtraProverReward storage epr = extraProverRewards[prover][epoch];
+            gp.unclaimExtra = epr.remain;
+            gp.extraRewardToken = epr.token;
+            delete extraProverRewards[prover][epoch];
 
             // check or collect miner/player total reward,
             // miner percent: y, player percent: 100 - y
@@ -582,13 +577,11 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             if (x < playerMaxNum) {
                 y = x * (minerMaxPer - minerMinPer) / playerMaxNum + minerMinPer;
             }
-            gp.totalMinerReward = amount * y / 100;
-            gp.totalPlayerReward = amount - gp.totalMinerReward;
+            gp.totalMinerReward = gp.unclaimReward * y / 100;
+            gp.totalPlayerReward = gp.unclaimReward - gp.totalMinerReward;
 
-            if (extraAmount > 0) {
-                gp.totalMinerExtraReward = extraAmount * y / 100;
-                gp.totalPlayerExtraReward = extraAmount - gp.totalMinerExtraReward;
-            }
+            gp.totalMinerExtraReward = gp.unclaimExtra * y / 100;
+            gp.totalPlayerExtraReward = gp.unclaimExtra - gp.totalMinerExtraReward;
         }
     }
 
@@ -600,11 +593,17 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         ProverPool storage gp = ep.proverPools[prover];
 
         // clear prover pool
-        if (gp.unclaimLabor == 0) {
+        if (gp.unclaimMinerLabor == 0 && gp.unclaimPlayerLabor == 0) {
             // return the remained
             if (gp.unclaimReward > 0) {
                 address vesting = IAddresses(addresses).get(Contracts.Vesting);
                 IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(vesting, gp.unclaimReward);
+            }
+
+            // return the extra
+            if (gp.unclaimExtra > 0) {
+                address owner = IProver(IAddresses(addresses).get(Contracts.Prover)).owner(prover);
+                IERC20(gp.extraRewardToken).transfer(owner, gp.unclaimExtra);
             }
 
             delete ep.proverPools[prover];
