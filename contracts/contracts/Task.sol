@@ -51,7 +51,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     uint256 public disputeDeposit;
 
     /// @notice Store all tasks
-    mapping(uint256 => GameTask) private tasks;
+    mapping(uint256 => GameTask) public tasks;
 
     /// @notice Store all tasks results
     mapping(bytes32 => uint256) public tasksResults;
@@ -217,7 +217,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         // transfer
         IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), disputeDeposit);
 
-        task.status == TaskStatus.Disputing;
+        task.status = TaskStatus.Disputing;
         task.dispute = disputeDeposit;
 
         emit DisputeTask(tid, msg.sender, disputeDeposit);

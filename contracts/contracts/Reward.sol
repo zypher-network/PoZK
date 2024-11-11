@@ -565,6 +565,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             ExtraProverReward storage epr = extraProverRewards[prover][epoch];
             gp.unclaimExtra = epr.remain;
             gp.extraRewardToken = epr.token;
+            emit ClaimExtraProverRewards(prover, epoch, epr.remain);
             delete extraProverRewards[prover][epoch];
 
             // check or collect miner/player total reward,
@@ -635,7 +636,7 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         int256 numerator,
         int256 denominator
     ) private pure returns (uint256, uint256) {
-        if (myStake == 0 || totalStake == 0 || myLabor == 0 || totalLabor == 0) {
+        if (myStake == 0 || myLabor == 0) {
             return (0, 0);
         }
 

@@ -518,7 +518,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         ProverStaking storage gs = proversStaking[prover];
-        Staking storage sm = gs.miners[msg.sender];
+        Staking storage sm = gs.miners[miner];
 
         // update new staking
         if (currentEpoch >= sm.newEpoch) {
@@ -526,12 +526,12 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
             sm.newEpoch = currentEpoch + 1;
         }
 
-        uint256 stakingAmount = amount;
-        uint256 unstakingAmount = 0;
+        uint256 slashAmount = amount;
+        uint256 unslashAmount = 0;
 
         if (sm.newValue < amount) {
-            stakingAmount = sm.newValue;
-            unstakingAmount = amount - stakingAmount;
+            slashAmount = sm.newValue;
+            unslashAmount = amount - slashAmount;
 
             Staking storage su = unstakings[miner];
             if (currentEpoch >= su.newEpoch) {
@@ -540,10 +540,10 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
                 su.newEpoch = currentEpoch + 1;
             }
 
-            if (su.newValue < unstakingAmount) {
-                uint256 remain = unstakingAmount - su.newValue;
+            if (su.newValue < unslashAmount) {
+                uint256 remain = unslashAmount - su.newValue;
                 if (su.value < remain) {
-                    unstakingAmount = su.newValue + su.value;
+                    unslashAmount = su.newValue + su.value;
                     su.value = 0;
                 } else {
                     su.value -= remain;
@@ -551,17 +551,17 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
                 su.newValue = 0;
             } else {
-                su.newValue -= unstakingAmount;
+                su.newValue -= unslashAmount;
             }
 
-            emit ClaimUnstaking(miner, unstakingAmount);
+            emit ClaimUnstaking(miner, unslashAmount);
         }
 
         // remove from miner staking
-        sm.newValue -= stakingAmount;
+        sm.newValue -= slashAmount;
 
         // append to player unstaking
-        this.addUnstaking(player, stakingAmount + unstakingAmount);
+        this.addUnstaking(player, slashAmount + unslashAmount);
 
         // remove from total staking
         Staking storage st = gs.minerTotal;
@@ -569,9 +569,9 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
             st.value = st.newValue;
             st.newEpoch = currentEpoch + 1;
         }
-        st.newValue -= stakingAmount;
+        st.newValue -= slashAmount;
 
-        emit MinerStakeChange(st.newEpoch, prover, miner, -int256(stakingAmount), sm.newValue, st.newValue);
+        emit MinerStakeChange(st.newEpoch, prover, miner, -int256(slashAmount), sm.newValue, st.newValue);
     }
 
     /// --------------- Player --------------- ///
