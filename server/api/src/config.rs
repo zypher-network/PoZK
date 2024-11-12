@@ -4,7 +4,10 @@ use serde::Deserialize;
 #[derive(Args, Debug, Clone, Deserialize)]
 pub struct ApiConfig {
     #[clap(long, help = "`api`: service port, eg. 9098")]
-    pub port: u16,
+    pub http_port: u16,
+
+    #[clap(long, help = "`api`: p2p port, eg. 6374")]
+    pub p2p_port: u16,
 
     #[clap(long, help = "`api`: service login param, eg. localhost:4000")]
     pub domains: Option<String>,
@@ -31,7 +34,8 @@ impl ApiConfig {
 impl Default for ApiConfig {
     fn default() -> Self {
         Self {
-            port: 9098,
+            http_port: 9098,
+            p2p_port: 6374,
             domains: None,
             miner: String::new(),
             secret: None,

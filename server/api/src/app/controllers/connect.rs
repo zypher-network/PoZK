@@ -1,122 +1,171 @@
+use axum::extract::ws::{Message, WebSocket};
 use axum::{
-    body::Bytes,
-    extract::{Extension, Json, Path, WebSocketUpgrade},
+    extract::{Extension, Path, WebSocketUpgrade},
+    http::{
+        header::{HeaderMap, HeaderValue},
+        StatusCode,
+    },
+    response::{IntoResponse, Response},
 };
-use axum::extract::ws::{CloseFrame, Message, WebSocket};
-use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
-use tokio::{net::TcpStream, select};
-
+use chamomile::prelude::PeerId;
+use chrono::prelude::Utc;
+use ethers::types::{Signature, SignatureError};
 use futures_util::{sink::SinkExt, StreamExt};
+use pozk_db::Task;
+use tokio::sync::mpsc::UnboundedSender;
 
-use crate::app::{success, AppContext, Error, Result};
+use crate::app::AppContext;
+use crate::p2p::P2pMessage;
 
 /// player connect to the service
-pub async fn player(Path(id): Path<u64>, ws: WebSocketUpgrade) -> Response {
-    // check task id exists
+pub async fn player(
+    Path(id): Path<u64>,
+    mut headers: HeaderMap,
+    ws: WebSocketUpgrade,
+    Extension(app): Extension<AppContext>,
+) -> Response {
+    // check peer is valid
+    let msg = format!("{}-{}", app.url, id);
 
-    ws.on_upgrade(move |socket: WebSocket| {
-        handle_player(socket, id)
-    })
+    let peer_res = headers
+        .remove("X-PEER")
+        .unwrap_or(HeaderValue::from_static(""))
+        .to_str()
+        .unwrap_or("")
+        .parse::<Signature>()
+        .and_then(|s| s.recover(msg))
+        .and_then(|s| PeerId::from_bytes(s.as_bytes()).map_err(|_| SignatureError::RecoveryError));
+
+    let peer = match peer_res {
+        Ok(s) => s,
+        Err(_) => return (StatusCode::BAD_REQUEST, "invalid player").into_response(),
+    };
+
+    // check task id exists and player is valid
+    if let Ok(Some(t)) = app.db.get::<Task>(&Task::to_key(id)) {
+        // check task is active
+        let now = Utc::now().timestamp();
+        if t.is_me && !t.over && t.overtime > now {
+            let sender = app.p2p_sender.clone();
+            return ws.on_upgrade(move |socket: WebSocket| handle_prover(socket, id, sender));
+        }
+        let sender = app.p2p_sender.clone();
+        return ws.on_upgrade(move |socket: WebSocket| handle_player(socket, id, peer, sender));
+    }
+
+    (StatusCode::BAD_REQUEST, "no task").into_response()
 }
 
 /// prover connect to the service
-pub async fn prover(Path(id): Path<u64>, ws: WebSocketUpgrade) -> Response {
+pub async fn prover(
+    Path(id): Path<u64>,
+    ws: WebSocketUpgrade,
+    Extension(app): Extension<AppContext>,
+) -> Response {
     // check task id exists
-
-    ws.on_upgrade(move |socket: WebSocket| {
-        handle_prover(socket, id)
-    })
-}
-
-async fn handle_player(socket: WebSocket, id: u64) {
-    debug!("Player websocket connected for task: {}", id);
-
-    let (mut sender, mut receiver) = socket.split();
-
-    while let Some(msg) = socket.recv().await {
-        match msg {
-            Message::Text(text) => {
-                // TODO match test
-
-                debug!("Received text message from client");
-                if let Err(e) = ws_connection.receive_text_msg(&text).await {
-                    ws_connection.send_error_msg(e).await;
-                }
-            }
-            Message::Binary(_) => {
-                debug!("Receive binary message to client");
-                ws_connection
-                    .close_all(Some(Error::WebSocket(1310)))
-                    .await?
-            }
-            Message::Close(_) => {
-                debug!("Client closed the WebSocket");
-                ws_connection.close_remote().await?
-            }
-            Message::Ping(data) => {
-                debug!("Received PING message from client");
-                ws_connection
-                    .remote_socket
-                    .send(TMessage::Ping(data))
-                    .await
-                    .map_err(|_| Error::WebSocket(1314))?;
-            }
-            Message::Pong(data) => {
-                debug!("Received PONG message from client");
-                ws_connection
-                    .remote_socket
-                    .send(TMessage::Pong(data))
-                    .await
-                    .map_err(|_| Error::WebSocket(1314))?;
-            }
+    if let Ok(Some(t)) = app.db.get::<Task>(&Task::to_key(id)) {
+        // check task is active
+        let now = Utc::now().timestamp();
+        if t.is_me && !t.over && t.overtime > now {
+            let sender = app.p2p_sender.clone();
+            return ws.on_upgrade(move |socket: WebSocket| handle_prover(socket, id, sender));
         }
     }
+
+    (StatusCode::BAD_REQUEST, "no task").into_response()
+}
+
+async fn handle_player(
+    socket: WebSocket,
+    id: u64,
+    peer: PeerId,
+    sender: UnboundedSender<P2pMessage>,
+) {
+    debug!("Websocket connected from player for task: {}", id);
+
+    let (ws_sender, mut ws_receiver) = socket.split();
+
+    // send sender to p2p service
+    sender
+        .send(P2pMessage::ConnectPlayer(id, peer, ws_sender))
+        .expect("missing p2p service");
+
+    while let Some(msg) = ws_receiver.next().await {
+        match msg {
+            Ok(Message::Text(text)) => {
+                debug!("Receive text message from player");
+                sender
+                    .send(P2pMessage::TextPlayer(id, peer, text))
+                    .expect("missing p2p service");
+            }
+            Ok(Message::Binary(data)) => {
+                debug!("Receive binary message from player");
+                sender
+                    .send(P2pMessage::BinaryPlayer(id, peer, data))
+                    .expect("missing p2p service");
+            }
+            Ok(Message::Close(_)) => {
+                debug!("Player closed the WebSocket");
+                sender
+                    .send(P2pMessage::ClosePlayer(id, peer))
+                    .expect("missing p2p service");
+            }
+            Ok(_) => {
+                debug!("Received PING/PONG message from prover");
+            }
+            Err(_) => break,
+        }
+    }
+
+    // send message to p2p service
+    sender
+        .send(P2pMessage::ClosePlayer(id, peer))
+        .expect("missing p2p service");
 
     debug!("Player websocket closed for task: {}", id);
 }
 
-async fn handle_prover(socket: WebSocket, id: String) {
-    debug!("WebSocket connected for task: {}", id);
+async fn handle_prover(socket: WebSocket, id: u64, sender: UnboundedSender<P2pMessage>) {
+    debug!("WebSocket connected from prover for task: {}", id);
+
+    let (ws_sender, mut ws_receiver) = socket.split();
 
     // register/replace websocket channel to p2p service
-    let (mut sender, mut receiver) = socket.split();
+    sender
+        .send(P2pMessage::ConnectProver(id, ws_sender))
+        .expect("missing p2p service");
 
-    while let Some(msg) = socket.recv().await {
+    while let Some(msg) = ws_receiver.next().await {
         match msg {
-            Message::Text(text) => {
-                debug!("Received text message from client");
-                if let Err(e) = ws_connection.receive_text_msg(&text).await {
-                    ws_connection.send_error_msg(e).await;
-                }
+            Ok(Message::Text(text)) => {
+                debug!("Receive text message from prover");
+                sender
+                    .send(P2pMessage::TextProver(id, text))
+                    .expect("missing p2p service");
             }
-            Message::Binary(_) => {
-                debug!("Receive binary message to client");
-                ws_connection
-                    .close_all(Some(Error::WebSocket(1310)))
-                    .await?
+            Ok(Message::Binary(data)) => {
+                debug!("Receive binary message from prover");
+                sender
+                    .send(P2pMessage::BinaryProver(id, data))
+                    .expect("missing p2p service");
             }
-            Message::Close(_) => {
-                debug!("Client closed the WebSocket");
-                ws_connection.close_remote().await?
+            Ok(Message::Close(_)) => {
+                debug!("prover closed the WebSocket");
+                sender
+                    .send(P2pMessage::CloseProver(id))
+                    .expect("missing p2p service");
             }
-            Message::Ping(data) => {
-                debug!("Received PING message from client");
-                ws_connection
-                    .remote_socket
-                    .send(TMessage::Ping(data))
-                    .await
-                    .map_err(|_| Error::WebSocket(1314))?;
+            Ok(_) => {
+                debug!("Received PING/PONG message from prover");
             }
-            Message::Pong(data) => {
-                debug!("Received PONG message from client");
-                ws_connection
-                    .remote_socket
-                    .send(TMessage::Pong(data))
-                    .await
-                    .map_err(|_| Error::WebSocket(1314))?;
-            }
+            Err(_) => break,
         }
     }
+
+    // send message to p2p service
+    sender
+        .send(P2pMessage::CloseProver(id))
+        .expect("missing p2p service");
 
     debug!("Prover websocket closed for task: {}", id);
 }

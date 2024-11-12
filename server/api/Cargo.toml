@@ -21,6 +21,7 @@ chamomile.workspace = true
 chrono.workspace = true
 clap.workspace = true
 ethers.workspace = true
+futures-util.workspace = true
 hex.workspace = true
 jsonwebtoken.workspace = true
 mime_guess.workspace = true

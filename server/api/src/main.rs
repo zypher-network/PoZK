@@ -4,14 +4,14 @@ extern crate tracing;
 mod app;
 mod config;
 mod metrics;
-mod service;
 mod p2p;
+mod service;
 
 use app::App;
 use config::ApiConfig;
 use metrics::{MetricsMessage, MetricsService};
+use p2p::{P2pMessage, P2pService};
 use service::MainService;
-use p2p::P2pService;
 
 use anyhow::Result;
 use clap::{Args, Parser};
@@ -137,7 +137,13 @@ async fn setup() -> Result<()> {
     )?
     .run();
 
-    let p2p_sender = P2pService::new(base_path, db.clone(), docker.clone()).run();
+    let p2p_sender = P2pService::new(
+        base_path,
+        co.api_config.p2p_port,
+        db.clone(),
+        docker.clone(),
+    )
+    .run();
 
     // calc parallel number
     let n_cpu = if cpu < 4 { 1 } else { cpu / 4 };
@@ -154,25 +160,25 @@ async fn setup() -> Result<()> {
     };
 
     // setup controller
-    let (controller, ready) =
+    let (controller, sk_bytes, ready) =
         if let Some(addr) = db.get::<MainController>(MainController::to_key())? {
-            (
-                LocalWallet::from(
-                    db.get::<Controller>(Controller::to_key(&addr.controller))?
-                        .unwrap()
-                        .singing_key,
-                ),
-                true,
-            )
+            let singing_key = db
+                .get::<Controller>(Controller::to_key(&addr.controller))?
+                .unwrap()
+                .singing_key;
+            let sk_bytes = singing_key.to_bytes().as_slice().to_vec();
+            (LocalWallet::from(singing_key), sk_bytes, true)
         } else {
-            (DEFAULT_WALLET.parse::<LocalWallet>()?, false)
+            (DEFAULT_WALLET.parse::<LocalWallet>()?, vec![], false)
         };
 
     if ready {
         metrics_sender
             .send(MetricsMessage::ChangeController(controller.clone()))
             .unwrap();
-        p2p_sender.send(P2pMessage::ChangeController(controller.clone())).unwrap();
+        p2p_sender
+            .send(P2pMessage::ChangeController(sk_bytes))
+            .unwrap();
     }
 
     let (service_sender, service_receiver) = new_service_channel();

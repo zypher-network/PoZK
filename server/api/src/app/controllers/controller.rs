@@ -102,9 +102,10 @@ pub async fn update(
     let sk_bytes = c.singing_key.to_bytes().as_slice().to_vec();
 
     app.sender
-        .send(ServiceMessage::ChangeController(LocalWallet::from(
-            c.singing_key,
-        ), sk_bytes))
+        .send(ServiceMessage::ChangeController(
+            LocalWallet::from(c.singing_key),
+            sk_bytes,
+        ))
         .expect("Service sender invalid");
 
     Ok(success())

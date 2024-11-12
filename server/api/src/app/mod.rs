@@ -60,7 +60,7 @@ impl App {
         url: String,
     ) -> anyhow::Result<Self> {
         let miner: Address = cfg.miner.parse()?;
-        let port = cfg.port;
+        let port = cfg.http_port;
         let domains = cfg.domains();
 
         let secret = if let Some(sec) = &cfg.secret {
