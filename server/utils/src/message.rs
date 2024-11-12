@@ -13,8 +13,8 @@ pub enum ServiceMessage {
     ApproveProver(Address, u64, u64),
     /// tid, proof
     UploadProof(String, Vec<u8>),
-    /// controller wallet
-    ChangeController(LocalWallet),
+    /// controller wallet and sk bytes
+    ChangeController(LocalWallet, Vec<u8>),
     /// pull prover, tag, name and overtime
     PullProver(Address, String, String, u64),
     /// remove prover

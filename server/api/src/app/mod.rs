@@ -22,14 +22,12 @@ use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedSender;
 use tower_http::cors::{Any, CorsLayer};
 
-use controllers::auth;
-use controllers::controller;
-use controllers::prover;
-use controllers::task;
+use controllers::*;
 use extensions::auth::Auth;
 use extensions::error::fallback;
 
 use crate::config::ApiConfig;
+use crate::p2p::P2pMessage;
 
 pub fn success() -> Json<Value> {
     Json(json!({ "status": "success" }))
@@ -44,6 +42,7 @@ pub struct App {
     db: Arc<ReDB>,
     docker: Arc<DockerManager>,
     sender: UnboundedSender<ServiceMessage>,
+    p2p_sender: UnboundedSender<P2pMessage>,
     secret: [u8; 32],
     task: Task<DefaultProvider>,
     url: String,
@@ -55,12 +54,13 @@ impl App {
         db: Arc<ReDB>,
         docker: Arc<DockerManager>,
         sender: UnboundedSender<ServiceMessage>,
+        p2p_sender: UnboundedSender<P2pMessage>,
         network: &str,
         endpoints: String,
         url: String,
     ) -> anyhow::Result<Self> {
         let miner: Address = cfg.miner.parse()?;
-        let port = cfg.port;
+        let port = cfg.http_port;
         let domains = cfg.domains();
 
         let secret = if let Some(sec) = &cfg.secret {
@@ -89,6 +89,7 @@ impl App {
             db,
             docker,
             sender,
+            p2p_sender,
             secret,
             task,
             url,
@@ -110,7 +111,13 @@ impl App {
                 .route("/health", get(auth::health))
                 .route("/orders", post(task::create))
                 .route("/orders/:id", post(task::track))
-                .route("/tasks/:id", get(task::download).post(task::upload))
+                .route("/connect/:id", get(connect::player))
+                .nest(
+                    "/inner",
+                    Router::new()
+                        .route("/tasks/:id", get(task::download).post(task::upload))
+                        .route("/connect/:id", get(connect::prover)),
+                )
                 .nest(
                     "/api",
                     Router::new()

@@ -23,8 +23,9 @@ pozk-utils = { version = "0.1", path = "./utils" }
 anyhow = { version = "1.0", features = ["backtrace"] }
 async-recursion = "1.1"
 async-trait = "0.1"
-axum = "0.7"
+axum = { version = "0.7", features = ["ws"] }
 bollard = { version = "0.17", features = ["chrono"] }
+chamomile = "0.10"
 chrono = "0.4"
 clap = { version = "4.5", features = ["derive"] }
 ethers = "2.0"

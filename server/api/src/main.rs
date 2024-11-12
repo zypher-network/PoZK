@@ -4,11 +4,13 @@ extern crate tracing;
 mod app;
 mod config;
 mod metrics;
+mod p2p;
 mod service;
 
 use app::App;
 use config::ApiConfig;
 use metrics::{MetricsMessage, MetricsService};
+use p2p::{P2pMessage, P2pService};
 use service::MainService;
 
 use anyhow::Result;
@@ -111,11 +113,11 @@ async fn setup() -> Result<()> {
 
     // setup base path
     init_path_and_server(&args.base_path, &args.server);
+    let base_path = PathBuf::from(&args.base_path);
 
     // setup database
     let db = {
-        let db_path = PathBuf::from(&args.base_path);
-        let db = ReDB::new(&db_path, co.db_config.auto_remove)?;
+        let db = ReDB::new(&base_path, co.db_config.auto_remove)?;
         Arc::new(db)
     };
 
@@ -135,6 +137,8 @@ async fn setup() -> Result<()> {
     )?
     .run();
 
+    let p2p_sender = P2pService::new(base_path, co.api_config.p2p_port).run();
+
     // calc parallel number
     let n_cpu = if cpu < 4 { 1 } else { cpu / 4 };
     let parallel = if let Some(p_cpu) = args.parallel {
@@ -150,23 +154,24 @@ async fn setup() -> Result<()> {
     };
 
     // setup controller
-    let (controller, ready) =
+    let (controller, sk_bytes, ready) =
         if let Some(addr) = db.get::<MainController>(MainController::to_key())? {
-            (
-                LocalWallet::from(
-                    db.get::<Controller>(Controller::to_key(&addr.controller))?
-                        .unwrap()
-                        .singing_key,
-                ),
-                true,
-            )
+            let singing_key = db
+                .get::<Controller>(Controller::to_key(&addr.controller))?
+                .unwrap()
+                .singing_key;
+            let sk_bytes = singing_key.to_bytes().as_slice().to_vec();
+            (LocalWallet::from(singing_key), sk_bytes, true)
         } else {
-            (DEFAULT_WALLET.parse::<LocalWallet>()?, false)
+            (DEFAULT_WALLET.parse::<LocalWallet>()?, vec![], false)
         };
 
     if ready {
         metrics_sender
             .send(MetricsMessage::ChangeController(controller.clone()))
+            .unwrap();
+        p2p_sender
+            .send(P2pMessage::ChangeController(sk_bytes))
             .unwrap();
     }
 
@@ -186,6 +191,7 @@ async fn setup() -> Result<()> {
         db.clone(),
         docker.clone(),
         service_sender.clone(),
+        p2p_sender.clone(),
         &args.network,
         endpoints,
         args.url.clone(),
@@ -196,6 +202,7 @@ async fn setup() -> Result<()> {
     MainService::new(
         pool_sender,
         metrics_sender,
+        p2p_sender,
         service_receiver,
         db,
         docker,
