@@ -35,7 +35,7 @@ impl Default for ApiConfig {
     fn default() -> Self {
         Self {
             http_port: 9098,
-            p2p_port: 6374,
+            p2p_port: 7364,
             domains: None,
             miner: String::new(),
             secret: None,

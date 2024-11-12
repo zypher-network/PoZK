@@ -9,7 +9,10 @@ services:
     image: zyphernetwork/pozk-miner:v0.1.3
     container_name: pozk-miner
     ports:
-      - "9098:9098"
+      - 9098:9098 # HTTP
+      - 7364:7364 # P2P
+      - 7364:7364/udp
+
     volumes:
       - ./:/usr/pozk
       - /var/run/docker.sock:/var/run/docker.sock
