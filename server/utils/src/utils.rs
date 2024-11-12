@@ -78,7 +78,7 @@ pub async fn read_task_proof(tid: &str) -> Result<Vec<u8>> {
 
 pub fn get_task_api(tid: &str) -> String {
     let server = API_SERVER.get().expect("Missing API SERVER");
-    format!("{}/tasks/{}", server, tid)
+    format!("{}/inner/tasks/{}", server, tid)
 }
 
 pub async fn download_input() -> Result<Vec<u8>> {
@@ -114,7 +114,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_download() {
-        let res = download_input_with_uri("http://localhost:9098/tasks/1")
+        let res = download_input_with_uri("http://localhost:9098/inner/tasks/1")
             .await
             .unwrap();
         println!("{} {:?}", res.len(), res);
@@ -123,7 +123,7 @@ mod tests {
     #[tokio::test]
     async fn test_upload() {
         upload_proof_with_uri(
-            "http://localhost:9098/tasks/1",
+            "http://localhost:9098/inner/tasks/1",
             vec![1, 2, 3],
             vec![1, 2, 3, 4],
         )
