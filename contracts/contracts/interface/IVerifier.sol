@@ -5,6 +5,9 @@ interface IVerifier {
     /// game (prover/verifier) name
     function name() external view returns (string memory);
 
+    /// game task is permissioned or not
+    function permission() external view returns (bool);
+
     // verify the zkp
     function verify(bytes calldata publics, bytes calldata proof) external view returns (bool);
 

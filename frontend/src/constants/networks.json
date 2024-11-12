@@ -1,0 +1,126 @@
+{
+    "localhost": {
+        "Addresses": {
+            "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "startBlock": 0
+        },
+        "Token": {
+            "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "startBlock": 0
+        },
+        "Vesting": {
+            "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+            "startBlock": 0
+        },
+        "Epoch": {
+            "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+            "startBlock": 0
+        },
+        "Stake": {
+            "address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+            "startBlock": 0
+        },
+        "Reward": {
+            "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+            "startBlock": 0
+        },
+        "Prover": {
+            "address": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+            "startBlock": 0
+        },
+        "Task": {
+            "address": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+            "startBlock": 0
+        },
+        "Controller": {
+            "address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+            "startBlock": 0
+        }
+    },
+    "testnet": {
+        "Addresses": {
+            "address": "0xfE8595EdE3DA06936f14C14eE7A475490E33a59d",
+            "startBlock": 1119483
+        },
+        "Token": {
+            "address": "0x07cb9813aEa7678B70D7Ae418A7d8680E432ea2e",
+            "startBlock": 1119483
+        },
+        "Vesting": {
+            "address": "0x81DB6405eDb330D4cBe4B2279397A5677010bD65",
+            "startBlock": 1119492
+        },
+        "Epoch": {
+            "address": "0x5393205CdAb1C4f45B045F10c07B29bFf2339b81",
+            "startBlock": 1119498
+        },
+        "Stake": {
+            "address": "0xa8c392Fd78fd61292529864873cD42309881903f",
+            "startBlock": 1119504
+        },
+        "Reward": {
+            "address": "0x93CF679371fCca140275fd5b974487c87c5bAAAb",
+            "startBlock": 1119510
+        },
+        "Prover": {
+            "address": "0x7937D8A26F867Ec563dC324Aca279Ce41e2eBDb9",
+            "startBlock": 1633377
+        },
+        "Task": {
+            "address": "0xcc8240470F63D0b8055bf03f44D8817dAfCa0DB7",
+            "startBlock": 1761470
+        },
+        "Controller": {
+            "address": "0xB7779c7af4727A1312fF0d99a0869F155d2F7753",
+            "startBlock": 1119529
+        }
+    },
+    "mainnet": {
+        "Addresses": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Token": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Vesting": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Epoch": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Stake": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Reward": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Prover": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Task": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Controller": {
+            "address": "",
+            "startBlock": 1
+        }
+    },
+    "l2testnet": {
+        "Token": {
+            "address": "0xCD3E16f27B24f73A9b4D514C74f14235D46ef75B",
+            "startBlock": 3793651
+        },
+        "Vesting": {
+            "address": "0xdfEe81f0B3BE8c86D0d0FFBf92788365ECe35930",
+            "startBlock": 3793652
+        }
+    }
+}

@@ -1,6 +1,8 @@
 "use client";
 import { memo, useMemo, useState } from "react";
+import cx from 'classnames';
 import Wifi from "@/components/icon/wifi.svg";
+import WifiOff from "@/components/icon/wifi-off.svg";
 import Copy from "@/components/icon/copy.svg";
 import { useToast } from "@/components/ui/use-toast";
 import { FaCheck } from "react-icons/fa";
@@ -12,6 +14,7 @@ import useSubgraphStore from "@/components/state/subgraphStore";
 import { useShallow } from "zustand/react/shallow";
 import { isTodaysEpoch } from "@/lib/day";
 const Banner = () => {
+  const { isConnected } = useAccount();
   const { staking, reward, epoches } = useSubgraphStore(useShallow(state => ({ staking: state.staking, epoches: state.epoches, reward: state.reward })));
 
   const rewardInfo = useMemo(() => {
@@ -79,41 +82,44 @@ const Banner = () => {
           ))}
         </ul>
         <img
-          className="absolute bottom-0 right-0"
-          src="/dashboard/banner_earning.png"
+          className="absolute top-2/4 right-9 transform translate-y-[-50%]"
+          src="/dashboard/banner_earning.webp"
           width={180}
           height={180}
           alt="dashboard"
         />
       </Card>
-      <Card className="flex flex-col justify-between basis-1/3">
+      <Card className="flex flex-col gap-0 basis-1/3 justify-start">
         <CardTitle className="border-b-[1px] pb-[28px]border-[#1F2D4E] pb-[12px]">
           Network State
         </CardTitle>
         <div
-          className="
-          border
-          border-[#674DFF]
-          bg-[#674DFF]
-          bg-opacity-30
-          rounded-[100px]
-          flex
-          justify-between
-          items-center
-          px-[28px]
-          h-[48px]
-          my-[16px]
-        "
+          className={cx(
+            'border bg-opacity-30 rounded-[100px] flex justify-between items-center px-[28px] h-[48px] my-[16px]',
+            {
+              'border-[#674DFF] bg-[#674DFF]': isConnected,
+              'border-[#4C4B56] bg-[#4C4B56]': !isConnected,
+            }
+          )}
         >
-          <Wifi />
-          <div className="flex justify-center gap-[10px] items-center">
-            <p className="font-light text-[20px]">Connected</p>
-            <div className="bg-[#A3E636] w-[8px] h-[8px] rounded-[50%] shadow-[0_0_0_4px_rgba(163,230,54,0.3)]" />
+          {isConnected ? <Wifi /> : <WifiOff />}
+          <div className="flex justify-center gap-[12px] items-center">
+            <p className="font-light text-[20px]">
+              {isConnected ? 'Connected' : 'Disconnect'}
+            </p>
+            <div
+              className={cx(
+                'w-[8px] h-[8px] rounded-[50%]',
+                {
+                  'bg-[#A3E636] shadow-[0_0_0_4px_rgba(163,230,54,0.3)]': isConnected,
+                  'bg-[#E44042] shadow-[0_0_0_4px_rgba(228,64,66,0.3)]': !isConnected,
+                }
+              )}
+            />
           </div>
           <div />
         </div>
-
-        <Address />
+        {isConnected && <Address />}
       </Card>
     </div>
   );

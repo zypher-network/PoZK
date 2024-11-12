@@ -1,0 +1,11 @@
+.coin-sprite {
+  width: 112px;
+  height: 112px;
+  background-repeat: no-repeat;
+  animation: play 0.5s steps(6) 3; /* 設置動畫播放時間、步數和循環 */
+}
+
+@keyframes play {
+  0% { background-position: 0px 0px; }
+  100% { background-position: -672px 0px; }
+}

@@ -74,9 +74,9 @@ export const usePostStake = () => {
       try {
         const inputAmount = new BigNumberJs(amount).times(BM18);
         const contract = StakeContract();
-        const contractRes = await contract.writeContractMethod("minerUnStake", [
+        const contractRes = await contract.writeContractMethod("minerUnstake", [
           prover,
-          inputAmount,
+          BigInt(inputAmount.toString(10)),
         ]);
         console.log({ contractRes });
         if (contractRes) {

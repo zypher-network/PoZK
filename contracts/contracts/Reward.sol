@@ -28,6 +28,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
     /// @notice The struct of prover pool
     struct ProverPool {
+        /// the prover PoZK
+        uint256 pozk;
+
         /// miner + player work (double)
         uint256 totalWorking;
 
@@ -39,9 +42,14 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
         uint256 totalMinerReward;
         uint256 totalPlayerReward;
+        uint256 totalMinerExtraReward;
+        uint256 totalPlayerExtraReward;
 
         uint256 unclaimReward;
-        uint256 unclaimLabor;
+        uint256 unclaimMinerLabor;
+        uint256 unclaimPlayerLabor;
+        uint256 unclaimExtra;
+        address extraRewardToken;
 
         mapping(address => StakerLabor) minerLabor;
         mapping(address => StakerLabor) playerLabor;
@@ -58,10 +66,19 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     /// @notice The struct of the epoch status
     struct EpochPool {
         uint256 unclaim;
+        uint256 totalPozk;
         uint256 totalProverStaking;
         mapping(address => ProverPool) proverPools;
         mapping(address => RunningProver) minerUnclaimedProvers;
         mapping(address => RunningProver) playerUnclaimedProvers;
+    }
+
+    /// @notice The extra prover reward struct
+    struct ExtraProverReward {
+        /// the token address of this reward
+        address token;
+        /// total reward, if not used, prover owner can claim
+        uint256 remain;
     }
 
     /// @notice Common Addresses contract
@@ -97,6 +114,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     /// @notice The player max games number when reach minerMaxPer
     uint256 public playerMaxNum;
 
+    /// @notice The extra prover rewards by game, it will distribute with main token
+    mapping(address => mapping(uint256 => ExtraProverReward)) public extraProverRewards;
+
     /// @notice Emitted when update the alpha for cobb-douglas function
     event Alpha(int256 alphaNumerator, int256 alphaDenominator);
 
@@ -120,6 +140,12 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
 
     /// @notice Emitted when collect reward (stake) from pool
     event PlayerCollect(uint256 epoch, address prover, address player, uint256 amount);
+
+    /// @notice Emitted when deposit extra reward token for miner
+    event DepositExtraProverRewards(address prover, uint256 epoch, address token, uint256 amount);
+
+    /// @notice Emitted when claimed unused extra reward token
+    event ClaimExtraProverRewards(address prover, uint256 epoch, uint256 remain);
 
     /// @notice Initialize
     /// @param _addresses the Addresses contract
@@ -235,28 +261,43 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // prover first has reward in this epoch
         if (gp.totalWorking == 0) {
             uint256 proverStaking = s.proverTotalStaking(prover);
+            if (proverStaking == 0) {
+                return;
+            }
+
             ep.unclaim += 1;
             ep.totalProverStaking += proverStaking;
             gp.totalStaking = proverStaking;
+
+            IProver p = IProver(IAddresses(addresses).get(Contracts.Prover));
+            gp.pozk = p.work(prover);
+            ep.totalPozk += gp.pozk;
         }
-
         gp.totalWorking += 2;
-        gp.unclaimLabor += 2;
 
+        // add labor to miner
         if (gp.minerLabor[miner].working == 0) {
             uint256 minerStaking = s.minerStaking(prover, miner);
             gp.minerLabor[miner].staking = minerStaking;
             gp.totalMinerStaking += minerStaking;
         }
+        if (gp.minerLabor[miner].staking > 0) {
+            gp.unclaimMinerLabor += 1;
+        }
         gp.minerLabor[miner].working += 1;
 
+        // add labor to player
         if (gp.playerLabor[player].working == 0) {
             uint256 playerStaking = s.playerStaking(player);
             gp.playerLabor[player].staking = playerStaking;
             gp.totalPlayerStaking += playerStaking;
         }
+        if (gp.playerLabor[player].staking > 0) {
+            gp.unclaimPlayerLabor += 1;
+        }
         gp.playerLabor[player].working += 1;
 
+        // add unclaim list
         if (rgm.index[prover] == 0) {
             if (rgm.unclaim == 0) {
                 rgm.provers.push(address(0));
@@ -297,8 +338,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         RunningProver storage rgm = ep.minerUnclaimedProvers[miner];
 
         uint256 labor = gp.minerLabor[miner].working;
-        uint256 amount = _cobbDouglas(
+        (uint256 amount, uint256 extraAmount) = _doubleCobbDouglas(
             gp.totalMinerReward,
+            gp.totalMinerExtraReward,
             labor,
             gp.totalWorking / 2,
             gp.minerLabor[miner].staking,
@@ -312,6 +354,14 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             address stake = IAddresses(addresses).get(Contracts.Stake);
             IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(stake, amount);
             IStake(stake).addUnstaking(miner, amount);
+        }
+
+        if (extraAmount > 0) {
+            IERC20(gp.extraRewardToken).transfer(miner, extraAmount);
+        }
+
+        if (gp.minerLabor[miner].staking > 0) {
+            gp.unclaimMinerLabor -= labor;
         }
 
         // clear unclaim prover
@@ -329,8 +379,8 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             delete gp.minerLabor[miner];
         }
 
-        gp.unclaimLabor -= labor;
         gp.unclaimReward -= amount;
+        gp.unclaimExtra -= extraAmount;
 
         _clearPool(epoch, prover);
 
@@ -355,8 +405,9 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         RunningProver storage rgp = ep.playerUnclaimedProvers[player];
 
         uint256 labor = gp.playerLabor[player].working;
-        uint256 amount = _cobbDouglas(
+        (uint256 amount, uint256 extraAmount) = _doubleCobbDouglas(
             gp.totalPlayerReward,
+            gp.totalPlayerExtraReward,
             labor,
             gp.totalWorking / 2,
             gp.playerLabor[player].staking,
@@ -370,6 +421,14 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             address stake = IAddresses(addresses).get(Contracts.Stake);
             IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(stake, amount);
             IStake(stake).addUnstaking(player, amount);
+        }
+
+        if (extraAmount > 0) {
+            IERC20(gp.extraRewardToken).transfer(player, extraAmount);
+        }
+
+        if (gp.playerLabor[player].staking > 0) {
+            gp.unclaimPlayerLabor -= labor;
         }
 
         // clear unclaim prover
@@ -387,8 +446,8 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             delete gp.playerLabor[player];
         }
 
-        gp.unclaimLabor -= labor;
         gp.unclaimReward -= amount;
+        gp.unclaimExtra -= extraAmount;
 
         _clearPool(epoch, prover);
 
@@ -429,6 +488,51 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         }
     }
 
+    /// @notice Prover/Game owner can deposit extra rewards for miner & player. Only support one token in epoch.
+    /// @param prover the prover
+    /// @param epoch the reward epoch
+    /// @param token the token address
+    /// @param amount the token amount
+    function depositExtraProverRewards(address prover, uint256 epoch, address token, uint256 amount) external {
+        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+        require(epoch >= currentEpoch, "R04");
+
+        ExtraProverReward storage epr = extraProverRewards[prover][epoch];
+
+        // check reward is empty or expired, only prover owner can set reward token address
+        if (epr.token == address(0)) {
+            address owner = IProver(IAddresses(addresses).get(Contracts.Prover)).owner(prover);
+            require(owner == msg.sender, "R05");
+            epr.token = token;
+        }
+
+        IERC20(epr.token).transferFrom(msg.sender, address(this), amount);
+        epr.remain += amount;
+
+        emit DepositExtraProverRewards(prover, epoch, token, amount);
+    }
+
+    /// @notice Prover/Game owner can claim expired extra rewards
+    /// @param prover the prover
+    /// @param epoch the epoch
+    function claimExtraProverRewards(address prover, uint256 epoch) external {
+       uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
+        require(currentEpoch > epoch, "R06");
+
+        ExtraProverReward storage epr = extraProverRewards[prover][epoch];
+        require(epr.remain > 0, "R07");
+
+        // check epoch had been claimed
+        ProverPool storage gp = pools[epoch].proverPools[prover];
+        require(gp.unclaimMinerLabor == 0 && gp.unclaimPlayerLabor == 0, "R08");
+
+        address owner = IProver(IAddresses(addresses).get(Contracts.Prover)).owner(prover);
+        IERC20(epr.token).transfer(owner, epr.remain);
+        emit ClaimExtraProverRewards(prover, epoch, epr.remain);
+
+        delete extraProverRewards[prover][epoch];
+    }
+
     /// @notice private function about claim reward
     /// @param epoch the epoch height
     /// @param prover the prover address
@@ -439,14 +543,14 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // check or collect prover total reward,
         // and release epoch token to reward
         if (gp.totalMinerReward == 0 && gp.totalPlayerReward == 0) {
-            IProver gm = IProver(IAddresses(addresses).get(Contracts.Prover));
             address vestingAddress = IAddresses(addresses).get(Contracts.Vesting);
             IVesting vesting = IVesting(vestingAddress);
 
-            uint256 amount = _cobbDouglas(
+            (uint256 amount,) = _doubleCobbDouglas(
                 vesting.mine(epoch),
-                gm.work(prover),
-                gm.totalWork(),
+                0,
+                gp.pozk,
+                ep.totalPozk,
                 gp.totalStaking,
                 ep.totalProverStaking,
                 alphaNumerator,
@@ -454,8 +558,15 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             );
 
             // release epoch amount token to contract
-            gp.unclaimReward = amount;
             IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(vestingAddress, address(this), amount);
+            gp.unclaimReward = amount;
+
+            // extra token reward
+            ExtraProverReward storage epr = extraProverRewards[prover][epoch];
+            gp.unclaimExtra = epr.remain;
+            gp.extraRewardToken = epr.token;
+            emit ClaimExtraProverRewards(prover, epoch, epr.remain);
+            delete extraProverRewards[prover][epoch];
 
             // check or collect miner/player total reward,
             // miner percent: y, player percent: 100 - y
@@ -467,8 +578,11 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
             if (x < playerMaxNum) {
                 y = x * (minerMaxPer - minerMinPer) / playerMaxNum + minerMinPer;
             }
-            gp.totalMinerReward = amount * y / 100;
-            gp.totalPlayerReward = amount - gp.totalMinerReward;
+            gp.totalMinerReward = gp.unclaimReward * y / 100;
+            gp.totalPlayerReward = gp.unclaimReward - gp.totalMinerReward;
+
+            gp.totalMinerExtraReward = gp.unclaimExtra * y / 100;
+            gp.totalPlayerExtraReward = gp.unclaimExtra - gp.totalMinerExtraReward;
         }
     }
 
@@ -480,11 +594,17 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         ProverPool storage gp = ep.proverPools[prover];
 
         // clear prover pool
-        if (gp.unclaimLabor == 0) {
+        if (gp.unclaimMinerLabor == 0 && gp.unclaimPlayerLabor == 0) {
             // return the remained
             if (gp.unclaimReward > 0) {
                 address vesting = IAddresses(addresses).get(Contracts.Vesting);
                 IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(vesting, gp.unclaimReward);
+            }
+
+            // return the extra
+            if (gp.unclaimExtra > 0) {
+                address owner = IProver(IAddresses(addresses).get(Contracts.Prover)).owner(prover);
+                IERC20(gp.extraRewardToken).transfer(owner, gp.unclaimExtra);
             }
 
             delete ep.proverPools[prover];
@@ -506,24 +626,26 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
     /// and fixed-point math easily overflows with multiplication,
     /// we will choose the following if `stakeRatio > feeRatio`:
     /// `reward * stakeRatio / e^(alpha * (ln(stakeRatio / feeRatio)))`
-    function _cobbDouglas(
-        uint256 reward,
+    function _doubleCobbDouglas(
+        uint256 reward1,
+        uint256 reward2,
         uint256 myLabor,
         uint256 totalLabor,
         uint256 myStake,
         uint256 totalStake,
         int256 numerator,
         int256 denominator
-    ) private pure returns (uint256) {
+    ) private pure returns (uint256, uint256) {
+        if (myStake == 0 || myLabor == 0) {
+            return (0, 0);
+        }
+
         if (myStake == totalStake || myLabor == totalLabor) {
-            return reward;
+            return (reward1, reward2);
         }
 
         int256 feeRatio = FixedMath.toFixed(myLabor, totalLabor);
         int256 stakeRatio = FixedMath.toFixed(myStake, totalStake);
-        if (feeRatio == 0 || stakeRatio == 0) {
-            return 0;
-        }
 
         // Compute
         // `e^(alpha * ln(feeRatio/stakeRatio))` if feeRatio <= stakeRatio
@@ -542,6 +664,41 @@ contract Reward is Initializable, OwnableUpgradeable, IReward {
         // depending on the choice we made earlier.
         n = feeRatio <= stakeRatio ? FixedMath.mul(stakeRatio, n) : FixedMath.div(stakeRatio, n);
         // Multiply the above with reward.
-        return FixedMath.uintMul(n, reward);
+        return (FixedMath.uintMul(n, reward1), FixedMath.uintMul(n, reward2));
     }
+
+    /* function viewProverStatus(uint256 epoch, address prover) external view returns (uint256, uint256, uint256, uint256) { */
+    /*     IProver gm = IProver(IAddresses(addresses).get(Contracts.Prover)); */
+    /*     EpochPool storage ep = pools[epoch]; */
+    /*     ProverPool storage gp = ep.proverPools[prover]; */
+
+    /*     return ( */
+    /*         gm.work(prover), */
+    /*         gm.totalWork(), */
+    /*         gp.totalStaking, */
+    /*         ep.totalProverStaking */
+    /*     ); */
+    /* } */
+
+    /* function viewMinerStatus(uint256 epoch, address prover, address miner) external view returns (uint256, uint256, uint256, uint256) { */
+    /*     ProverPool storage gp = pools[epoch].proverPools[prover]; */
+
+    /*     return ( */
+    /*         gp.minerLabor[miner].working, */
+    /*         gp.totalWorking / 2, */
+    /*         gp.minerLabor[miner].staking, */
+    /*         gp.totalMinerStaking */
+    /*     ); */
+    /* } */
+
+    /* function viewPlayerStatus(uint256 epoch, address prover, address player) external view returns (uint256, uint256, uint256, uint256) { */
+    /*     ProverPool storage gp = pools[epoch].proverPools[prover]; */
+
+    /*     return ( */
+    /*         gp.playerLabor[player].working, */
+    /*         gp.totalWorking / 2, */
+    /*         gp.playerLabor[player].staking, */
+    /*         gp.totalPlayerStaking */
+    /*     ); */
+    /* } */
 }

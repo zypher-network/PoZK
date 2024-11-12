@@ -13,6 +13,7 @@ import NoData from '@/components/icon/no-data.svg';
 import useGetStatistics from "@/components/hooks/useGetStatistics";
 import dayjs from "dayjs";
 import useSubgraphStore from "@/components/state/subgraphStore";
+import { useAccount } from "wagmi";
 export const description = "An interactive bar chart";
 
 const chartConfig = {
@@ -23,6 +24,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const Charts = () => {
+  const { isConnected } = useAccount();
   const stats = useGetStatistics();
   const reset = useSubgraphStore(state => state.reset);
   const [activeKey, setActiveKey] = useState<'day' | 'month' | 'year'>('day');
@@ -54,69 +56,74 @@ const Charts = () => {
           </div>
         </div>
       </CardHeader>
-      {/* <div className="flex h-[300px] w-full justify-center items-center">
-        <div className="flex flex-col gap-1">
-          <NoData />
-          <div className="opacity-50 text-xl leading-normal">No Data</div>
-        </div>
-      </div> */}
-      <ChartContainer
-        config={chartConfig}
-        className="aspect-auto h-[300px] w-full"
-      >
-        <BarChart
-          // accessibilityLayer
-          data={stats[activeKey]}
-          margin={{
-            left: 12,
-            right: 12,
-          }}
-        >
-          <XAxis
-            dataKey="label"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            style={{
-              fill: "rgba(255, 255, 255, 0.5", // 设置标签字体颜色为深灰色
-            }}
-            // minTickGap={32}
-            tickFormatter={value => dayjs(value).format('MMM D')}
-          />
-          <ChartTooltip
-            content={
-              <ChartTooltipContent
-                // className="w-[150px]"
-                nameKey="views"
-                labelFormatter={(value) => {
-                  return new Date(value).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  });
-                }}
-              />
-            }
-          />
-          <defs>
-            <linearGradient
-              id="desktop-gradient"
-              x1="0%"
-              y1="0%"
-              x2="0%"
-              y2="100%"
+      {
+        isConnected ? (
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[300px] w-full"
+          >
+            <BarChart
+              // accessibilityLayer
+              data={stats[activeKey]}
+              margin={{
+                left: 12,
+                right: 12,
+              }}
             >
-              <stop offset="0%" stopColor="#674EFF" />
-              <stop offset="100%" stopColor="#9277FD" />
-            </linearGradient>
-          </defs>
-          <Bar
-            dataKey="value"
-            fill="url(#desktop-gradient)"
-            label={{ position: 'top' }}
-          />
-        </BarChart>
-      </ChartContainer>
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                style={{
+                  fill: "rgba(255, 255, 255, 0.5", // 设置标签字体颜色为深灰色
+                }}
+                // minTickGap={32}
+                tickFormatter={value => dayjs(value).format('MMM D')}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    // className="w-[150px]"
+                    nameKey="views"
+                    labelFormatter={(value) => {
+                      return new Date(value).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      });
+                    }}
+                  />
+                }
+              />
+              <defs>
+                <linearGradient
+                  id="desktop-gradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="0%"
+                  y2="100%"
+                >
+                  <stop offset="0%" stopColor="#674EFF" />
+                  <stop offset="100%" stopColor="#9277FD" />
+                </linearGradient>
+              </defs>
+              <Bar
+                dataKey="value"
+                fill="url(#desktop-gradient)"
+                label={{ position: 'top' }}
+              />
+            </BarChart>
+          </ChartContainer>
+        ) : (
+          <div className="flex h-[300px] w-full justify-center items-center">
+            <div className="flex flex-col gap-1">
+              <NoData />
+              <div className="opacity-50 text-xl leading-normal">No Data</div>
+            </div>
+          </div>
+        )
+      }
     </Card>
   );
 };

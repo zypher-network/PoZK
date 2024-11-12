@@ -34,6 +34,7 @@ enum EventType {
     CreateTask,
     AcceptTask,
     ApproveProver,
+    StopProver,
     MinerTest,
 }
 
@@ -69,6 +70,11 @@ struct ApproveProver {
 }
 
 #[derive(Clone, Debug, EthEvent)]
+struct StopProver {
+    prover: Address,
+}
+
+#[derive(Clone, Debug, EthEvent)]
 struct MinerTestCreate {
     id: U256,
     account: Address,
@@ -95,15 +101,23 @@ impl Scan {
         let create_task = CreateTask::signature();
         let accept_task = AcceptTask::signature();
         let approve_prover = ApproveProver::signature();
+        let stop_prover = StopProver::signature();
         let miner_test = MinerTestCreate::signature();
 
         let mut events = HashMap::new();
         events.insert(create_task, EventType::CreateTask);
         events.insert(accept_task, EventType::AcceptTask);
         events.insert(approve_prover, EventType::ApproveProver);
+        events.insert(stop_prover, EventType::StopProver);
         events.insert(miner_test, EventType::MinerTest);
 
-        let topics = vec![create_task, accept_task, approve_prover, miner_test];
+        let topics = vec![
+            create_task,
+            accept_task,
+            approve_prover,
+            stop_prover,
+            miner_test,
+        ];
 
         // filter
         let filter = Filter::new().address(addresses).topic0(topics);
@@ -256,8 +270,13 @@ impl Scan {
                 EventType::AcceptTask => {
                     let at = <AcceptTask as EthEvent>::decode_log(&log.into())?;
                     let is_me = at.miner == self.miner;
+                    let overtime = at.overtime.as_u64() as i64;
                     info!("[Scan] fetch new AcceptTask: {}", is_me);
-                    Ok(Some(ServiceMessage::AcceptTask(at.id.as_u64(), is_me)))
+                    Ok(Some(ServiceMessage::AcceptTask(
+                        at.id.as_u64(),
+                        overtime,
+                        is_me,
+                    )))
                 }
                 EventType::ApproveProver => {
                     let ap = <ApproveProver as EthEvent>::decode_log(&log.into())?;
@@ -271,12 +290,17 @@ impl Scan {
                         ap.prover, version, overtime,
                     )))
                 }
+                EventType::StopProver => {
+                    let ap = <StopProver as EthEvent>::decode_log(&log.into())?;
+                    info!("[Scan] fetch new StopProver: {}", ap.prover);
+                    Ok(Some(ServiceMessage::RemoveProver(ap.prover)))
+                }
                 EventType::MinerTest => {
                     let mt = <MinerTestCreate as EthEvent>::decode_log(&log.into())?;
                     let is_me = mt.account == self.miner;
                     if is_me {
                         let id = mt.id.as_u64();
-                        let overtime = mt.overtime.as_u64();
+                        let overtime = mt.overtime.as_u64() as i64;
                         info!("[Scan] fetch new miner test: {} - {}", id, mt.prover);
                         Ok(Some(ServiceMessage::MinerTest(
                             id,

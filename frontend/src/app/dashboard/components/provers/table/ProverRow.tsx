@@ -26,6 +26,7 @@ import { useMemo } from "react";
 
 interface IProverRow {
   name: string;
+  stop: boolean;
   running?: boolean;
   created: string;
   prover: Address;
@@ -34,7 +35,7 @@ interface IProverRow {
   needUpgrade?: boolean;
 }
 
-const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prover, version, overtime, needUpgrade = false }) => {
+const ProverRow: React.FC<IProverRow> = ({ running = false, stop, name, created, prover, version, overtime, needUpgrade = false }) => {
   const { setStakeItemHandler } = usePostStake();
   const minStake = useBalanceStore(state => state.minStake);
   const { address } = useAccount();
@@ -74,18 +75,28 @@ const ProverRow: React.FC<IProverRow> = ({ running = false, name, created, prove
         <div className="py-1 cursor-pointer text-black px-3 rounded text-sm bg-[#82c01e]" onClick={() => setStakeItemHandler(prover, "Stake")}>Stake</div>
       );
     }
+    if (stop && new BigNumberJs(stakingAmount).gt('0')) {
+      return (
+        <div className="py-1 cursor-pointer text-white px-3 rounded text-sm bg-[#E44042]" onClick={() => setStakeItemHandler(prover, "UnStake")}>UnStake</div>
+      )
+    }
     return null;
   }
+
+  if (stop && new BigNumberJs(stakingAmount).lte('0')) {
+    return null;
+  }
+
   return (
     <TableRow>
-      <TableCell className="capitalize">{running ? 'Running' : 'Ping'}</TableCell>
+      <TableCell className="capitalize">{stop ? 'Disabled' : (running ? 'Running' : 'Ping')}</TableCell>
       <TableCell className="font-medium capitalize">{name}</TableCell>
       <TableCell>{created ? calcDuration(new Date(created)) : '--'}</TableCell>
       <TableCell>{new BigNumberJs(stakingAmount).div(BM18).toFormat()}</TableCell>
       <TableCell>{data?.tasks?.length ?? '--'}</TableCell>
-      <TableCell>{isMiner ? "✅" : ""}</TableCell>
+      <TableCell>{stop ? "" : (isMiner ? "✅" : "")}</TableCell>
       <TableCell className="justify-end gap-2">
-        {!running && (
+        {!stop && !running && (
           <Recommendation
             name={name}
             image={prover}

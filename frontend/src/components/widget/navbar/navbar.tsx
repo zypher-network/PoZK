@@ -4,13 +4,18 @@ import { appName } from "@/constants/constants";
 import NavItems from "./nav-items";
 import { memo, useMemo } from "react";
 import { usePathname } from "next/navigation";
-export type INavName = "Dashboard" | "Rewards" | "Referral" | "Setting";
+export type INavName = "Dashboard" | "Rewards" | "Referral" | "Setting" | "Miner Game";
 export type NavItem = {
   name: INavName;
   href: string;
   description: string;
 };
 export const navigation: NavItem[] = [
+  {
+    name: "Miner Game",
+    href: "/dashboard/miner-game",
+    description: "Miner Game",
+  },
   {
     name: "Dashboard",
     href: "/dashboard",
@@ -45,7 +50,7 @@ export const useLocation = () => {
   return path;
 };
 const Location = ({ titleProps }: { titleProps?: string }) => {
-  const pathname = useLocation();
+  const pathname = usePathname();
   const title = useMemo(() => {
     try {
       return (
@@ -61,7 +66,7 @@ export const MemoizedLocation = memo(Location);
 const Navbar = () => {
   return (
     <div className="overflow-show pl-[48px] pt-[48px]">
-      <Link href="/">
+      <Link href="/dashboard">
         <img src="/nav/logo_dark.png" width={185} height={40} alt={appName} />
       </Link>
       <nav className="pt-[48px] flex gap-[40px] flex-col">

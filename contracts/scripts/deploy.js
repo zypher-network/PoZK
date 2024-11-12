@@ -63,15 +63,6 @@ async function deployContract(name, params=[]) {
 
 const ONE_TOKEN = 1000000000000000000n;
 
-async function deployNew() {
-  const addresses = await attachContract("Addresses");
-  let addr = await addresses.getAddress();
-
-  const vesting = await deployContractWithProxy("Stake", [addr]);
-
-  await addresses.set(3, vesting);
-}
-
 async function deployL2() {
   const [token, token_s] = await deployContract("Token", [5000000000n * ONE_TOKEN]); // 5,000,000,000 TOEKN for stake
   const [vesting, vesting_s] = await deployContractWithProxy("L2Vesting", [token]);
@@ -90,6 +81,12 @@ async function deployL2() {
   };
 
   writeNetworks(obj);
+}
+
+async function deployCompeption() {
+  const [addresses, _s] = await attachContract("Addresses");
+  let addr = await addresses.getAddress();
+  await deployContractWithProxy("MiningCompetition", [addr]);
 }
 
 async function deploy() {
@@ -179,7 +176,7 @@ async function deploy() {
 async function main() {
   await deploy();
   // await deployL2();
-  // await deployNew();
+  // await deployCompeption();
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -529,6 +529,60 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "tasks",
+    "outputs": [
+      {
+        "internalType": "enum TaskStatus",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "player",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "miner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "overtime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "publics",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "dispute",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"

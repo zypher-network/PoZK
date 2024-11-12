@@ -51,7 +51,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     uint256 public disputeDeposit;
 
     /// @notice Store all tasks
-    mapping(uint256 => GameTask) private tasks;
+    mapping(uint256 => GameTask) public tasks;
 
     /// @notice Store all tasks results
     mapping(bytes32 => uint256) public tasksResults;
@@ -111,8 +111,12 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
             IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), fee);
         }
 
-        // check prover is valid
-        require(IProver(IAddresses(addresses).get(Contracts.Prover)).isProver(prover), "T01");
+        // check prover is valid and permission
+        IProver iprover = IProver(IAddresses(addresses).get(Contracts.Prover));
+        require(iprover.isProver(prover), "T01");
+        if (IVerifier(iprover.verifier(prover)).permission()) {
+            require(msg.sender == prover, "T11");
+        }
 
         GameTask storage task = tasks[nextId];
         task.prover = prover;
@@ -213,7 +217,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         // transfer
         IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), disputeDeposit);
 
-        task.status == TaskStatus.Disputing;
+        task.status = TaskStatus.Disputing;
         task.dispute = disputeDeposit;
 
         emit DisputeTask(tid, msg.sender, disputeDeposit);

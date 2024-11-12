@@ -13,7 +13,6 @@ export default function DashboardLayout({
   useInitSubgraph();
   useGetUserBalance();
   const [hasAuth] = useAuth();
-  console.log(hasAuth, '---');
   if (!hasAuth) {
     return (
       <div className="grid place-items-center animate-pulse p-4">Loading</div>

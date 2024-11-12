@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAccount } from "wagmi";
 
 import { FaAngleDoubleDown } from "react-icons/fa";
 import useEpochStore from "@/components/state/epochStore";
@@ -22,8 +23,10 @@ import Claim from "../dialog/Claim/Claim";
 import { headerList } from "../../state/state";
 import useSubgraphStore from "@/components/state/subgraphStore";
 import { useShallow } from "zustand/react/shallow";
+import NoData from '@/components/icon/no-data.svg';
 
 const EpochPhase = () => {
+  const { isConnected } = useAccount();
   const [viewAll, setViewAll] = useState(false);
   const setEpoch = useEpochStore(state => state.setSelectEpoch);
   const { epoches, reward } = useSubgraphStore(useShallow(state => ({ reward: state.reward, epoches: state.epoches })));
@@ -93,14 +96,22 @@ const EpochPhase = () => {
               className="h-[16px] bg-transparent"
             ></TableCell>
           </TableRow>
-          {/* <TableRow>
-          <TableCell
-            colSpan={headerList.length}
-            className="h-[200px] bg-transparent"
-          >
-            <NoData />
-          </TableCell>
-        </TableRow> */}
+          {
+            !isConnected && (
+              <TableCell
+                colSpan={headerList.length}
+                className="h-[160px] bg-transparent"
+              >
+                <div className="flex h-full w-full pt-6 justify-center items-center">
+                  <div className="flex flex-col gap-1">
+                    <NoData />
+                    <div className="opacity-50 text-xl leading-normal">No Data</div>
+                  </div>
+                </div>
+              </TableCell>
+            )
+          }
+          
           {(!viewAll ? displayEpoches.slice(0, 4) : displayEpoches).map((item) => (
             <TableRow key={item.id}>
               <TableCell>
