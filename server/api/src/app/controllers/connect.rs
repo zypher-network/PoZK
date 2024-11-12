@@ -10,7 +10,7 @@ use axum::{
 use chamomile::prelude::PeerId;
 use chrono::prelude::Utc;
 use ethers::types::{Signature, SignatureError};
-use futures_util::{sink::SinkExt, StreamExt};
+use futures_util::StreamExt;
 use pozk_db::Task;
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -47,10 +47,8 @@ pub async fn player(
         let now = Utc::now().timestamp();
         if t.is_me && !t.over && t.overtime > now {
             let sender = app.p2p_sender.clone();
-            return ws.on_upgrade(move |socket: WebSocket| handle_prover(socket, id, sender));
+            return ws.on_upgrade(move |socket: WebSocket| handle_player(socket, id, peer, sender));
         }
-        let sender = app.p2p_sender.clone();
-        return ws.on_upgrade(move |socket: WebSocket| handle_player(socket, id, peer, sender));
     }
 
     (StatusCode::BAD_REQUEST, "no task").into_response()
@@ -59,16 +57,35 @@ pub async fn player(
 /// prover connect to the service
 pub async fn prover(
     Path(id): Path<u64>,
+    mut headers: HeaderMap,
     ws: WebSocketUpgrade,
     Extension(app): Extension<AppContext>,
 ) -> Response {
+    let viewable = headers
+        .remove("X-VIEWABLE")
+        .unwrap_or(HeaderValue::from_static("false"))
+        .to_str()
+        .unwrap_or("false")
+        .parse::<bool>()
+        .unwrap_or(false);
+
+    let started = headers
+        .remove("X-STARTED")
+        .unwrap_or(HeaderValue::from_static("false"))
+        .to_str()
+        .unwrap_or("false")
+        .parse::<bool>()
+        .unwrap_or(false);
+
     // check task id exists
     if let Ok(Some(t)) = app.db.get::<Task>(&Task::to_key(id)) {
         // check task is active
         let now = Utc::now().timestamp();
         if t.is_me && !t.over && t.overtime > now {
             let sender = app.p2p_sender.clone();
-            return ws.on_upgrade(move |socket: WebSocket| handle_prover(socket, id, sender));
+            return ws.on_upgrade(move |socket: WebSocket| {
+                handle_prover(socket, id, sender, viewable, started, t.overtime)
+            });
         }
     }
 
@@ -125,14 +142,23 @@ async fn handle_player(
     debug!("Player websocket closed for task: {}", id);
 }
 
-async fn handle_prover(socket: WebSocket, id: u64, sender: UnboundedSender<P2pMessage>) {
+async fn handle_prover(
+    socket: WebSocket,
+    id: u64,
+    sender: UnboundedSender<P2pMessage>,
+    viewable: bool,
+    started: bool,
+    overtime: i64,
+) {
     debug!("WebSocket connected from prover for task: {}", id);
 
     let (ws_sender, mut ws_receiver) = socket.split();
 
     // register/replace websocket channel to p2p service
     sender
-        .send(P2pMessage::ConnectProver(id, ws_sender))
+        .send(P2pMessage::ConnectProver(
+            id, ws_sender, viewable, started, overtime,
+        ))
         .expect("missing p2p service");
 
     while let Some(msg) = ws_receiver.next().await {

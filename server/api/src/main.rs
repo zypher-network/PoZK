@@ -137,13 +137,7 @@ async fn setup() -> Result<()> {
     )?
     .run();
 
-    let p2p_sender = P2pService::new(
-        base_path,
-        co.api_config.p2p_port,
-        db.clone(),
-        docker.clone(),
-    )
-    .run();
+    let p2p_sender = P2pService::new(base_path, co.api_config.p2p_port).run();
 
     // calc parallel number
     let n_cpu = if cpu < 4 { 1 } else { cpu / 4 };
