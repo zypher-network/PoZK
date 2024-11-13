@@ -7,9 +7,8 @@ use axum::{
     },
     response::{IntoResponse, Response},
 };
-use chamomile::prelude::PeerId;
 use chrono::prelude::Utc;
-use ethers::types::{Signature, SignatureError};
+use ethers::types::{Address, Signature};
 use futures_util::StreamExt;
 use pozk_db::Task;
 use tokio::sync::mpsc::UnboundedSender;
@@ -33,8 +32,7 @@ pub async fn player(
         .to_str()
         .unwrap_or("")
         .parse::<Signature>()
-        .and_then(|s| s.recover(msg))
-        .and_then(|s| PeerId::from_bytes(s.as_bytes()).map_err(|_| SignatureError::RecoveryError));
+        .and_then(|s| s.recover(msg));
 
     let peer = match peer_res {
         Ok(s) => s,
@@ -95,7 +93,7 @@ pub async fn prover(
 async fn handle_player(
     socket: WebSocket,
     id: u64,
-    peer: PeerId,
+    peer: Address,
     sender: UnboundedSender<P2pMessage>,
 ) {
     debug!("Websocket connected from player for task: {}", id);

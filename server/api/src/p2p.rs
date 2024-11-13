@@ -2,7 +2,9 @@ use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use chamomile::prelude::{start_with_key, Config, Key, Peer, PeerId, ReceiveMessage, SendMessage};
 use chrono::Utc;
+use ethers::prelude::Address;
 use futures_util::{stream::SplitSink, SinkExt};
+use pozk_utils::{BinaryMessage, TextMessage};
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::{
     select,
@@ -14,18 +16,17 @@ type WsChannel = SplitSink<WebSocket, Message>;
 
 const P2P_RESTART_TIME: u64 = 10;
 const P2P_CLEAR_TIME: u64 = 3600; // 1h
-const POZK_PLAYER_BINARY: [u8; 12] = [112, 111, 122, 107, 58, 112, 108, 97, 121, 101, 114, 58]; // "pozk:player:"
 
 pub enum P2pMessage {
     ChangeController(Vec<u8>),
     ConnectProver(u64, WsChannel, bool, bool, i64),
     CloseProver(u64),
-    ConnectPlayer(u64, PeerId, WsChannel),
-    ClosePlayer(u64, PeerId),
+    ConnectPlayer(u64, Address, WsChannel),
+    ClosePlayer(u64, Address),
     TextProver(u64, String),
     BinaryProver(u64, Vec<u8>),
-    TextPlayer(u64, PeerId, String),
-    BinaryPlayer(u64, PeerId, Vec<u8>),
+    TextPlayer(u64, Address, String),
+    BinaryPlayer(u64, Address, Vec<u8>),
 }
 
 enum PlayerChannel {
@@ -84,16 +85,16 @@ struct P2pTask {
     /// prover websocket sender
     prover: WsChannel,
     /// task players
-    players: HashMap<PeerId, PlayerChannel>,
+    players: HashMap<Address, PlayerChannel>,
     /// task viewers
-    viewers: HashMap<PeerId, PlayerChannel>,
+    viewers: HashMap<Address, PlayerChannel>,
 }
 
 pub struct P2pService {
     path: PathBuf,
     port: u16,
     tasks: HashMap<u64, P2pTask>,
-    peers: HashMap<PeerId, u64>,
+    peers: HashMap<Address, u64>,
 }
 
 enum P2pFuture {
@@ -203,11 +204,11 @@ impl P2pService {
                         if let Some(task) = self.tasks.get_mut(&tid) {
                             if !task.started || task.players.contains_key(&peer) {
                                 task.players.insert(peer, PlayerChannel::Ws(ws));
-                                let text = format!("pozk:connect_player:{}", peer.to_hex());
+                                let text = TextMessage::ConnectPlayer(peer).encode();
                                 let _ = task.prover.send(Message::Text(text)).await;
                             } else if task.viewable {
                                 task.viewers.insert(peer, PlayerChannel::Ws(ws));
-                                let text = format!("pozk:connect_viewer:{}", peer.to_hex());
+                                let text = TextMessage::ConnectViewer(peer).encode();
                                 let _ = task.prover.send(Message::Text(text)).await;
                             } else {
                                 let _ = ws.send(Message::Close(None)).await;
@@ -225,116 +226,109 @@ impl P2pService {
                                     let _ = task.players.remove(&peer);
                                 }
 
-                                format!("pozk:close_player:{}", peer.to_hex())
+                                TextMessage::ClosePlayer(peer)
                             } else {
                                 let _ = task.viewers.remove(&peer);
-                                format!("pozk:close_viewer:{}", peer.to_hex())
+                                TextMessage::CloseViewer(peer)
                             };
-                            let _ = task.prover.send(Message::Text(text)).await;
+                            let _ = task.prover.send(Message::Text(text.encode())).await;
                         }
                     }
                     P2pMessage::TextProver(tid, text) => {
                         // handler inner function
-                        if text.starts_with("pozk:close_player:") {
-                            // close player
-                            let peer =
-                                PeerId::from_hex(text.trim_start_matches("pozk:close_player:"))
-                                    .unwrap_or(PeerId::default());
-                            if let Some(task) = self.tasks.get_mut(&tid) {
-                                if let Some(mut player_sender) = task.players.remove(&peer) {
-                                    player_sender.close(&send).await;
-                                }
-                                if let Some(mut viewer_sender) = task.viewers.remove(&peer) {
-                                    viewer_sender.close(&send).await;
+                        match TextMessage::decode(text) {
+                            TextMessage::Started => {
+                                if let Some(task) = self.tasks.get_mut(&tid) {
+                                    task.started = true;
                                 }
                             }
-
-                            let _ = self.peers.remove(&peer);
-                            continue;
-                        }
-
-                        if text.starts_with("pozk:started") {
-                            if let Some(task) = self.tasks.get_mut(&tid) {
-                                task.started = true;
-                            }
-                            continue;
-                        }
-
-                        // send to special peer
-                        if text.starts_with("pozk:player:") {
-                            let text1 = text.trim_start_matches("pozk:player:");
-                            if text1.len() < 43 {
-                                continue;
-                            }
-                            let peer = PeerId::from_hex(&text1[0..42]).unwrap_or(PeerId::default());
-                            let real = text1[1..].to_owned();
-
-                            if let Some(task) = self.tasks.get_mut(&tid) {
-                                if let Some(ch) = task.players.get_mut(&peer) {
-                                    ch.text(&send, real.clone()).await;
-                                }
-                                if let Some(ch) = task.viewers.get_mut(&peer) {
-                                    ch.text(&send, real).await;
+                            TextMessage::Over => {
+                                if let Some(mut task) = self.tasks.remove(&tid) {
+                                    let _ = task.prover.send(Message::Close(None)).await;
+                                    for (_, mut p) in task.players.drain() {
+                                        p.close(&send).await;
+                                    }
+                                    for (_, mut p) in task.viewers.drain() {
+                                        p.close(&send).await;
+                                    }
                                 }
                             }
-                            continue;
-                        }
-
-                        // send to all peers
-                        if let Some(task) = self.tasks.get_mut(&tid) {
-                            for (_, ch) in task.players.iter_mut() {
-                                ch.text(&send, text.clone()).await;
-                            }
-                            for (_, ch) in task.viewers.iter_mut() {
-                                ch.text(&send, text.clone()).await;
-                            }
-                        }
-                    }
-                    P2pMessage::BinaryProver(tid, mut data) => {
-                        // pozk_player:xxxx:data
-                        if data.len() > 34 && &data[0..12] == &POZK_PLAYER_BINARY {
-                            // send to special peer
-                            let peer =
-                                PeerId::from_bytes(&data[12..32]).unwrap_or(PeerId::default());
-                            let real = data.split_off(34);
-
-                            if let Some(task) = self.tasks.get_mut(&tid) {
-                                if let Some(ch) = task.players.get_mut(&peer) {
-                                    ch.binary(&send, real.clone()).await;
+                            TextMessage::ClosePlayer(peer) => {
+                                if let Some(task) = self.tasks.get_mut(&tid) {
+                                    if let Some(mut player_sender) = task.players.remove(&peer) {
+                                        player_sender.close(&send).await;
+                                    }
                                 }
-                                if let Some(ch) = task.viewers.get_mut(&peer) {
-                                    ch.binary(&send, real).await;
+
+                                let _ = self.peers.remove(&peer);
+                            }
+                            TextMessage::CloseViewer(peer) => {
+                                if let Some(task) = self.tasks.get_mut(&tid) {
+                                    if let Some(mut viewer_sender) = task.viewers.remove(&peer) {
+                                        viewer_sender.close(&send).await;
+                                    }
+                                }
+
+                                let _ = self.peers.remove(&peer);
+                            }
+                            TextMessage::Player(peer, text) => {
+                                if let Some(task) = self.tasks.get_mut(&tid) {
+                                    if let Some(ch) = task.players.get_mut(&peer) {
+                                        ch.text(&send, text.clone()).await;
+                                    }
+                                    if let Some(ch) = task.viewers.get_mut(&peer) {
+                                        ch.text(&send, text).await;
+                                    }
                                 }
                             }
-                            continue;
-                        }
-
-                        // send to all peers
-                        if let Some(task) = self.tasks.get_mut(&tid) {
-                            for (_, ch) in task.players.iter_mut() {
-                                ch.binary(&send, data.clone()).await;
+                            TextMessage::Broadcast(text) => {
+                                if let Some(task) = self.tasks.get_mut(&tid) {
+                                    for (_, ch) in task.players.iter_mut() {
+                                        ch.text(&send, text.clone()).await;
+                                    }
+                                    for (_, ch) in task.viewers.iter_mut() {
+                                        ch.text(&send, text.clone()).await;
+                                    }
+                                }
                             }
-                            for (_, ch) in task.viewers.iter_mut() {
-                                ch.binary(&send, data.clone()).await;
-                            }
+                            _ => {}
                         }
                     }
+                    P2pMessage::BinaryProver(tid, data) => match BinaryMessage::decode(data) {
+                        BinaryMessage::Player(peer, data) => {
+                            if let Some(task) = self.tasks.get_mut(&tid) {
+                                if let Some(ch) = task.players.get_mut(&peer) {
+                                    ch.binary(&send, data.clone()).await;
+                                }
+                                if let Some(ch) = task.viewers.get_mut(&peer) {
+                                    ch.binary(&send, data).await;
+                                }
+                            }
+                        }
+                        BinaryMessage::Broadcast(data) => {
+                            if let Some(task) = self.tasks.get_mut(&tid) {
+                                for (_, ch) in task.players.iter_mut() {
+                                    ch.binary(&send, data.clone()).await;
+                                }
+                                for (_, ch) in task.viewers.iter_mut() {
+                                    ch.binary(&send, data.clone()).await;
+                                }
+                            }
+                        }
+                    },
                     P2pMessage::TextPlayer(tid, peer, text) => {
                         if let Some(task) = self.tasks.get_mut(&tid) {
                             if task.players.contains_key(&peer) {
-                                let new_text = format!("pozk:player:{}:{}", peer.to_hex(), text);
-                                let _ = task.prover.send(Message::Text(new_text)).await;
+                                let text = TextMessage::Player(peer, text).encode();
+                                let _ = task.prover.send(Message::Text(text)).await;
                             }
                         }
                     }
                     P2pMessage::BinaryPlayer(tid, peer, data) => {
                         if let Some(task) = self.tasks.get_mut(&tid) {
                             if task.players.contains_key(&peer) {
-                                let mut new_data = POZK_PLAYER_BINARY.to_vec();
-                                new_data.extend(peer.to_bytes());
-                                new_data.push(58);
-                                new_data.extend(data);
-                                let _ = task.prover.send(Message::Binary(new_data)).await;
+                                let data = BinaryMessage::Player(peer, data).encode();
+                                let _ = task.prover.send(Message::Binary(data)).await;
                             }
                         }
                     }
@@ -347,18 +341,18 @@ impl P2pService {
                         let mut tid_bytes = [0u8; 8];
                         tid_bytes.copy_from_slice(&data[..8]);
                         let tid = u64::from_le_bytes(tid_bytes);
-                        let peer = node.id;
+                        let peer = Address::from_slice(node.id.as_bytes());
 
                         if let Some(task) = self.tasks.get_mut(&tid) {
                             if !task.started || task.players.contains_key(&peer) {
-                                task.players.insert(peer, PlayerChannel::P2p(peer));
-                                let text = format!("pozk:connect_player:{}", peer.to_hex());
+                                task.players.insert(peer, PlayerChannel::P2p(node.id));
+                                let text = TextMessage::ConnectPlayer(peer).encode();
                                 let _ = task.prover.send(Message::Text(text)).await;
 
                                 self.peers.insert(peer, tid);
                             } else if task.viewable {
-                                task.viewers.insert(peer, PlayerChannel::P2p(peer));
-                                let text = format!("pozk:connect_viewer:{}", peer.to_hex());
+                                task.viewers.insert(peer, PlayerChannel::P2p(node.id));
+                                let text = TextMessage::ConnectViewer(peer).encode();
                                 let _ = task.prover.send(Message::Text(text)).await;
 
                                 self.peers.insert(peer, tid);
@@ -374,7 +368,7 @@ impl P2pService {
                         }
                     }
                     ReceiveMessage::StableLeave(node) => {
-                        let peer = node.id;
+                        let peer = Address::from_slice(node.id.as_bytes());
                         let tid = self.peers.remove(&peer).unwrap_or(0);
 
                         if let Some(task) = self.tasks.get_mut(&tid) {
@@ -384,25 +378,22 @@ impl P2pService {
                                 } else {
                                     let _ = task.players.remove(&peer);
                                 }
-
-                                format!("pozk:close_player:{}", peer.to_hex())
+                                TextMessage::ClosePlayer(peer)
                             } else {
                                 let _ = task.viewers.remove(&peer);
-                                format!("pozk:close_viewer:{}", peer.to_hex())
+                                TextMessage::CloseViewer(peer)
                             };
-                            let _ = task.prover.send(Message::Text(text)).await;
+                            let _ = task.prover.send(Message::Text(text.encode())).await;
                         }
                     }
-                    ReceiveMessage::Data(peer, data) => {
+                    ReceiveMessage::Data(node_id, data) => {
+                        let peer = Address::from_slice(node_id.as_bytes());
                         let tid = self.peers.get(&peer).unwrap_or(&0);
 
                         if let Some(task) = self.tasks.get_mut(tid) {
                             if task.players.contains_key(&peer) {
-                                let mut new_data = POZK_PLAYER_BINARY.to_vec();
-                                new_data.extend(peer.to_bytes());
-                                new_data.push(58);
-                                new_data.extend(data);
-                                let _ = task.prover.send(Message::Binary(new_data)).await;
+                                let data = BinaryMessage::Player(peer, data).encode();
+                                let _ = task.prover.send(Message::Binary(data)).await;
                             }
                         }
                     }
