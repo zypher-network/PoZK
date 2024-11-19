@@ -13,6 +13,7 @@ categories = ["cryptography"]
 keywords = ["PoZK", "zytron", "miner"]
 description = "PoZK miner"
 license = "GPL-3.0-only"
+include = ["public", "src", "Cargo.toml", "README.md"]
 
 [workspace.dependencies]
 pozk-db = { version = "0.1", path = "./db" }

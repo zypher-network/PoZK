@@ -13,33 +13,33 @@ use std::sync::Arc;
 use tracing::error;
 
 // Vesting contract with abi
-abigen!(Token, "../public/ABI/Token.json");
+abigen!(Token, "public/ABI/Token.json");
 
 // Vesting contract with abi
-abigen!(Vesting, "../public/ABI/Vesting.json");
+abigen!(Vesting, "public/ABI/Vesting.json");
 
 // Epoch contract with abi
-abigen!(Epoch, "../public/ABI/Epoch.json");
+abigen!(Epoch, "public/ABI/Epoch.json");
 
 // Prover contract with abi
-abigen!(Prover, "../public/ABI/Prover.json");
+abigen!(Prover, "public/ABI/Prover.json");
 
 // Stake contract with abi
-abigen!(Stake, "../public/ABI/Stake.json");
+abigen!(Stake, "public/ABI/Stake.json");
 
 // Task contract with abi
-abigen!(Task, "../public/ABI/Task.json");
+abigen!(Task, "public/ABI/Task.json");
 
 // Reward contract with abi
-abigen!(Reward, "../public/ABI/Reward.json");
+abigen!(Reward, "public/ABI/Reward.json");
 
 // Controller contract with abi
-abigen!(Controller, "../public/ABI/Controller.json");
+abigen!(Controller, "public/ABI/Controller.json");
 
 // Zytron standard AA wallet for zero gas
-abigen!(AAWallet, "../public/others/Wallet.json");
+abigen!(AAWallet, "public/others/Wallet.json");
 
-const NETWORKS_ADDRESS: &str = include_str!("../../../public/networks.json");
+const NETWORKS_ADDRESS: &str = include_str!("../public/networks.json");
 
 pub fn contract_address(network: &str, name: &str) -> Result<(Address, u64)> {
     let addresses: Value =
