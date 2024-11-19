@@ -81,6 +81,14 @@ pub fn get_task_api(tid: &str) -> String {
     format!("{}/inner/tasks/{}", server, tid)
 }
 
+pub fn convert_task_to_connect_api(url: &str) -> (String, &str) {
+    let mut v: Vec<&str> = url.split('/').collect();
+    let id = v.pop().unwrap_or("");
+    let _ = v.pop(); // pop tasks
+    v.push("connect"); // push connect
+    (v.join("/"), id)
+}
+
 pub async fn download_input() -> Result<Vec<u8>> {
     let uri = std::env::var("INPUT").unwrap();
     download_input_with_uri(&uri).await

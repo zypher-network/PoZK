@@ -6,7 +6,7 @@ const POZK_PLAYER_BINARY: [u8; 8] = [112, 111, 122, 107, 58, 0, 6, 58]; // "pozk
 pub enum TextMessage {
     Started,
     Over,
-    ConnectPlayer(Address),
+    ConnectPlayer(Address, String),
     ConnectViewer(Address),
     ClosePlayer(Address),
     CloseViewer(Address),
@@ -24,7 +24,7 @@ impl TextMessage {
         match self {
             TextMessage::Started => "pozk:00:".to_owned(),
             TextMessage::Over => "pozk:01:".to_owned(),
-            TextMessage::ConnectPlayer(peer) => format!("pozk:02:{:?}", peer),
+            TextMessage::ConnectPlayer(peer, text) => format!("pozk:02:{:?}:{}", peer, text),
             TextMessage::ConnectViewer(peer) => format!("pozk:03:{:?}", peer),
             TextMessage::ClosePlayer(peer) => format!("pozk:04:{:?}", peer),
             TextMessage::CloseViewer(peer) => format!("pozk:05:{:?}", peer),
@@ -42,7 +42,13 @@ impl TextMessage {
         match text.as_str() {
             "pozk:00:" => TextMessage::Started,
             "pozk:01:" => TextMessage::Over,
-            "pozk:02:" => TextMessage::ConnectPlayer(Address::from_str(&real).unwrap_or(dp)),
+            "pozk:02:" => {
+                let mut info = real.split(":");
+                let addr = info.next().unwrap_or("");
+                let text = info.next().unwrap_or("");
+                let peer = Address::from_str(&addr).unwrap_or(dp);
+                TextMessage::ConnectPlayer(peer, text.to_owned())
+            }
             "pozk:03:" => TextMessage::ConnectViewer(Address::from_str(&real).unwrap_or(dp)),
             "pozk:04:" => TextMessage::ClosePlayer(Address::from_str(&real).unwrap_or(dp)),
             "pozk:05:" => TextMessage::CloseViewer(Address::from_str(&real).unwrap_or(dp)),

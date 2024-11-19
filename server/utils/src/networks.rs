@@ -10,6 +10,7 @@ use ethers::{
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use tracing::error;
 
 // Vesting contract with abi
 abigen!(Token, "../public/ABI/Token.json");

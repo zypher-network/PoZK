@@ -1,10 +1,9 @@
-#[macro_use]
-extern crate tracing;
-
 mod utils;
 pub use utils::*;
 
+#[cfg(feature = "contracts")]
 mod networks;
+#[cfg(feature = "contracts")]
 pub use networks::*;
 
 mod message;
