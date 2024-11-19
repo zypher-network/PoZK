@@ -21,7 +21,7 @@ pub enum P2pMessage {
     ChangeController(Vec<u8>),
     ConnectProver(u64, WsChannel, bool, bool, i64),
     CloseProver(u64),
-    ConnectPlayer(u64, Address, WsChannel),
+    ConnectPlayer(u64, Address, String, WsChannel),
     ClosePlayer(u64, Address),
     TextProver(u64, String),
     BinaryProver(u64, Vec<u8>),
@@ -200,11 +200,11 @@ impl P2pService {
                             let _ = self.tasks.remove(&tid);
                         }
                     }
-                    P2pMessage::ConnectPlayer(tid, peer, mut ws) => {
+                    P2pMessage::ConnectPlayer(tid, peer, data, mut ws) => {
                         if let Some(task) = self.tasks.get_mut(&tid) {
                             if !task.started || task.players.contains_key(&peer) {
                                 task.players.insert(peer, PlayerChannel::Ws(ws));
-                                let text = TextMessage::ConnectPlayer(peer).encode();
+                                let text = TextMessage::ConnectPlayer(peer, data).encode();
                                 let _ = task.prover.send(Message::Text(text)).await;
                             } else if task.viewable {
                                 task.viewers.insert(peer, PlayerChannel::Ws(ws));
@@ -334,19 +334,20 @@ impl P2pService {
                     }
                 },
                 Some(P2pFuture::P2p(msg)) => match msg {
-                    ReceiveMessage::StableConnect(node, data) => {
+                    ReceiveMessage::StableConnect(node, mut data) => {
                         if data.len() < 8 {
                             continue;
                         }
+                        let raw_data = hex::encode(data.split_off(8));
                         let mut tid_bytes = [0u8; 8];
-                        tid_bytes.copy_from_slice(&data[..8]);
+                        tid_bytes.copy_from_slice(&data);
                         let tid = u64::from_le_bytes(tid_bytes);
                         let peer = Address::from_slice(node.id.as_bytes());
 
                         if let Some(task) = self.tasks.get_mut(&tid) {
                             if !task.started || task.players.contains_key(&peer) {
                                 task.players.insert(peer, PlayerChannel::P2p(node.id));
-                                let text = TextMessage::ConnectPlayer(peer).encode();
+                                let text = TextMessage::ConnectPlayer(peer, raw_data).encode();
                                 let _ = task.prover.send(Message::Text(text)).await;
 
                                 self.peers.insert(peer, tid);

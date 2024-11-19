@@ -34,6 +34,13 @@ pub async fn player(
         .parse::<Signature>()
         .and_then(|s| s.recover(msg));
 
+    let data = headers
+        .remove("X-DATA")
+        .unwrap_or(HeaderValue::from_static(""))
+        .to_str()
+        .unwrap_or("")
+        .to_owned();
+
     let peer = match peer_res {
         Ok(s) => s,
         Err(_) => return (StatusCode::BAD_REQUEST, "invalid player").into_response(),
@@ -45,7 +52,9 @@ pub async fn player(
         let now = Utc::now().timestamp();
         if t.is_me && !t.over && t.overtime > now {
             let sender = app.p2p_sender.clone();
-            return ws.on_upgrade(move |socket: WebSocket| handle_player(socket, id, peer, sender));
+            return ws.on_upgrade(move |socket: WebSocket| {
+                handle_player(socket, id, peer, data, sender)
+            });
         }
     }
 
@@ -94,6 +103,7 @@ async fn handle_player(
     socket: WebSocket,
     id: u64,
     peer: Address,
+    data: String,
     sender: UnboundedSender<P2pMessage>,
 ) {
     debug!("Websocket connected from player for task: {}", id);
@@ -102,7 +112,7 @@ async fn handle_player(
 
     // send sender to p2p service
     sender
-        .send(P2pMessage::ConnectPlayer(id, peer, ws_sender))
+        .send(P2pMessage::ConnectPlayer(id, peer, data, ws_sender))
         .expect("missing p2p service");
 
     while let Some(msg) = ws_receiver.next().await {
