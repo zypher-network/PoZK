@@ -3,6 +3,7 @@ FROM node:20-alpine AS builder1
 
 WORKDIR /build1
 ADD frontend frontend
+ADD public public
 
 WORKDIR /build1/frontend
 RUN yarn config set network-timeout 300000
