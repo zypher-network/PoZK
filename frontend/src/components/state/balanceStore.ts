@@ -1,11 +1,9 @@
 import { Address } from 'viem';
 import { create } from 'zustand';
 import { CHAINID, contractAddress } from '@/web3/constants';
-import ContractService from '@/web3/contract/contract';
-import StakeAbi from "@/web3/contract/abi/Stake.json";
-import TokenAbi from "@/web3/contract/abi/Token.json";
+import { TokenContract } from "@/web3/contract/TokenContract";
+import { StakeContract } from "@/web3/contract/StakeContract";
 import BigNumberJs, { BM18 } from '@/lib/BigNumberJs';
-
 
 type BalanceStore = {
   payToken: {
@@ -34,8 +32,8 @@ const useBalanceStore = create<BalanceStore>((set, get) => ({
   fetching: false,
   updateBalance: async (address: Address) => {
     set({ fetching: true });
-    const tokenContract = new ContractService(contractAddress[CHAINID].Token, TokenAbi);
-    const stakeContract = new ContractService(contractAddress[CHAINID].Stake, StakeAbi);
+    const tokenContract = TokenContract();
+    const stakeContract = StakeContract();
     // const params = [
     //   {
     //     address: contractAddress[CHAINID].Token,

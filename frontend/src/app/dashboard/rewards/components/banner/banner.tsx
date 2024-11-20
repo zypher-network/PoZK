@@ -11,9 +11,7 @@ import BigNumberJs, { BM18 } from "@/lib/BigNumberJs";
 import useSubgraphStore from "@/components/state/subgraphStore";
 import Loading from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
-import ContractService from "@/web3/contract/contract";
-import { CHAINID, contractAddress } from "@/web3/constants";
-import StakeAbi from '@/web3/contract/abi/Stake.json';
+import { StakeContract } from "@/web3/contract/StakeContract";
 
 const Banner = () => {
   const { address } = useAccount();
@@ -59,7 +57,7 @@ const Banner = () => {
   const fetchClaimableReward = async () => {
     setClaimable('0');
     try {
-      const contract = new ContractService(contractAddress[CHAINID].Stake, StakeAbi);
+      const contract = StakeContract();
       const rawClaimable = await contract.readContractData('claimable', [address]) as unknown as bigint;
       setClaimable(new BigNumberJs(rawClaimable.toString()).div(BM18).toFormat());
     } catch (error) {
@@ -69,7 +67,7 @@ const Banner = () => {
 
   const handleClaim = async () => {
     try {
-      const contract = new ContractService(contractAddress[CHAINID].Stake, StakeAbi);
+      const contract = StakeContract();
       await contract.writeContractMethod('claim', [address]);
       reset('reward');
     } catch (error) {

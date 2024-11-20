@@ -39,40 +39,40 @@
     },
     "testnet": {
         "Addresses": {
-            "address": "0xfE8595EdE3DA06936f14C14eE7A475490E33a59d",
-            "startBlock": 1119483
+            "address": "0xd0CcFb1706d865dB83fFd930D142eD7Df864deb0",
+            "startBlock": 2478655
         },
         "Token": {
             "address": "0x07cb9813aEa7678B70D7Ae418A7d8680E432ea2e",
             "startBlock": 1119483
         },
         "Vesting": {
-            "address": "0x81DB6405eDb330D4cBe4B2279397A5677010bD65",
-            "startBlock": 1119492
+            "address": "0xF0e2e722D7Fb51C0fAE15E9c49d72772E81D5287",
+            "startBlock": 2478656
         },
         "Epoch": {
-            "address": "0x5393205CdAb1C4f45B045F10c07B29bFf2339b81",
-            "startBlock": 1119498
+            "address": "0xb7F3381a3Cd630187cbF154Bb6F29085EDC38123",
+            "startBlock": 2478657
         },
         "Stake": {
-            "address": "0xa8c392Fd78fd61292529864873cD42309881903f",
-            "startBlock": 1119504
+            "address": "0xb77dC579B146026603737e0E0ff0545F47f9b489",
+            "startBlock": 2478659
         },
         "Reward": {
-            "address": "0x93CF679371fCca140275fd5b974487c87c5bAAAb",
-            "startBlock": 1119510
+            "address": "0x0629C6aFdE926cD2FEf16BD5D28B8a721B6cb51F",
+            "startBlock": 2478661
         },
         "Prover": {
-            "address": "0x7937D8A26F867Ec563dC324Aca279Ce41e2eBDb9",
-            "startBlock": 1633377
+            "address": "0xcde827a122e840F80BE1C15a046CfB86bC73e577",
+            "startBlock": 2478663
         },
         "Task": {
-            "address": "0xcc8240470F63D0b8055bf03f44D8817dAfCa0DB7",
-            "startBlock": 1761470
+            "address": "0x499094F6Ac3C351EF2d113f2851b7F1b7e761B09",
+            "startBlock": 2478665
         },
         "Controller": {
-            "address": "0xB7779c7af4727A1312fF0d99a0869F155d2F7753",
-            "startBlock": 1119529
+            "address": "0x1DD1253e7F245a763776a94A886FB3ED1FEed01b",
+            "startBlock": 2478669
         }
     },
     "mainnet": {
