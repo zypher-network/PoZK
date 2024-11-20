@@ -36,9 +36,16 @@ async function prover() {
   console.log("Prover set ok");
 }
 
+async function openNetworkMode() {
+  const [e, _e] = await attachContract("Epoch");
+  await e.setNetworkMode(2); // 1 is permissioned, 2 is permissionless
+  const account = e.runner.address;
+  console.log("Network mode to permissionless");
+}
+
 async function stakeWithTest() {
   const [e, _e] = await attachContract("Epoch");
-  await e.setNetworkMode(1); // 1 is permissioned
+  await e.setNetworkMode(1); // 1 is permissioned, 2 is permissionless
   const account = e.runner.address;
   console.log("Network mode to permissioned");
 
@@ -179,7 +186,8 @@ async function unstake() {
 async function main() {
   //await dao();
   //await vesting();
-  await prover();
+  //await openNetworkMode();
+  //await prover();
   //await stakeWithTest();
   //await stakeWithTestCreate();
   //await stakeWithTestSubmit();

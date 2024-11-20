@@ -4,8 +4,8 @@ const { attachContract, sleep } = require("./address_utils.js");
 const ONE_TOKEN = 10000000000000000000n;
 
 // 2048
-// const myProver = "0x5b92b011513f9aaf8f6541003dc088625e7438e8";
-// const myVerifier = "0x5b92b011513f9aaf8f6541003dc088625e7438e8";
+const myProver = "0x5b92b011513f9aaf8f6541003dc088625e7438e8";
+const myVerifier = "0x5b92b011513f9aaf8f6541003dc088625e7438e8";
 
 // cr
 // const myProver = "0xef1e764c386ec95ed233035661dd4269be8fd8e7";
@@ -19,9 +19,10 @@ const ONE_TOKEN = 10000000000000000000n;
 // const myProver = "0x6558c36b5736466c472231A26A4B47512Bd936Da";
 // const myVerifier = "0xc90459cB8a9Ab5EFCd5aEe271f3F343DA4a3eDBE";
 
+// Competition
 // const myProver = "0xb216af68a82538ff12edc8ac9eec3e91eaa54e9e";
-const myProver = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
-const myVerifier = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
+// const myProver = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
+// const myVerifier = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
 
 async function registerProver() {
   const [c, _] = await attachContract("Prover");
@@ -50,7 +51,7 @@ async function stopProver() {
 }
 
 async function main() {
-  //await registerProver();
+  // await registerProver();
   await stakeProver();
   //await stopProver();
 }
