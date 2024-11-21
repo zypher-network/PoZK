@@ -24,6 +24,7 @@ async function vesting() {
 
 async function dao() {
   const [e, _] = await attachContract("Epoch");
+  //console.log(await e.runner.signMessage("thisismessage"));
   await e.addDao(e.runner.address, true);
   console.log("DAO set ok");
 }
@@ -184,9 +185,9 @@ async function unstake() {
 }
 
 async function main() {
-  //await dao();
-  //await vesting();
-  //await openNetworkMode();
+  await dao();
+  await vesting();
+  await openNetworkMode();
   //await prover();
   //await stakeWithTest();
   //await stakeWithTestCreate();

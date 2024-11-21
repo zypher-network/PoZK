@@ -1,9 +1,10 @@
 'use client';
 import React from 'react'
 import { ApolloClient, InMemoryCache, ApolloProvider as Provider } from '@apollo/client';
+import { CHAINID, SubgraphUrls } from "@/web3/constants";
 
 const client = new ApolloClient({
-  uri: 'https://pozk-subgraph.zypher.dev/subgraphs/name/testnet/pozk/',
+  uri: SubgraphUrls[CHAINID],
   cache: new InMemoryCache(),
 });
 

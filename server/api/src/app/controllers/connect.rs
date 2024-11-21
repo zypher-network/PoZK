@@ -27,7 +27,7 @@ pub async fn player(
     let msg = format!("{}-{}", app.url, id);
 
     let peer_res = headers
-        .remove("X-PEER")
+        .remove("X-PEER-SIG")
         .unwrap_or(HeaderValue::from_static(""))
         .to_str()
         .unwrap_or("")
@@ -35,7 +35,7 @@ pub async fn player(
         .and_then(|s| s.recover(msg));
 
     let data = headers
-        .remove("X-DATA")
+        .remove("X-PEER-DATA")
         .unwrap_or(HeaderValue::from_static(""))
         .to_str()
         .unwrap_or("")
