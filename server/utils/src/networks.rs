@@ -77,7 +77,7 @@ pub fn pozk_rpc_url(network: &str) -> Result<String> {
 
 pub fn pozk_zero_gas_url(network: &str) -> Result<String> {
     match network {
-        "testnet" => Ok("https://gas-testnet.zypher.network".to_owned()),
+        "testnet" => Ok("https://gas.zypher.dev".to_owned()),
         "mainnet" => Ok("https://gas.zypher.network".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }
