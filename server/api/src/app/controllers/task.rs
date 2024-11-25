@@ -125,7 +125,7 @@ fn parse_task(bytes: Bytes) -> Result<ServiceTask> {
     let signature = Signature::try_from(&bytes[0..65])
         .map_err(|_| Error::Invalid(2006, "Invalid signature".to_owned()))?;
     let signer = signature
-        .recover(&bytes[85..])
+        .recover(&bytes[65..])
         .map_err(|_| Error::Invalid(2007, "Invalid signature".to_owned()))?;
 
     let mut prover_bytes = [0u8; 20];
