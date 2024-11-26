@@ -193,10 +193,10 @@ async function unstake() {
 }
 
 async function main() {
-  await epoch();
-  //await dao();
-  //await vesting();
-  //await openNetworkMode();
+  //await epoch();
+  await dao();
+  await vesting();
+  await openNetworkMode();
   //await prover();
   //await stakeWithTest();
   //await stakeWithTestCreate();
