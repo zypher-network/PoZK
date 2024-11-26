@@ -69,7 +69,7 @@ pub fn pozk_metrics_url(network: &str) -> Result<String> {
 pub fn pozk_rpc_url(network: &str) -> Result<String> {
     match network {
         "localhost" => Ok("http://localhost:8545".to_owned()),
-        "testnet" => Ok("https://rpc-testnet.zypher.network".to_owned()),
+        "testnet" => Ok("https://opbnb-testnet-rpc.bnbchain.org".to_owned()),
         "mainnet" => Ok("https://rpc.zypher.network".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }

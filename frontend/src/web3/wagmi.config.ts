@@ -8,22 +8,22 @@ const testnetSourceId = 59141; // Linea Sepolia
 const mainnetSourceId = 59144; // Linea Mainnet
 
 const zytronTestnet = /*#__PURE__*/ defineChain({
-    id: 50098,
+    id: 5611,
     name: 'Zytron Testnet',
     nativeCurrency: {
         name: 'Ether',
-        symbol: 'ETH',
+        symbol: 'tETH',
         decimals: 18,
     },
     rpcUrls: {
         default: {
-            http: ['https://rpc-testnet.zypher.network'],
+            http: ['https://opbnb-testnet-rpc.bnbchain.org'],
         },
     },
     blockExplorers: {
         default: {
             name: 'Blockscout',
-            url: 'https://explorer-testnet.zypher.network',
+            url: 'https://testnet.opbnbscan.com',
         },
     },
     testnetSourceId,

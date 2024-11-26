@@ -46,7 +46,7 @@ export const contractAddress: Record<ChainId, IContractList> = {
 };
 
 export const ChainRpcUrls: Record<ChainId, string[]> = {
-  [ChainId.TESTNET]: ["https://rpc-testnet.zypher.network/"],
+  [ChainId.TESTNET]: ["https://opbnb-testnet-rpc.bnbchain.org"],
   [ChainId.MAINNET]: ["https://rpc.zypher.network/"],
 };
 

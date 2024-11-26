@@ -29,6 +29,14 @@ async function dao() {
   console.log("DAO set ok");
 }
 
+async function epoch() {
+  const [e, _] = await attachContract("Epoch");
+  console.log(await e.startTime());
+  await e.getAndUpdate();
+  await sleep();
+  console.log(await e.startTime());
+}
+
 async function prover() {
   const [c, _] = await attachContract("Prover");
   await c.register(myProver, 10000, 2, 20, myProver);
@@ -185,9 +193,10 @@ async function unstake() {
 }
 
 async function main() {
-  await dao();
-  await vesting();
-  await openNetworkMode();
+  await epoch();
+  //await dao();
+  //await vesting();
+  //await openNetworkMode();
   //await prover();
   //await stakeWithTest();
   //await stakeWithTestCreate();
