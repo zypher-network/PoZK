@@ -4,12 +4,12 @@ const { attachContract, sleep } = require("./address_utils.js");
 const ONE_TOKEN = 10000000000000000000n;
 
 // 2048
-const myProver = "0x5b92b011513f9aaf8f6541003dc088625e7438e8";
-const myVerifier = "0x5b92b011513f9aaf8f6541003dc088625e7438e8";
+const myProver = "0x0eaca2011742c5156f217f1b1d0784fe5fbf2428";
+const myVerifier = "0x0eaca2011742c5156f217f1b1d0784fe5fbf2428";
 
 // cr
-// const myProver = "0xef1e764c386ec95ed233035661dd4269be8fd8e7";
-// const myVerifier = "0xef1e764c386ec95ed233035661dd4269be8fd8e7";
+// const myProver = "0xbc9b4e9d43830f747e65873a5e122ddd9c9d769b";
+// const myVerifier = "0xbc9b4e9d43830f747e65873a5e122ddd9c9d769b";
 
 // Shuffle20
 // const myProver = "0xfb530825bC8edCA2b13597F3B2b91310d43099a1";
@@ -25,10 +25,16 @@ const myVerifier = "0x5b92b011513f9aaf8f6541003dc088625e7438e8";
 // const myVerifier = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
 
 async function registerProver() {
-  const [c, _] = await attachContract("Prover");
+  const [c, _c] = await attachContract("Prover");
+  const [e, _e] = await attachContract("Epoch");
   await c.register(myProver, 10000, 1, 10, myVerifier);
+  console.log("Waiting approve prover");
   await sleep();
   await c.approve(myProver, true, true);
+  console.log("Waiting update epoch");
+  await sleep();
+  await e.getAndUpdate();
+  await sleep();
   console.log("Prover setted");
 }
 
@@ -51,7 +57,7 @@ async function stopProver() {
 }
 
 async function main() {
-  // await registerProver();
+  await registerProver();
   await stakeProver();
   //await stopProver();
 }

@@ -2,7 +2,7 @@ import { Address } from "viem";
 import network from "@/constants/networks.json";
 
 export enum ChainId {
-  TESTNET = "50098", // zytron testnet
+  TESTNET = "5611", // opbnb testnet
   MAINNET = "9901" // zytron mainnet
 }
 

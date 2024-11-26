@@ -106,11 +106,11 @@ pub async fn new_signer(
 }
 
 pub async fn check_zero_gas(uri: &str, controller: Address) -> Result<()> {
-    let res = reqwest::get(format!("{}/api/balanceof/{:?}", uri, controller))
+    let res = reqwest::get(format!("{}/balanceof/{:?}", uri, controller))
         .await?
         .json::<Value>()
         .await?;
-    if let Some(amount) = res.pointer("/data/amount") {
+    if let Some(amount) = res.pointer("/amount") {
         if amount != "0x0" {
             return Ok(());
         }
@@ -125,13 +125,13 @@ pub async fn create_zero_gas(uri: &str, controller: Address) -> Result<Address> 
         "owner": format!("{:?}", controller)
     });
     let res = client
-        .post(format!("{}/api/create", uri))
+        .post(format!("{}/create", uri))
         .json(&data)
         .send()
         .await?
         .json::<Value>()
         .await?;
-    if let Some(aa) = res.pointer("/data/wallet") {
+    if let Some(aa) = res.pointer("/wallet") {
         Ok(aa.as_str().unwrap_or("").parse::<Address>()?)
     } else {
         Err(anyhow!("Invalid response"))
@@ -179,18 +179,18 @@ pub async fn zero_gas<S: Signer>(
         "owner": owner,
     });
     let res = client
-        .post(format!("{}/api/functioncall", uri))
+        .post(format!("{}/functioncall", uri))
         .json(&data)
         .send()
         .await?
         .json::<Value>()
         .await?;
 
-    if let Some(hash) = res.pointer("/data/tx_hash") {
+    if let Some(hash) = res.pointer("/tx_hash") {
         return Ok(Some(hash.as_str().unwrap_or("").to_owned()));
     }
 
-    if let Some(err) = res.pointer("/msg") {
+    if let Some(err) = res.pointer("/error") {
         error!("[Utils] 0 gas chain error: {}", err);
         Ok(None)
     } else {

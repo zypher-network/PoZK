@@ -3,3 +3,4 @@
 Cargo.lock
 *.redb
 web-app
+.data

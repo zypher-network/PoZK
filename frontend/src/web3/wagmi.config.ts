@@ -9,7 +9,7 @@ const mainnetSourceId = 59144; // Linea Mainnet
 
 const zytronTestnet = /*#__PURE__*/ defineChain({
     id: 5611,
-    name: 'Zytron Testnet',
+    name: 'PoZK Testnet',
     nativeCurrency: {
         name: 'Ether',
         symbol: 'tETH',
@@ -31,7 +31,7 @@ const zytronTestnet = /*#__PURE__*/ defineChain({
 
 const zytronMainnet = /*#__PURE__*/ defineChain({
     id: 9901,
-    name: 'Zytron Mainnet',
+    name: 'PoZK Mainnet',
     nativeCurrency: {
         name: 'Ether',
         symbol: 'ETH',
