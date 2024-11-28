@@ -22,7 +22,7 @@ const ZeroGasStatus: React.FC<IZeroGasStatus> = ({ address }) => {
   const checkSbt = async () => {
     try {
       const result = await zeroGas.getBalance(address);
-      const { amount, wallet } = result?.data ?? {};
+      const { amount, wallet } = result ?? {};
       if (amount && wallet) {
         const sbtAmount = parseInt(amount, 16);
         setHasSbt(Boolean(sbtAmount));
@@ -47,7 +47,7 @@ const ZeroGasStatus: React.FC<IZeroGasStatus> = ({ address }) => {
       const result = await zeroGas.createAAWallet(address);
       if (result) {
         await contract.writeContractMethod("add", [
-          result.data.wallet,
+          result.wallet,
         ]);
       }
       checkSbt();

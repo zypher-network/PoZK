@@ -54,3 +54,8 @@ export const SubgraphUrls: Record<ChainId, string> = {
   [ChainId.TESTNET]: "https://pozk-subgraph.zypher.dev/subgraphs/name/testnet/pozk/",
   [ChainId.MAINNET]: "https://pozk-subgraph.zypher.dev/subgraphs/name/testnet/pozk/",
 }
+
+export const ZeroGasUrls: Record<ChainId, string> = {
+    [ChainId.TESTNET]: "https://gas.zypher.dev",
+    [ChainId.MAINNET]: "https://gas.zypher.network",
+}

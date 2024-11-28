@@ -1,35 +1,24 @@
-
-const baseUrl = 'https://gas.zypher.network' as const;
+import { CHAINID, ZeroGasUrls } from "@/web3/constants";
 
 type ResponseGetBalance = {
-  code: number;
-  data: {
-    amount: string;
-    wallet: string;
-  };
-  msg: string | null;
-  uid: string;
+  amount: string;
+  wallet: string;
 }
 
 type ResponseCreate = {
-  code: number;
-  data: {
-    tx_hash: string;
-    wallet: string;
-  };
-  msg: string | null;
-  uid: string;
+  tx_hash: string;
+  wallet: string;
 }
 
 class ZeroGas {
   endpoints = {
-    balanceOf: '/api/balanceof/',
-    create: '/api/create',
+    balanceOf: '/balanceof/',
+    create: '/create',
   }
 
   async getBalance (address: string) {
     try {
-      const response = await fetch(`${baseUrl}${this.endpoints.balanceOf}${address}`);
+      const response = await fetch(`${ZeroGasUrls[CHAINID]}${this.endpoints.balanceOf}${address}`);
       const result = await response.json() as ResponseGetBalance;
       return result;
     } catch (error) {
@@ -40,7 +29,7 @@ class ZeroGas {
 
   async createAAWallet (address: string) {
     try {
-      const response = await fetch(`${baseUrl}${this.endpoints.create}`, {
+      const response = await fetch(`${ZeroGasUrls[CHAINID]}${this.endpoints.create}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
