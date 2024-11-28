@@ -26,6 +26,7 @@ pub enum PoolMessage {
 
 pub struct Pool {
     wallet: LocalWallet,
+    provider: Arc<DefaultProvider>,
     task: Task<DefaultSigner>,
     stake: Stake<DefaultSigner>,
     controller: Controller<DefaultProvider>,
@@ -49,16 +50,17 @@ impl Pool {
         if providers.is_empty() {
             return Err(anyhow!("No providers"));
         }
-        let chain = providers[0].get_chainid().await?.as_u64();
+        let provider = providers[0].clone();
+        let chain = provider.get_chainid().await?.as_u64();
 
         let (task_address, _start) = cfg.task_address()?;
         let (stake_address, _start) = cfg.stake_address()?;
         let (controller_address, _start) = cfg.controller_address()?;
 
-        let signer = new_signer(providers[0].clone(), wallet.clone()).await?;
+        let signer = new_signer(provider.clone(), wallet.clone()).await?;
         let task = Task::new(task_address, signer.clone());
         let stake = Stake::new(stake_address, signer.clone());
-        let controller = Controller::new(controller_address, providers[0].clone());
+        let controller = Controller::new(controller_address, provider.clone());
 
         let miner = cfg.miner()?;
         let zero_gas = cfg.zero_gas.clone();
@@ -66,6 +68,7 @@ impl Pool {
 
         let mut pool = Self {
             wallet,
+            provider,
             task,
             stake,
             miner,
@@ -177,11 +180,12 @@ impl Pool {
                 let task_address = self.task.address();
                 let stake_address = self.stake.address();
 
-                let signer = Arc::new(self.task.client_ref().with_signer(wallet.clone()));
-                self.task = Task::new(task_address, signer.clone());
-                self.stake = Stake::new(stake_address, signer);
-                self.wallet = wallet;
-                self.check().await;
+                if let Ok(signer) = new_signer(self.provider.clone(), wallet.clone()).await {
+                    self.task = Task::new(task_address, signer.clone());
+                    self.stake = Stake::new(stake_address, signer);
+                    self.wallet = wallet;
+                    self.check().await;
+                }
             }
             PoolMessage::AcceptTask(tid, url) => {
                 let gas_price = self

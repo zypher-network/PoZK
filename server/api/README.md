@@ -1,13 +1,13 @@
 # api server
 
 ## login
-nonce: `block number`  
+nonce: `block number`
 expiry_time: `default 1 min`
 
 ### req:
-```jsonc
+```json
 {
-    "domain": "localhost:4000", 
+    "domain": "localhost:4000",
     "address": "0x28B9FEAE1f3d76565AAdec86E7401E815377D9Cc",
     "uri": "http://0.0.0.0:8090/api/login",
     "version": "1",
@@ -22,7 +22,7 @@ expiry_time: `default 1 min`
 }
 ```
 ### success resp
-```jsonc
+```json
 {
   "code": 0,
   "data": {
@@ -33,7 +33,7 @@ expiry_time: `default 1 min`
 }
 ```
 ### fail resp
-```jsonc
+```json
 HTTP/1.1 401 Unauthorized
 content-type: text/plain; charset=utf-8
 content-length: 19
@@ -45,14 +45,14 @@ authorization error
 ## post:controller/new
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 {}
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": {
@@ -66,7 +66,7 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## post:controller/add
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 {
@@ -75,7 +75,7 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": null,
@@ -87,14 +87,14 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## post:controller/set/{address}
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 {}
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": null,
@@ -106,14 +106,14 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## get:controller/export/{address}
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 {}
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": {
@@ -128,13 +128,13 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## query get:controller/set
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": {
@@ -148,13 +148,13 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## get: controller/list?page_size=1&page_count=10
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": {
@@ -173,13 +173,13 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## get: prover/list?page_size=1&page_count=10
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": {
@@ -208,13 +208,13 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## get: prover/{image_id}/list?page_size=1&page_count=10
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": {
@@ -241,7 +241,7 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## post: prover/pull/
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 {
@@ -254,7 +254,7 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": null,
@@ -266,13 +266,13 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## post: prover/{container_id}/start
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": null,
@@ -284,7 +284,7 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ## post: prover/new/
 
 ### req
-```jsonc
+```json
 X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5ZjEzNzg5OTMyZDA1YzExZTI1IiwiY3JlYXRlX3RpbWUiOjE3MjA0MjQ1NDUsImV4cGlyeV90aW1lIjoxNzIwNDI0NjA1fQ.1wgqrBQU-fwwfb4n2rKvCeJEvZwsq43m-w-E4TD679k
 
 {
@@ -307,7 +307,7 @@ X-API-Key: eyJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiMHhhYTYzMjFmMmE4MTNjNzIwZjBmYTE5
 ```
 
 ### resp
-```jsonc
+```json
 {
   "code": 0,
   "data": {
