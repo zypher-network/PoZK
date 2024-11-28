@@ -3,6 +3,7 @@ const { attachContract, sleep } = require("./address_utils.js");
 
 const ONE_TOKEN = 10000000000000000000n;
 
+// Testnet (opbnbtestnet)
 // 2048
 const myProver = "0x0eaca2011742c5156f217f1b1d0784fe5fbf2428";
 const myVerifier = "0x0eaca2011742c5156f217f1b1d0784fe5fbf2428";
@@ -12,22 +13,23 @@ const myVerifier = "0x0eaca2011742c5156f217f1b1d0784fe5fbf2428";
 // const myVerifier = "0xbc9b4e9d43830f747e65873a5e122ddd9c9d769b";
 
 // Shuffle20
-// const myProver = "0xfb530825bC8edCA2b13597F3B2b91310d43099a1";
-// const myVerifier = "0x407441d85e8F54772f84Ac1f47570C7Cf6Dac080";
+// const myProver = "0x6708d16d1197b4a68df93a27c785208de7819e1e";
+// const myVerifier = "0xe2fc3851169c692a1b8b5654d1d58919c7198015";
 
 // Shuffle52
-// const myProver = "0x6558c36b5736466c472231A26A4B47512Bd936Da";
-// const myVerifier = "0xc90459cB8a9Ab5EFCd5aEe271f3F343DA4a3eDBE";
+// const myProver = "0x3e7e24fec0f9c6ce2ca63a1a4d829ff5fdfa3423";
+// const myVerifier = "0x4f447d512776fc467d4b16ddabcec76a2707d122";
 
-// Competition
-// const myProver = "0xb216af68a82538ff12edc8ac9eec3e91eaa54e9e";
-// const myProver = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
-// const myVerifier = "0x614e0cccba48c2bb4da3f05704874f80e3a551d5";
+// Competition 1 & 2
+// const myProver = "0x1248e1031c4d81a678c63811d7bf714b1a18220b";
+// const myVerifier = "0x1248e1031c4d81a678c63811d7bf714b1a18220b";
+// const myProver = "0x9b0b9bfcd3e1e3715bead7639d93b9c87a74b32a";
+// const myVerifier = "0x9b0b9bfcd3e1e3715bead7639d93b9c87a74b32a";
 
 async function registerProver() {
   const [c, _c] = await attachContract("Prover");
   const [e, _e] = await attachContract("Epoch");
-  await c.register(myProver, 10000, 1, 10, myVerifier);
+  await c.register(myProver, 5000, 1, 10, myVerifier);
   console.log("Waiting approve prover");
   await sleep();
   await c.approve(myProver, true, true);

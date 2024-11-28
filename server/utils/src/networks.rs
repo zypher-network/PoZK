@@ -60,8 +60,8 @@ pub fn contract_address(network: &str, name: &str) -> Result<(Address, u64)> {
 
 pub fn pozk_metrics_url(network: &str) -> Result<String> {
     match network {
-        "localhost" | "testnet" => Ok("https://pozk-metrics.zypher.dev".to_owned()),
-        "mainnet" => Ok("https://pozk-metrics.zypher.network".to_owned()),
+        "localhost" | "testnet" => Ok("https://pozk-proxy.zypher.dev".to_owned()),
+        "mainnet" => Ok("https://pozk-proxy.zypher.network".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }
 }
