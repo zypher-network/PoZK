@@ -43,7 +43,7 @@ const Banner = () => {
   }, [reward.data, epoches.data]);
 
   const totalStaking = useMemo(() => {
-    return staking.data.reduce((prev, curr) => prev.plus(curr.newAmount), new BigNumberJs('0'));
+    return staking.data.reduce((prev, curr) => prev.plus(curr.amount), new BigNumberJs('0'));
   }, [staking])
   return (
     <div className="flex justify-between items-stretch gap-[24px]">

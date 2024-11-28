@@ -6,7 +6,7 @@ const useSortProvers = () => {
   const { data } = useSubgraphStore(state => state.staking);
   const provers = useProverStore(state => state.provers);
   const getStakingAmount = (prover: string) => {
-    return data.find(staking => staking.prover === prover)?.newAmount ?? '0';
+    return data.find(staking => staking.prover === prover)?.amount ?? '0';
   }
   return provers.slice()
     .sort((x, y) => {
