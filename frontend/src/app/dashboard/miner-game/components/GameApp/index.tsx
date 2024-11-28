@@ -1,25 +1,46 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import cx from 'classnames'
 
 import Loading from '@/components/icon/load.svg';
+import useProverStore from '@/components/state/proverStore';
+import useSubgraphStore from '@/components/state/subgraphStore';
+import useBalanceStore from '@/components/state/balanceStore';
 
 interface IGameApp {
 }
 
 const GameApp: React.FC<IGameApp> = (props) => {
   const [imgUrl, setImgUrl] = useState('');
+  const provers = useProverStore(state => state.provers);
+  const { data } = useSubgraphStore(state => state.staking);
+  const minStake = useBalanceStore(state => state.minStake);
 
   const handlePreload = async () => {
     try {
       const response = await fetch('/rewards/miner-game.gif');
       const imgBlob = await response.blob();
-      setImgUrl(URL.createObjectURL(imgBlob));
+      const imgUrl = URL.createObjectURL(imgBlob)
+      setImgUrl(imgUrl);
     } catch (error) {
+      console.log(error);
     }
   }
 
+  const isCompetitionStaked = useMemo(() => {
+    return provers
+      .filter(prover => prover.name.toLowerCase().includes('competition'))
+      .some(({ id }) =>
+        Number(data.find(staking => staking.prover === id)?.amount ?? '0') >= Number(minStake.value)
+      );
+  }, [provers, data]);
+
   useEffect(() => {
-    handlePreload();
+    if (isCompetitionStaked && !imgUrl) {
+      handlePreload();
+    }
+  }, [isCompetitionStaked]);
+
+  useEffect(() => {
     return () => {
       imgUrl && URL.revokeObjectURL(imgUrl);
     }
@@ -30,12 +51,12 @@ const GameApp: React.FC<IGameApp> = (props) => {
         className={cx(
           'size-full flex justify-center items-center border-4 border-[#051027] rounded-2xl',
           {
-            'filter grayscale': Boolean(imgUrl),
+            'filter grayscale': !Boolean(imgUrl),
           }
         )}
         style={{
           // backgroundImage: `url(${imgUrl})`,
-          backgroundImage: imgUrl ? `url(/rewards/miner-game-preview.png)` : '',
+          backgroundImage: imgUrl ? `url(${imgUrl})` : 'url(/rewards/miner-game-preview.png)',
           backgroundSize: 'cover',
         }}
       >

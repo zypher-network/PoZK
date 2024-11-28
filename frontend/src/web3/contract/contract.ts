@@ -8,7 +8,8 @@ import {
   Address,
   Abi,
   TypedDataDomain,
-  hexToSignature,
+  parseSignature,
+  encodeFunctionData,
 } from "viem";
 import { chain } from "@/web3/wagmi.config";
 
@@ -49,6 +50,20 @@ class ContractService {
     try {
       const walletClient = await this.getWalletClient();
       const account = await this.getWalletAddress();
+
+      const data = encodeFunctionData({
+        abi: this.contractABI ?? [],
+        functionName: methodName,
+        args,
+      });
+
+      const gas = await this.publicClient.estimateGas({
+        account,
+        to: this.contractAddress!,
+        data,
+        value: overrides?.value ? parseEther(overrides.value) : 0n,
+      })
+    
       const { request } = await this.publicClient.simulateContract({
         account: account,
         address: this.contractAddress!,
@@ -59,9 +74,7 @@ class ContractService {
         ...(overrides?.value !== undefined && {
           value: parseEther(overrides.value),
         }),
-        ...(overrides?.gasLimit !== undefined && {
-          gas: parseGwei(overrides.gasLimit),
-        }),
+        ...(overrides?.gasLimit !== undefined ? { gas: parseGwei(overrides.gasLimit) } : { gas }),
         ...(overrides?.gasPrice !== undefined && {
           gasPrice: parseGwei(overrides.gasPrice),
         }),
@@ -109,7 +122,7 @@ class ContractService {
           number: 42,
         },
       });
-      const { v, r, s } = hexToSignature(signature);
+      const { v, r, s } = parseSignature(signature);
       return { v: Number(v), r, s };
     } catch (err) {
       console.error("Error in signTypedData:", err);
