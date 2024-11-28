@@ -30,7 +30,7 @@ const GameApp: React.FC<IGameApp> = (props) => {
     return provers
       .filter(prover => prover.name.toLowerCase().includes('competition'))
       .some(({ id }) =>
-        Number(data.find(staking => staking.prover === id)?.amount ?? '0') >= Number(minStake.value)
+        Number(data.find(staking => staking.prover === id)?.newAmount ?? '0') >= Number(minStake.value)
       );
   }, [provers, data]);
 

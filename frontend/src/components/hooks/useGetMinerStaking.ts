@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 const useGetMinerStaking = (prover: Address) => {
   const { data } = useSubgraphStore(state => state.staking);
-  const stakingAmount = useMemo(() => data.find(staking => staking.prover === prover)?.amount ?? '0', [data]);
+  const stakingAmount = useMemo(() => data.find(staking => staking.prover === prover)?.newAmount ?? '0', [data]);
   return stakingAmount;
 }
 
