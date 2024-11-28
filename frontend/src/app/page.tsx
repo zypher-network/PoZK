@@ -31,7 +31,7 @@ export default function Home() {
     try {
       setLoading(true);
       const { message, signature } = await evmWallet.signByEIP4361(
-        "Welcome to Zytron!"
+        "Welcome to PoZK!"
       );
       if (message && signature) {
         const params = {
@@ -84,7 +84,7 @@ export default function Home() {
           />
         </Link>
         <h1 className="text-2xl font-bold mb-6 text-center">
-          Welcome to Zytron
+          Welcome to PoZK
         </h1>
         <Button
           className="w-[150px]"

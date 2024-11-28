@@ -29,7 +29,8 @@ const myVerifier = "0x0eaca2011742c5156f217f1b1d0784fe5fbf2428";
 async function registerProver() {
   const [c, _c] = await attachContract("Prover");
   const [e, _e] = await attachContract("Epoch");
-  await c.register(myProver, 5000, 1, 10, myVerifier);
+  await c.register(myProver, 10000, 1, 20, myVerifier);
+  // await c.upgrade(myProver, 5000, 1, 20, myVerifier);
   console.log("Waiting approve prover");
   await sleep();
   await c.approve(myProver, true, true);

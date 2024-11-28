@@ -17,7 +17,7 @@ expiry_time: `default 1 min`
     "v": 27,
     "r": "0xf69e02fdeb811acab1d39938de4bec54931e2f0b4357f3793f6717e1f39d4665",
     "s": "0x126cc57b71ffad79ceabffbc3d88a39afb0a62e0132e0cff3450a9db2e06ade9",
-    "statement": "Welcome to Zytron!",
+    "statement": "Welcome to PoZK!",
     "resources": []
 }
 ```

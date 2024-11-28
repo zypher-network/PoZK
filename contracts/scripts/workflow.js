@@ -29,12 +29,21 @@ async function dao() {
   console.log("DAO set ok");
 }
 
-async function epoch() {
+async function setEpochTime() {
+  const time = 600;
   const [e, _] = await attachContract("Epoch");
-  console.log(await e.startTime());
+  console.log("Old period secs:", await e.period());
+  await e.setPeriod(time);
+  await sleep();
+  console.log("New period secs:", await e.period());
+}
+
+async function newEpoch() {
+  const [e, _] = await attachContract("Epoch");
+  console.log("Old epoch:", await e.height());
   await e.getAndUpdate();
   await sleep();
-  console.log(await e.startTime());
+  console.log("New epoch:", await e.height());
 }
 
 async function prover() {
@@ -193,10 +202,11 @@ async function unstake() {
 }
 
 async function main() {
-  //await epoch();
-  await dao();
-  await vesting();
-  await openNetworkMode();
+  await newEpoch();
+  //await dao();
+  //await vesting();
+  //await openNetworkMode();
+  //await setEpochTime();
   //await prover();
   //await stakeWithTest();
   //await stakeWithTestCreate();
