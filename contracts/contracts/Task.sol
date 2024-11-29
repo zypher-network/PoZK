@@ -33,6 +33,8 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         uint256 fee;
         /// @notice the miner account
         address miner;
+        /// @notice the miner url
+        string url;
         /// @notice the overtime of this task
         uint256 overtime;
         /// @notice the proof public inputs data
@@ -143,9 +145,13 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         bool acceptable = task.status == TaskStatus.Waiting || task.overtime < block.timestamp;
         require(acceptable, "T04");
 
-        uint256 overtime = IProver(IAddresses(addresses).get(Contracts.Prover)).overtime(task.prover);
+        IProver iprover = IProver(IAddresses(addresses).get(Contracts.Prover));
+        require(iprover.checkUrl(task.prover, url), "T11");
+        uint256 overtime = iprover.overtime(task.prover);
+
         task.status = TaskStatus.Proving;
         task.miner = miner;
+        task.url = url;
         task.overtime = block.timestamp + overtime;
 
         emit AcceptTask(tid, miner, task.overtime, url);

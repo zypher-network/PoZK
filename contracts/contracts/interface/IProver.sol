@@ -22,4 +22,6 @@ interface IProver {
     function verifier(address prover) external view returns (address);
 
     function owner(address prover) external view returns (address);
+
+    function checkUrl(address prover, string memory url) external view returns (bool);
 }

@@ -27,6 +27,7 @@ pub struct CreateForm {
     tag: String,
     name: String,
     overtime: u64,
+    url: bool,
 }
 
 /// create & pull & running a prover
@@ -45,6 +46,7 @@ pub async fn create(
             form.tag,
             form.name,
             form.overtime,
+            form.url,
         ))
         .expect("Service sender invalid");
 

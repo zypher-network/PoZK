@@ -10,6 +10,7 @@ export const GET_PROVERS = gql`
       name
       minable
       overtime
+      checkUrl
       id
       approved
     }

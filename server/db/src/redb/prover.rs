@@ -12,8 +12,9 @@ pub struct Prover {
     pub tag: String,
     pub image: String,
     pub name: String,
-    pub created: i64,
     pub overtime: u64,
+    pub url: bool,
+    pub created: i64,
 }
 
 impl Prover {

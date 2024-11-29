@@ -9,14 +9,14 @@ pub enum ServiceMessage {
     CreateTask(u64, Address, Vec<u8>, Vec<u8>),
     /// tid, overtime, is_me
     AcceptTask(u64, i64, bool),
-    /// prover, version, overtime
-    ApproveProver(Address, u64, u64),
+    /// prover, version, overtime, need url
+    ApproveProver(Address, u64, u64, bool),
     /// tid, proof
     UploadProof(String, Vec<u8>),
     /// controller wallet and sk bytes
     ChangeController(LocalWallet, Vec<u8>),
-    /// pull prover, tag, name and overtime
-    PullProver(Address, String, String, u64),
+    /// pull prover, tag, name and overtime, need url
+    PullProver(Address, String, String, u64, bool),
     /// remove prover
     RemoveProver(Address),
     /// test id, prover, overtime, inputs, publics

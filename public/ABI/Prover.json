@@ -79,6 +79,12 @@
       {
         "indexed": false,
         "internalType": "bool",
+        "name": "url",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
         "name": "minable",
         "type": "bool"
       },
@@ -162,6 +168,12 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "url",
+        "type": "bool"
       }
     ],
     "name": "RegisterProver",
@@ -237,6 +249,12 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "url",
+        "type": "bool"
       }
     ],
     "name": "UpgradeProver",
@@ -263,6 +281,30 @@
     "name": "approve",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "prover",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "url",
+        "type": "string"
+      }
+    ],
+    "name": "checkUrl",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -374,6 +416,11 @@
         "internalType": "address",
         "name": "_verifier",
         "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "_checkUrl",
+        "type": "bool"
       }
     ],
     "name": "register",
@@ -497,6 +544,11 @@
         "internalType": "address",
         "name": "_verifier",
         "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "_checkUrl",
+        "type": "bool"
       }
     ],
     "name": "upgrade",

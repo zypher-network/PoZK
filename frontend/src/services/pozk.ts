@@ -77,13 +77,14 @@ class PoZK {
     return await api.post(`${this.endpoints.login}`, params);
   }
 
-  async pullProve (prover: Address, tag: string, name: string, overtime: string) {
+  async pullProve (prover: Address, tag: string, name: string, overtime: string, url: boolean) {
     try {
       const req = {
         tag: `v${tag}`,
         name,
         prover,
         overtime: Number(overtime),
+        url,
       };
       const response = await api.post(`${this.endpoints.prover.pull}`, req) as any;
     } catch (error) {

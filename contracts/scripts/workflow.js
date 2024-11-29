@@ -48,7 +48,7 @@ async function newEpoch() {
 
 async function prover() {
   const [c, _] = await attachContract("Prover");
-  await c.register(myProver, 10000, 2, 20, myProver);
+  await c.register(myProver, 10000, 2, 20, myProver, false);
   await sleep();
   await c.approve(myProver, true, true);
   console.log("Prover set ok");

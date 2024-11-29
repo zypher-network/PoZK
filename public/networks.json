@@ -63,12 +63,12 @@
             "startBlock": 45709105
         },
         "Prover": {
-            "address": "0x8aCF473885f975023e7A9B7C043Da53D690cbc6E",
-            "startBlock": 45709119
+            "address": "0x4a64eEf7d3706e3A5b23155818a7037021FABFaA",
+            "startBlock": 45964138
         },
         "Task": {
-            "address": "0x66e9CE70bb3431958e0CE352d1B5D85772E57E06",
-            "startBlock": 45709132
+            "address": "0xd596839CD76BFF7d164C8A3e308FEfc4Cb9c09D1",
+            "startBlock": 45964163
         },
         "Controller": {
             "address": "0xDd3c0D61E7A654Ff5Dc4Ade5AD5c47cB4b5e69C2",

@@ -48,6 +48,8 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         ProverWork overtime;
         /// @notice Current & future verifier
         ProverVerifier verifier;
+        /// @notice The prover need URL or not
+        bool checkUrl;
         /// @notice The prover is minable, control by prover DAO
         bool minable;
     }
@@ -62,16 +64,16 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     mapping(address => GameProver) private provers;
 
     /// @notice Emit when new prover register and waiting reviewing
-    event RegisterProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier, string name);
+    event RegisterProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier, string name, bool url);
 
     /// @notice Emit when prover owner transfer to others
     event TransferProver(address prover, address owner);
 
     /// @notice Emit when the prover start upgrading and waiting reviewing, before approve, it will still use old info
-    event UpgradeProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier, string name);
+    event UpgradeProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier, string name, bool url);
 
     /// @notice Emit when the prover is approved or reject
-    event ApproveProver(address prover, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved);
+    event ApproveProver(address prover, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool url, bool minable, bool approved);
 
     /// @notice Emit when the prover is stopped
     event StopProver(address prover);
@@ -95,7 +97,8 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @param _version the prover prover version
     /// @param _overtime the limit time when doing zkp, if overflow the time, others miner can accept the task again
     /// @param _verifier the verifier contract, uses the IVerifier interface
-    function register(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
+    /// @param _checkUrl if prover need miner has URL or not
+    function register(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier, bool _checkUrl) external {
         require(provers[prover].version.value == 0 && _version > 0, "G01");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
         string memory name = IVerifier(_verifier).name();
@@ -107,9 +110,10 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         g.version = ProverWork(_version, _version, 0);
         g.overtime = ProverWork(_overtime, _overtime, 0);
         g.verifier = ProverVerifier(_verifier, _verifier, 0);
+        g.checkUrl = _checkUrl;
         g.minable = false;
 
-        emit RegisterProver(prover, _work, _version, _overtime, _verifier, name);
+        emit RegisterProver(prover, _work, _version, _overtime, _verifier, name, _checkUrl);
         emit TransferProver(prover, msg.sender);
     }
 
@@ -129,7 +133,8 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @param _version the prover next prover version
     /// @param _overtime the limit time when doing zkp, if overflow the time, others miner can accept the task again
     /// @param _verifier the next verifier contract, uses the IVerifier interface
-    function upgrade(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
+    /// @param _checkUrl if prover need miner has URL or not
+    function upgrade(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier, bool _checkUrl) external {
         require(provers[prover].owner == msg.sender, "G02");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
         string memory name = IVerifier(_verifier).name();
@@ -170,8 +175,9 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         }
         g.verifier.newValue = _verifier;
         g.verifier.newEpoch = type(uint256).max;
+        g.checkUrl = _checkUrl;
 
-        emit UpgradeProver(prover, _work, _version, _overtime, _verifier, name);
+        emit UpgradeProver(prover, _work, _version, _overtime, _verifier, name, _checkUrl);
     }
 
     /// @notice Prover owner can transfer ownership to others
@@ -233,7 +239,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
             g.verifier.newValue = g.verifier.value;
         }
 
-        emit ApproveProver(prover, g.work.newValue, proversTotalWork.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, minable, approved);
+        emit ApproveProver(prover, g.work.newValue, proversTotalWork.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, g.checkUrl, minable, approved);
     }
 
     /// @notice DAO can stop a prover
@@ -326,5 +332,37 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @return the owner account of the prover
     function owner(address prover) external view returns (address) {
         return provers[prover].owner;
+    }
+
+    /// notice Check the prover is need URL or not
+    /// @param prover the prover
+    /// @param url the url string
+    /// @return the result
+    function checkUrl(address prover, string memory url) external view returns (bool) {
+        if (!provers[prover].checkUrl) {
+            return true;
+        }
+
+        bytes memory urlBytes = bytes(url);
+
+        // https://x.x
+        if (urlBytes.length < 11) {
+            return false;
+        }
+
+        // Check if url starts with 'https://'
+        if (urlBytes[0] == 'h' &&
+            urlBytes[1] == 't' &&
+            urlBytes[2] == 't' &&
+            urlBytes[3] == 'p' &&
+            urlBytes[4] == 's' &&
+            urlBytes[5] == ':' &&
+            urlBytes[6] == '/' &&
+            urlBytes[7] == '/'
+           ) {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -85,7 +85,7 @@ async function deployAndSetupContracts(setup) {
     const [demo1, demo_s] = await deployContract("DemoProver", []);
     demo = demo1;
 
-    await prover.register(demo_s, 10000, 1, 10, demo_s);
+    await prover.register(demo_s, 10000, 1, 10, demo_s, false);
     await prover.approve(demo_s, true, true);
 
     // setup staking

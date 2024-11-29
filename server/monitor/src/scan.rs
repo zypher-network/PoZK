@@ -65,6 +65,7 @@ struct ApproveProver {
     version: U256,
     overtime: U256,
     verifier: Address,
+    url: bool,
     minable: bool,
     approved: bool,
 }
@@ -287,7 +288,7 @@ impl Scan {
                         ap.prover, version
                     );
                     Ok(Some(ServiceMessage::ApproveProver(
-                        ap.prover, version, overtime,
+                        ap.prover, version, overtime, ap.url
                     )))
                 }
                 EventType::StopProver => {

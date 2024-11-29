@@ -191,7 +191,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 app.pool_sender.clone(),
             ));
         }
-        ServiceMessage::ApproveProver(prover, version, overtime) => {
+        ServiceMessage::ApproveProver(prover, version, overtime, url) => {
             // 1. check prover in local
             let key = Prover::to_key(&prover);
             let new_tag = format!("v{}", version);
@@ -206,13 +206,14 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 p.image = image;
                 p.tag = new_tag;
                 p.overtime = overtime;
+                p.url = url;
                 app.db.add(&p)?;
 
                 // 4. delete old image
                 app.docker.remove(&old_image).await?;
             }
         }
-        ServiceMessage::PullProver(prover, tag, name, overtime) => {
+        ServiceMessage::PullProver(prover, tag, name, overtime, url) => {
             // 1. pull docker image
             let repo = format!("{:?}", prover);
             let image = app.docker.pull(&repo, &tag).await?;
@@ -222,9 +223,10 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
             let p = Prover {
                 prover,
                 tag,
+                image,
                 name,
                 overtime,
-                image,
+                url,
                 created,
             };
             app.db.add(&p)?;

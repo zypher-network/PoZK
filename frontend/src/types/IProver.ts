@@ -46,6 +46,7 @@ export type GQLProver = {
   name: string;
   minable: boolean;
   overtime: string;
+  checkUrl: boolean;
   id: Address;
   approved: boolean;
 }
