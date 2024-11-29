@@ -5,7 +5,9 @@ use pozk_db::ReDB;
 use pozk_db::{MainController, Prover, Task};
 use pozk_docker::{DockerManager, RunOption};
 use pozk_monitor::PoolMessage;
-use pozk_utils::{remove_task_input, write_task_input, write_task_proof, ServiceMessage};
+use pozk_utils::{
+    remove_task_input, is_valid_url, write_task_input, write_task_proof, ServiceMessage,
+};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::Duration;
@@ -35,6 +37,7 @@ pub struct MainService {
     db: Arc<ReDB>,
     docker: Arc<DockerManager>,
     url: String,
+    check_url: bool,
     task_parallel: usize,
     /// task from API and not limit by parallel
     task_proxy: HashMap<String, Option<Sender<Vec<u8>>>>,
@@ -57,6 +60,12 @@ impl MainService {
         task_parallel: usize,
         url: String,
     ) -> Self {
+        let check_url = is_valid_url(&url, true);
+        if check_url {
+            info!("[Service] checked url: {}", check_url);
+        } else {
+            warn!("[Service] checked url: {}", check_url);
+        }
         Self {
             pool_sender,
             metrics_sender,
@@ -65,6 +74,7 @@ impl MainService {
             db,
             docker,
             url,
+            check_url,
             task_parallel,
             task_proxy: HashMap::new(),
             task_onchain: BTreeMap::new(),
@@ -99,6 +109,11 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
             // 1. check prover in local
             let key = Prover::to_key(&prover);
             if let Some(p) = app.db.get::<Prover>(key)? {
+                // check url status
+                if p.url && !app.check_url {
+                    return Ok(());
+                }
+
                 // 2. insert to waiting list
                 app.task_onchain.insert(
                     tid,

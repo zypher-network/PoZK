@@ -288,7 +288,7 @@ impl Scan {
                         ap.prover, version
                     );
                     Ok(Some(ServiceMessage::ApproveProver(
-                        ap.prover, version, overtime, ap.url
+                        ap.prover, version, overtime, ap.url,
                     )))
                 }
                 EventType::StopProver => {

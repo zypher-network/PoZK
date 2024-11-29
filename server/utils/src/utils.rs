@@ -116,9 +116,34 @@ pub async fn upload_proof_with_uri(uri: &str, output: Vec<u8>, proof: Vec<u8>) -
     Ok(())
 }
 
+pub fn is_valid_url(url: &str, https: bool) -> bool {
+    let rule = if https {
+        r"^https://([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(/[a-zA-Z0-9-._~:/?#@!$&'()*+,;=]*)?$"
+    } else {
+        r"^(http://|https://)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,6}(/[a-zA-Z0-9-._~:/?#@!$&'()*+,;=]*)?$"
+    };
+
+    let url_regex = regex::Regex::new(rule).unwrap(); // safe
+    url_regex.is_match(url)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_url() {
+        assert_eq!(is_valid_url("", true), false);
+        assert_eq!(is_valid_url("http://localhost", true), false);
+        assert_eq!(is_valid_url("https://", true), false);
+        assert_eq!(is_valid_url("example.com", true), false);
+        assert_eq!(is_valid_url("http://example.com", true), false);
+        assert_eq!(is_valid_url("http://example.com", false), true);
+        assert_eq!(is_valid_url("https://example.com", true), true);
+        assert_eq!(is_valid_url("https://example.org/path?query=string#fragment", true), true);
+        assert_eq!(is_valid_url("https://sub.domain.co.uk", true), true);
+        assert_eq!(is_valid_url("ftp://example.com", true), false);
+    }
 
     #[tokio::test]
     async fn test_download() {
