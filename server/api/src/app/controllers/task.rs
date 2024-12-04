@@ -2,6 +2,7 @@ use axum::{
     body::Bytes,
     extract::{Extension, Json, Path},
 };
+use chrono::Utc;
 use ethers::prelude::{Address, Signature, H160};
 use pozk_db::Prover;
 use pozk_docker::RunOption;
@@ -10,7 +11,6 @@ use pozk_utils::{
 };
 use rand::distributions::{Alphanumeric, DistString};
 use serde_json::{json, Value};
-use tokio::sync::oneshot::channel;
 
 use crate::app::{success, AppContext, Error, Result};
 
@@ -64,40 +64,20 @@ pub async fn create(Extension(app): Extension<AppContext>, body: Bytes) -> Resul
     let _container = app.docker.run(&p.image, &sid, RunOption::default()).await?;
 
     // 4. create one time channel to services
-    if p.overtime > 20 {
-        // send to background
-        if app
-            .sender
-            .send(ServiceMessage::ApiTask(sid.clone(), None))
-            .is_err()
-        {
-            return Err(Error::Internal(2002));
-        }
-
-        Ok(Json(json!({
-            "status": "success",
-            "id": sid,
-            "overtime": p.overtime,
-        })))
-    } else {
-        let (sender, receiver) = channel();
-
-        if app
-            .sender
-            .send(ServiceMessage::ApiTask(sid, Some(sender)))
-            .is_err()
-        {
-            return Err(Error::Internal(2002));
-        }
-
-        match receiver.await {
-            Ok(proof) => Ok(Json(json!({
-                "status": "success",
-                "result": hex::encode(proof),
-            }))),
-            Err(_) => Err(Error::Internal(2003)),
-        }
+    let over_at = Utc::now().timestamp() + p.overtime as i64;
+    if app
+        .sender
+        .send(ServiceMessage::ApiTask(sid.clone(), over_at))
+        .is_err()
+    {
+        return Err(Error::Internal(2002));
     }
+
+    Ok(Json(json!({
+        "status": "success",
+        "id": sid,
+        "overtime": over_at,
+    })))
 }
 
 /// track task result from player service

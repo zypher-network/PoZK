@@ -6,16 +6,13 @@ use pozk_db::{MainController, Prover, Task};
 use pozk_docker::{DockerManager, RunOption};
 use pozk_monitor::PoolMessage;
 use pozk_utils::{
-    remove_task_input, is_valid_url, write_task_input, write_task_proof, ServiceMessage,
+    is_valid_url, remove_task_input, write_task_input, write_task_proof, ServiceMessage,
 };
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::{
-    sync::{
-        mpsc::{UnboundedReceiver, UnboundedSender},
-        oneshot::Sender,
-    },
+    sync::mpsc::{UnboundedReceiver, UnboundedSender},
     time::sleep,
 };
 
@@ -40,7 +37,7 @@ pub struct MainService {
     check_url: bool,
     task_parallel: usize,
     /// task from API and not limit by parallel
-    task_proxy: HashMap<String, Option<Sender<Vec<u8>>>>,
+    task_proxy: HashMap<String, i64>,
     /// task send to this pool when already a task running
     task_onchain: BTreeMap<u64, WaitingTask>,
     /// task need to accept if possible
@@ -178,13 +175,12 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
             }
         }
         ServiceMessage::UploadProof(sid, proof) => {
-            if let Some(sender_op) = app.task_proxy.remove(&sid) {
-                if let Some(sender) = sender_op {
-                    let _ = sender.send(proof);
-                } else {
+            if let Some(over_at) = app.task_proxy.remove(&sid) {
+                let now = Utc::now().timestamp();
+                // check overtime, if over, just ignore it.
+                if now <= over_at {
                     write_task_proof(&sid, proof).await?;
                 }
-
                 return Ok(());
             }
 
@@ -294,8 +290,8 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 }
             }
         }
-        ServiceMessage::ApiTask(sid, sender) => {
-            app.task_proxy.insert(sid, sender);
+        ServiceMessage::ApiTask(sid, over_at) => {
+            app.task_proxy.insert(sid, over_at);
         }
         ServiceMessage::TaskHeartbeat => {
             let now = Utc::now().timestamp();

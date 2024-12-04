@@ -1,8 +1,5 @@
 use ethers::prelude::{Address, LocalWallet};
-use tokio::sync::{
-    mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    oneshot::Sender,
-};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 pub enum ServiceMessage {
     /// tid, prover, inputs, publics
@@ -22,7 +19,7 @@ pub enum ServiceMessage {
     /// test id, prover, overtime, inputs, publics
     MinerTest(u64, Address, i64, Vec<u8>, Vec<u8>),
     /// task from player service
-    ApiTask(String, Option<Sender<Vec<u8>>>),
+    ApiTask(String, i64),
     /// Heartbeat for cleanup task
     TaskHeartbeat,
 }

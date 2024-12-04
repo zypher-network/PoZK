@@ -140,7 +140,10 @@ mod tests {
         assert_eq!(is_valid_url("http://example.com", true), false);
         assert_eq!(is_valid_url("http://example.com", false), true);
         assert_eq!(is_valid_url("https://example.com", true), true);
-        assert_eq!(is_valid_url("https://example.org/path?query=string#fragment", true), true);
+        assert_eq!(
+            is_valid_url("https://example.org/path?query=string#fragment", true),
+            true
+        );
         assert_eq!(is_valid_url("https://sub.domain.co.uk", true), true);
         assert_eq!(is_valid_url("ftp://example.com", true), false);
     }
