@@ -14,8 +14,8 @@ contract DemoProver is ERC165, IVerifier {
         return "Demo-Prover";
     }
 
-    function permission() external view returns (bool) {
-        return false;
+    function permission(address _sender) external view returns (bool) {
+        return true;
     }
 
     function verify(bytes calldata _publics, bytes calldata _proof) external view returns (bool) {
