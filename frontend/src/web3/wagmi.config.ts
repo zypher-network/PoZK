@@ -4,26 +4,28 @@ import generateMetadata from "@/lib/generateMetadata";
 import { CHAINID, ChainId } from "@/web3/constants";
 
 import { defineChain } from "viem/utils";
+import { lineaSepolia } from 'viem/chains';
+
 const testnetSourceId = 59141; // Linea Sepolia
 const mainnetSourceId = 59144; // Linea Mainnet
 
 const zytronTestnet = /*#__PURE__*/ defineChain({
-    id: 5611,
+    id: 50098,
     name: 'PoZK Testnet',
     nativeCurrency: {
         name: 'Ether',
-        symbol: 'tETH',
+        symbol: 'ETH',
         decimals: 18,
     },
     rpcUrls: {
         default: {
-            http: ['https://opbnb-testnet-rpc.bnbchain.org'],
+            http: ['https://rpc-testnet.zypher.network'],
         },
     },
     blockExplorers: {
         default: {
             name: 'Blockscout',
-            url: 'https://testnet.opbnbscan.com',
+            url: 'https://explorer-testnet.zypher.network',
         },
     },
     testnetSourceId,
@@ -57,6 +59,7 @@ export const projectId = "bc467c124a7a7a8ce06a41ef40b1b842";
 const ChainList = {
   [ChainId.MAINNET]: zytronMainnet,
   [ChainId.TESTNET]: zytronTestnet,
+  [ChainId.L2TESTNET]: lineaSepolia,
 };
 export const chain = ChainList[CHAINID];
 export const wagmiConfig = defaultWagmiConfig({

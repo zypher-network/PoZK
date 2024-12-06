@@ -60,7 +60,7 @@ pub fn contract_address(network: &str, name: &str) -> Result<(Address, u64)> {
 
 pub fn pozk_metrics_url(network: &str) -> Result<String> {
     match network {
-        "localhost" | "testnet" => Ok("https://pozk-proxy.zypher.dev".to_owned()),
+        "localhost" | "testnet" | "l2testnet" => Ok("https://pozk-proxy.zypher.dev".to_owned()),
         "mainnet" => Ok("https://pozk-proxy.zypher.network".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }
@@ -69,16 +69,18 @@ pub fn pozk_metrics_url(network: &str) -> Result<String> {
 pub fn pozk_rpc_url(network: &str) -> Result<String> {
     match network {
         "localhost" => Ok("http://localhost:8545".to_owned()),
-        "testnet" => Ok("https://opbnb-testnet-rpc.bnbchain.org".to_owned()),
+        "testnet" => Ok("https://rpc-testnet.zypher.network".to_owned()),
         "mainnet" => Ok("https://rpc.zypher.network".to_owned()),
+        "l2testnet" => Ok("https://rpc.sepolia.linea.build".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }
 }
 
 pub fn pozk_zero_gas_url(network: &str) -> Result<String> {
     match network {
-        "testnet" => Ok("https://gas.zypher.dev".to_owned()),
+        "testnet" => Ok("https://gas-testnet.zypher.network".to_owned()),
         "mainnet" => Ok("https://gas.zypher.network".to_owned()),
+        "l2testnet" => Ok("https://gas.zypher.dev".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }
 }

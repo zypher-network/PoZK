@@ -1,9 +1,9 @@
 const { ethers, upgrades, network } = require("hardhat");
 const { attachContract, sleep } = require("./address_utils.js");
 
-// const myProver = "0x3aa5ebb10dc797cac828524e59a333d0a371443c"; // localhsot
-const myProver = "0x5b92b011513f9aaf8f6541003dc088625e7438e8"; // 2048
-const myProver1 = "0xef1e764c386ec95ed233035661dd4269be8fd8e7"; // cr
+const myProver = "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c"; // localhost1
+const myProver1 = "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d"; // localhost2
+
 const ONE_TOKEN = 10000000000000000000n;
 
 const ACCOUNT1 = new ethers.Wallet("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
@@ -202,11 +202,11 @@ async function unstake() {
 }
 
 async function main() {
-  await newEpoch();
-  //await dao();
-  //await vesting();
+  //await newEpoch();
+  await dao();
+  await vesting();
+  await setEpochTime();
   //await openNetworkMode();
-  //await setEpochTime();
   //await prover();
   //await stakeWithTest();
   //await stakeWithTestCreate();
