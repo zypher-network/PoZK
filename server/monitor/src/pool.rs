@@ -2,8 +2,8 @@ use anyhow::{anyhow, Result};
 use async_recursion::async_recursion;
 use ethers::prelude::*;
 use pozk_utils::{
-    check_zero_gas, create_zero_gas, new_providers, new_signer, zero_gas, AAWallet, Controller,
-    DefaultProvider, DefaultSigner, Stake, Task,
+    check_zero_gas, create_zero_gas, new_providers, new_signer, pozk_gas_price, zero_gas, AAWallet,
+    Controller, DefaultProvider, DefaultSigner, Stake, Task,
 };
 use std::sync::Arc;
 use tokio::{
@@ -15,7 +15,6 @@ use tokio::{
 use crate::MonitorConfig;
 
 const GAS_PRICE: u64 = 1_000_000; // 0.001 GWEI
-const EXTRA_GAS: u64 = 10; // extra 10%
 
 pub enum PoolMessage {
     ChangeController(LocalWallet),
@@ -32,6 +31,7 @@ pub struct Pool {
     controller: Controller<DefaultProvider>,
     miner: Address,
     chain: u64,
+    gas_price: Option<U256>,
     zero_gas: String,
     zero_gas_working: bool,
     zero_gas_wallet: AAWallet<DefaultSigner>,
@@ -66,6 +66,8 @@ impl Pool {
         let zero_gas = cfg.zero_gas.clone();
         let zero_gas_wallet = AAWallet::new(Address::zero(), signer);
 
+        let gas_price = pozk_gas_price(&cfg.network);
+
         let mut pool = Self {
             wallet,
             provider,
@@ -74,6 +76,7 @@ impl Pool {
             miner,
             controller,
             chain,
+            gas_price,
             zero_gas,
             zero_gas_wallet,
             zero_gas_working: false,
@@ -188,48 +191,17 @@ impl Pool {
                 }
             }
             PoolMessage::AcceptTask(tid, url) => {
-                let gas_price = self
-                    .task
-                    .client_ref()
-                    .get_gas_price()
-                    .await
-                    .unwrap_or(GAS_PRICE.into());
-                let extra_gas = gas_price + gas_price / U256::from(EXTRA_GAS);
-
-                let func = self
-                    .task
-                    .accept(U256::from(tid), self.miner, url)
-                    .gas_price(extra_gas);
+                let func = self.task.accept(U256::from(tid), self.miner, url);
                 self.send(func, true).await;
             }
             PoolMessage::SubmitTask(tid, proof) => {
-                let gas_price = self
-                    .task
-                    .client_ref()
-                    .get_gas_price()
-                    .await
-                    .unwrap_or(GAS_PRICE.into());
-                let extra_gas = gas_price + gas_price / U256::from(EXTRA_GAS);
-
-                let func = self
-                    .task
-                    .submit(U256::from(tid), proof.into())
-                    .gas_price(extra_gas);
+                let func = self.task.submit(U256::from(tid), proof.into());
                 self.send(func, true).await;
             }
             PoolMessage::SubmitMinerTest(tid, proof) => {
-                let gas_price = self
-                    .stake
-                    .client_ref()
-                    .get_gas_price()
-                    .await
-                    .unwrap_or(GAS_PRICE.into());
-                let extra_gas = gas_price + gas_price / U256::from(EXTRA_GAS);
-
                 let func = self
                     .stake
-                    .miner_test_submit(U256::from(tid), false, proof.into())
-                    .gas_price(extra_gas);
+                    .miner_test_submit(U256::from(tid), false, proof.into());
                 self.send(func, true).await;
             }
         }
@@ -273,7 +245,16 @@ impl Pool {
             }
         }
 
-        match func.send().await {
+        let gas_price = if let Some(gs) = self.gas_price {
+            gs
+        } else {
+            self.task
+                .client_ref()
+                .get_gas_price()
+                .await
+                .unwrap_or(GAS_PRICE.into())
+        };
+        match func.gas_price(gas_price).send().await {
             Ok(pending) => {
                 if let Ok(receipt) = pending.await {
                     info!(

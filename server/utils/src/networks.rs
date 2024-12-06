@@ -12,6 +12,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use tracing::error;
 
+const GAS_PRICE: u64 = 50;
+
 // Vesting contract with abi
 abigen!(Token, "public/ABI/Token.json");
 
@@ -82,6 +84,14 @@ pub fn pozk_zero_gas_url(network: &str) -> Result<String> {
         "mainnet" => Ok("https://gas.zypher.network".to_owned()),
         "l2testnet" => Ok("https://gas.zypher.dev".to_owned()),
         _ => Err(anyhow!("Invalid network")),
+    }
+}
+
+pub fn pozk_gas_price(network: &str) -> Option<U256> {
+    match network {
+        "testnet" | "mainnet" => Some(U256::from(GAS_PRICE)),
+        "l2testnet" => None,
+        _ => None,
     }
 }
 
