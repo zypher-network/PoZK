@@ -23,7 +23,15 @@ const useInitSubgraph = () => {
   const { data: { provers } = {}, refetch: refetchProvers } = useQuery<{ provers: GQLProver[] }>(GET_PROVERS);
   const { data: { epoches } = {}, refetch: refetchEpoches } = useQuery<{ epoches: GQLEpoch[] }>(GET_EPOCHES);
   const { data: { reward = null, unstakingClaims } = {}, refetch: refetchReward } = useQuery<{ reward: GQLEpochReward, unstakingClaims: GQLUnstakingClaim[] }>(GET_MINER_REWARDS, { variables: { id: address?.toLowerCase() }, skip: !address });
-  const { data: { stakings } = {}, refetch: refetchStaking } = useQuery<{ stakings: GQLStaking[] }>(GET_MINER_STAKING, { variables: { account: address?.toLowerCase() }, skip: !address, fetchPolicy: 'no-cache' });
+  const { data: { stakings } = {}, refetch: refetchStaking } = useQuery<{ stakings: GQLStaking[] }>(
+    GET_MINER_STAKING,
+    {
+      variables: { account: address?.toLowerCase() },
+      skip: !address,
+      fetchPolicy: 'no-cache',
+      pollInterval: 5000,
+    }
+  );
 
   useEffect(() => {
     setData('reward', reward);

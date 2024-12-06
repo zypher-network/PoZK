@@ -30,7 +30,7 @@ type SubgraphStore = {
   reset: (key: FieldKeys) => void;
 }
 
-const useSubgraphStore = create<SubgraphStore>((set) => ({
+const useSubgraphStore = create<SubgraphStore>((set, get) => ({
   epoches: {
     data: [],
     pending: false,
@@ -62,7 +62,8 @@ const useSubgraphStore = create<SubgraphStore>((set) => ({
   reset (key) {
     set({
       [key]: {
-        data: key === 'reward' ? null : [],
+        data: get()[key].data,
+        // data: key === 'reward' ? null : [],
         pending: true,
       }
     })
