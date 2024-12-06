@@ -4,7 +4,7 @@ networks:
 
 services:
   pozk-miner:
-    image: zyphernetwork/pozk-miner:v0.1.7
+    image: zyphernetwork/pozk-miner:v0.1.8
     container_name: pozk-miner
     ports:
       - 9098:9098 # HTTP

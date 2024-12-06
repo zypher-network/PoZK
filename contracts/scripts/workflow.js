@@ -56,7 +56,7 @@ async function prover() {
 
 async function openNetworkMode() {
   const [e, _e] = await attachContract("Epoch");
-  await e.setNetworkMode(2); // 1 is permissioned, 2 is permissionless
+  await e.setNetworkMode(1); // 1 is permissioned, 2 is permissionless
   const account = e.runner.address;
   console.log("Network mode to permissionless");
 }
@@ -206,7 +206,7 @@ async function main() {
   await dao();
   await vesting();
   await setEpochTime();
-  //await openNetworkMode();
+  await openNetworkMode();
   //await prover();
   //await stakeWithTest();
   //await stakeWithTestCreate();
