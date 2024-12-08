@@ -59,6 +59,7 @@ pub async fn create(
     app.db.add(&c)?;
 
     Ok(Json(json!({
+        "code": 0,
         "controller": format!("{:?}", c.controller),
         "singing_key": format!("0x{}", hex::encode(&c.singing_key.to_bytes()))
     })))

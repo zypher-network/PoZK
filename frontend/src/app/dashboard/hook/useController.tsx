@@ -151,7 +151,7 @@ export const usePostController = () => {
           `/api/controllers/${address}`,
           undefined
         );
-        if (res["status"] === "success") {
+        if (res["code"] === 0) {
           toast({
             title: "Set controller Success",
             variant: "success",

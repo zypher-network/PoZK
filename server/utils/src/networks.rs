@@ -272,7 +272,9 @@ fn generate_eip712_data(
     }
 }
 
-const PROXY_LIST_ACCOUNTS: [H160; 1] = [H160([0u8; 20])];
+const PROXY_LIST_ACCOUNTS: [H160; 1] = [H160([
+    94, 245, 28, 159, 68, 157, 183, 190, 47, 12, 99, 108, 108, 19, 126, 101, 184, 185, 107, 155,
+])];
 
 pub fn check_task_proxy_list(signer: &Address) -> bool {
     PROXY_LIST_ACCOUNTS.contains(signer)

@@ -74,7 +74,7 @@ pub async fn create(Extension(app): Extension<AppContext>, body: Bytes) -> Resul
     }
 
     Ok(Json(json!({
-        "status": "success",
+        "code": 0,
         "track": sid,
         "overtime": over_at,
     })))
@@ -84,7 +84,7 @@ pub async fn create(Extension(app): Extension<AppContext>, body: Bytes) -> Resul
 pub async fn track(Path(id): Path<String>) -> Result<Json<Value>> {
     match read_task_proof(&id).await {
         Ok(proof) => Ok(Json(json!({
-            "status": "success",
+            "code": 0,
             "result": hex::encode(proof),
         }))),
         Err(_) => Err(Error::NotFound(2004)),

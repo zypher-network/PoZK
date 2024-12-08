@@ -30,7 +30,7 @@ use crate::config::ApiConfig;
 use crate::p2p::P2pMessage;
 
 pub fn success() -> Json<Value> {
-    Json(json!({ "status": "success" }))
+    Json(json!({ "code": 0 }))
 }
 
 pub type AppContext = Arc<App>;
