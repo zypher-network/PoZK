@@ -37,6 +37,7 @@ pub struct MetricsService {
 enum InnerFuture {
     Message(MetricsMessage),
     Report,
+    Miner,
 }
 
 impl MetricsService {
@@ -90,8 +91,12 @@ impl MetricsService {
                     recv.recv().await.map(InnerFuture::Message)
                 } => w,
                 w = async {
-                    sleep(std::time::Duration::from_secs(600)).await;
+                    sleep(std::time::Duration::from_secs(600)).await; // 10min
                     Some(InnerFuture::Report)
+                } => w,
+                w = async {
+                    sleep(std::time::Duration::from_secs(3600)).await; // 1h
+                    Some(InnerFuture::Miner)
                 } => w,
             };
 
@@ -107,6 +112,11 @@ impl MetricsService {
                 Some(InnerFuture::Report) => {
                     if let Err(e) = self.report_miner_healthy().await {
                         error!("Report prover error: {}", e);
+                    }
+                }
+                Some(InnerFuture::Miner) => {
+                    if let Err(e) = self.report_miner_info().await {
+                        error!("Report miner error: {}", e);
                     }
                 }
                 None => break,
