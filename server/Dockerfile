@@ -1,5 +1,5 @@
 # Builder frontend
-FROM node:20-alpine AS builder1
+FROM node:lts-bullseye AS builder1
 
 WORKDIR /build1
 ADD frontend frontend
