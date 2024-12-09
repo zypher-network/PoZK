@@ -21,7 +21,7 @@ use pozk_docker::DockerManager;
 use pozk_monitor::{MonitorConfig, Pool, Scan};
 use pozk_utils::{init_path_and_server, new_service_channel, pozk_rpc_url, pozk_zero_gas_url};
 use serde::Deserialize;
-use std::{fs, path::PathBuf, sync::Arc};
+use std::{fs, path::PathBuf, sync::Arc, time::Duration};
 
 // empty account: sk = 0, address = 0x7e5f4552091a69125d5dfcb7b8c2659029395bdf
 const DEFAULT_WALLET: &str = "0000000000000000000000000000000000000000000000000000000000000001";
@@ -167,9 +167,16 @@ async fn setup() -> Result<()> {
         };
 
     if ready {
-        metrics_sender
-            .send(MetricsMessage::ChangeController(controller.clone()))
-            .unwrap();
+        // here use a sleep time to waiting api started.
+        let init_controller = controller.clone();
+        let init_metrics_sender = metrics_sender.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(10)).await;
+            init_metrics_sender
+                .send(MetricsMessage::ChangeController(init_controller))
+                .unwrap();
+        });
+
         p2p_sender
             .send(P2pMessage::ChangeController(sk_bytes))
             .unwrap();
