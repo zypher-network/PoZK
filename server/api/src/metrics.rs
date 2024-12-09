@@ -160,15 +160,12 @@ impl MetricsService {
             "signature": signature,
         });
 
-        info!("Report miner info to: {}", self.metrics);
-
-        let res = self
+        let _res = self
             .client
             .post(format!("{}/miners", self.metrics))
             .json(&data)
             .send()
             .await?;
-        info!("Report res: {:?}", res);
 
         Ok(())
     }
