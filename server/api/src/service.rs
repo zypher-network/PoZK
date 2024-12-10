@@ -181,6 +181,8 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 if now <= over_at {
                     write_task_proof(&sid, proof).await?;
                 }
+                // remove task input
+                let _ = remove_task_input(&sid).await;
                 return Ok(());
             }
 
