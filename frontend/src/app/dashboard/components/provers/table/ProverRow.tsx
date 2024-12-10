@@ -32,11 +32,11 @@ interface IProverRow {
   prover: Address;
   version: string;
   overtime: string;
-  checkUrl: boolean;
+  ptype: number;
   needUpgrade?: boolean;
 }
 
-const ProverRow: React.FC<IProverRow> = ({ running = false, stop, name, created, prover, version, overtime, checkUrl, needUpgrade = false }) => {
+const ProverRow: React.FC<IProverRow> = ({ running = false, stop, name, created, prover, version, overtime, ptype, needUpgrade = false }) => {
   const { setStakeItemHandler } = usePostStake();
   const minStake = useBalanceStore(state => state.minStake);
   const { address } = useAccount();
@@ -103,7 +103,7 @@ const ProverRow: React.FC<IProverRow> = ({ running = false, stop, name, created,
             image={prover}
             tag={version}
             overtime={overtime}
-            checkUrl={checkUrl}
+            ptype={ptype}
             needUpgrade={needUpgrade}
           />
         )}

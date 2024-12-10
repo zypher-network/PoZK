@@ -8,6 +8,12 @@ enum ProverStatus {
     Stopped
 }
 
+enum ProverType {
+    ZK,
+    Z4,
+    ZKVM
+}
+
 interface IProver {
     function isProver(address prover) external view returns (bool);
 

@@ -42,6 +42,12 @@
       },
       {
         "indexed": false,
+        "internalType": "enum ProverType",
+        "name": "ptype",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "work",
         "type": "uint256"
@@ -75,12 +81,6 @@
         "internalType": "address",
         "name": "verifier",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "url",
-        "type": "bool"
       },
       {
         "indexed": false,
@@ -141,6 +141,12 @@
       },
       {
         "indexed": false,
+        "internalType": "enum ProverType",
+        "name": "ptype",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "work",
         "type": "uint256"
@@ -168,12 +174,6 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "url",
-        "type": "bool"
       }
     ],
     "name": "RegisterProver",
@@ -222,6 +222,12 @@
       },
       {
         "indexed": false,
+        "internalType": "enum ProverType",
+        "name": "ptype",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "work",
         "type": "uint256"
@@ -249,12 +255,6 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "url",
-        "type": "bool"
       }
     ],
     "name": "UpgradeProver",
@@ -398,6 +398,11 @@
         "type": "address"
       },
       {
+        "internalType": "enum ProverType",
+        "name": "_ptype",
+        "type": "uint8"
+      },
+      {
         "internalType": "uint256",
         "name": "_work",
         "type": "uint256"
@@ -416,11 +421,6 @@
         "internalType": "address",
         "name": "_verifier",
         "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "_checkUrl",
-        "type": "bool"
       }
     ],
     "name": "register",
@@ -526,6 +526,11 @@
         "type": "address"
       },
       {
+        "internalType": "enum ProverType",
+        "name": "_ptype",
+        "type": "uint8"
+      },
+      {
         "internalType": "uint256",
         "name": "_work",
         "type": "uint256"
@@ -544,11 +549,6 @@
         "internalType": "address",
         "name": "_verifier",
         "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "_checkUrl",
-        "type": "bool"
       }
     ],
     "name": "upgrade",

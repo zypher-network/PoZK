@@ -153,7 +153,7 @@ describe("Rewards", function () {
 
     it("Rewards with 2p:1m:1p", async function () {
       const [_, demo2_s] = await deployContract("DemoProver", []);
-      await prover.register(demo2_s, 10000, 1, 10, demo2_s, false);
+      await prover.register(demo2_s, 0, 10000, 1, 10, demo2_s);
       await prover.approve(demo2_s, true, true);
       await token.approve(stake_s, 200);
       await stake.minerStake(demo2_s, 100);
@@ -177,7 +177,7 @@ describe("Rewards", function () {
       const [_d, demo2_s] = await deployContract("DemoProver", []);
       const reward_s = await reward.getAddress();
 
-      await prover.register(demo2_s, 10000, 1, 10, demo2_s, false);
+      await prover.register(demo2_s, 0, 10000, 1, 10, demo2_s);
       await prover.approve(demo2_s, true, true);
       await token.approve(stake_s, 200);
       await stake.proverStake(demo2_s, 100);

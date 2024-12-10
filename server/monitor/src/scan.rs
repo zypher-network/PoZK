@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use ethers::prelude::*;
 use pozk_db::{ReDB, ScanBlock};
-use pozk_utils::{new_providers, DefaultProvider, ServiceMessage};
+use pozk_utils::{new_providers, DefaultProvider, ProverType, ServiceMessage};
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -59,6 +59,7 @@ struct AcceptTask {
 #[derive(Clone, Debug, EthEvent)]
 struct ApproveProver {
     prover: Address,
+    ptype: u8,
     work: U256,
     total: U256,
     epoch: U256,
@@ -283,12 +284,13 @@ impl Scan {
                     let ap = <ApproveProver as EthEvent>::decode_log(&log.into())?;
                     let version = ap.version.as_u64();
                     let overtime = ap.overtime.as_u64();
+                    let ptype = ProverType::from_byte(ap.ptype);
                     info!(
                         "[Scan] fetch new ApproveProver: {} - {}",
                         ap.prover, version
                     );
                     Ok(Some(ServiceMessage::ApproveProver(
-                        ap.prover, version, overtime, ap.url,
+                        ap.prover, version, overtime, ptype,
                     )))
                 }
                 EventType::StopProver => {

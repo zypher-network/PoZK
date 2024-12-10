@@ -1,4 +1,5 @@
 use ethers::types::Address;
+use pozk_utils::ProverType;
 use redb::TableDefinition;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +14,7 @@ pub struct Prover {
     pub image: String,
     pub name: String,
     pub overtime: u64,
-    pub url: bool,
+    pub ptype: ProverType,
     pub created: i64,
 }
 

@@ -107,7 +107,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
             let key = Prover::to_key(&prover);
             if let Some(p) = app.db.get::<Prover>(key)? {
                 // check url status
-                if p.url && !app.check_url {
+                if p.ptype.check_url() && !app.check_url {
                     return Ok(());
                 }
 
@@ -202,7 +202,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 app.pool_sender.clone(),
             ));
         }
-        ServiceMessage::ApproveProver(prover, version, overtime, url) => {
+        ServiceMessage::ApproveProver(prover, version, overtime, ptype) => {
             // 1. check prover in local
             let key = Prover::to_key(&prover);
             let new_tag = format!("v{}", version);
@@ -217,14 +217,14 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 p.image = image;
                 p.tag = new_tag;
                 p.overtime = overtime;
-                p.url = url;
+                p.ptype = ptype;
                 app.db.add(&p)?;
 
                 // 4. delete old image
                 app.docker.remove(&old_image).await?;
             }
         }
-        ServiceMessage::PullProver(prover, tag, name, overtime, url) => {
+        ServiceMessage::PullProver(prover, tag, name, overtime, ptype) => {
             // 1. pull docker image
             let repo = format!("{:?}", prover);
             let image = app.docker.pull(&repo, &tag).await?;
@@ -237,7 +237,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 image,
                 name,
                 overtime,
-                url,
+                ptype,
                 created,
             };
             app.db.add(&p)?;

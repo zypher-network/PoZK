@@ -10,7 +10,7 @@ export const GET_PROVERS = gql`
       name
       minable
       overtime
-      checkUrl
+      ptype
       id
       approved
     }

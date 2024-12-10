@@ -1,7 +1,7 @@
 use axum::extract::{Extension, Json, Path, Query};
 use ethers::prelude::Address;
 use pozk_db::Prover;
-use pozk_utils::ServiceMessage;
+use pozk_utils::{ProverType, ServiceMessage};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
@@ -27,7 +27,7 @@ pub struct CreateForm {
     tag: String,
     name: String,
     overtime: u64,
-    url: bool,
+    ptype: u8,
 }
 
 /// create & pull & running a prover
@@ -46,7 +46,7 @@ pub async fn create(
             form.tag,
             form.name,
             form.overtime,
-            form.url,
+            ProverType::from_byte(form.ptype),
         ))
         .expect("Service sender invalid");
 

@@ -1,19 +1,21 @@
 use ethers::prelude::{Address, LocalWallet};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
+use crate::networks::ProverType;
+
 pub enum ServiceMessage {
     /// tid, prover, inputs, publics
     CreateTask(u64, Address, Vec<u8>, Vec<u8>),
     /// tid, overtime, is_me
     AcceptTask(u64, i64, bool),
-    /// prover, version, overtime, need url
-    ApproveProver(Address, u64, u64, bool),
+    /// prover, version, overtime, prover type
+    ApproveProver(Address, u64, u64, ProverType),
     /// tid, proof
     UploadProof(String, Vec<u8>),
     /// controller wallet and sk bytes
     ChangeController(LocalWallet, Vec<u8>),
-    /// pull prover, tag, name and overtime, need url
-    PullProver(Address, String, String, u64, bool),
+    /// pull prover, tag, name and overtime, prover type
+    PullProver(Address, String, String, u64, ProverType),
     /// remove prover
     RemoveProver(Address),
     /// test id, prover, overtime, inputs, publics

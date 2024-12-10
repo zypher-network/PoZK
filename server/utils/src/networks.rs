@@ -7,6 +7,7 @@ use ethers::{
         eip712::{EIP712Domain, Eip712DomainType, TypedData},
     },
 };
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -40,6 +41,39 @@ abigen!(Controller, "public/ABI/Controller.json");
 
 // Zytron standard AA wallet for zero gas
 abigen!(AAWallet, "public/others/Wallet.json");
+
+/// Prover type
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+pub enum ProverType {
+    ZK,
+    Z4,
+    ZKVM,
+}
+
+impl ProverType {
+    pub fn to_byte(&self) -> u8 {
+        match self {
+            ProverType::ZK => 0u8,
+            ProverType::Z4 => 1u8,
+            ProverType::ZKVM => 2u8,
+        }
+    }
+
+    pub fn from_byte(b: u8) -> Self {
+        match b {
+            1u8 => ProverType::Z4,
+            2u8 => ProverType::ZKVM,
+            _ => ProverType::ZK,
+        }
+    }
+
+    pub fn check_url(&self) -> bool {
+        match self {
+            ProverType::Z4 => true,
+            _ => false,
+        }
+    }
+}
 
 const NETWORKS_ADDRESS: &str = include_str!("../public/networks.json");
 

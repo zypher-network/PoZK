@@ -58,7 +58,7 @@ async function upgrade() {
   // await upgradeContractWithProxy("Task");
 
   // await redeploy("Stake", 3, [1000n * ONE_TOKEN]);
-  // await redeploy("Prover", 5, []);
+  await redeploy("Prover", 5, []);
   // await redeploy("Task", 6, [100n * ONE_TOKEN]);
 }
 

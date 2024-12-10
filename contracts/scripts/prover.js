@@ -36,8 +36,8 @@ async function registerProver() {
   const [c, _c] = await attachContract("Prover");
   const [e, _e] = await attachContract("Epoch");
   console.log("Starting register prover");
-  await c.register(myProver, WORK, 1, 20, myVerifier, false);
-  // await c.upgrade(myProver, WORK, 1, 20, myVerifier, false);
+  await c.register(myProver, 0, WORK, 1, 20, myVerifier);
+  // await c.upgrade(myProver, 0, WORK, 1, 20, myVerifier);
   console.log("Waiting approve prover");
   await sleep();
   await c.approve(myProver, true, true);

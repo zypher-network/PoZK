@@ -38,6 +38,8 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     struct GameProver {
         /// @notice Prover status, include: Reviewing, Working, Upgrading, Stopped
         ProverStatus status;
+        /// @notice Prover type, include: ZK, Z4, ZKVM
+        ProverType ptype;
         /// @notice The prover owner account
         address owner;
         /// @notice Current & future work status
@@ -48,8 +50,6 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         ProverWork overtime;
         /// @notice Current & future verifier
         ProverVerifier verifier;
-        /// @notice The prover need URL or not
-        bool checkUrl;
         /// @notice The prover is minable, control by prover DAO
         bool minable;
     }
@@ -64,16 +64,16 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     mapping(address => GameProver) private provers;
 
     /// @notice Emit when new prover register and waiting reviewing
-    event RegisterProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier, string name, bool url);
+    event RegisterProver(address prover, ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name);
 
     /// @notice Emit when prover owner transfer to others
     event TransferProver(address prover, address owner);
 
     /// @notice Emit when the prover start upgrading and waiting reviewing, before approve, it will still use old info
-    event UpgradeProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier, string name, bool url);
+    event UpgradeProver(address prover, ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name);
 
     /// @notice Emit when the prover is approved or reject
-    event ApproveProver(address prover, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool url, bool minable, bool approved);
+    event ApproveProver(address prover, ProverType ptype, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved);
 
     /// @notice Emit when the prover is stopped
     event StopProver(address prover);
@@ -93,27 +93,27 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
 
     /// @notice Register new prover to market, the sender is prover owner, and waiting review
     /// @param prover the prover contract(or not) address (unique identifier)
+    /// @param _ptype the prover type
     /// @param _work the prover pozk work, calculation based on zk scheme and circuit size
     /// @param _version the prover prover version
     /// @param _overtime the limit time when doing zkp, if overflow the time, others miner can accept the task again
     /// @param _verifier the verifier contract, uses the IVerifier interface
-    /// @param _checkUrl if prover need miner has URL or not
-    function register(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier, bool _checkUrl) external {
+    function register(address prover, ProverType _ptype, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
         require(provers[prover].version.value == 0 && _version > 0, "G01");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
         string memory name = IVerifier(_verifier).name();
 
         GameProver storage g = provers[prover];
         g.status = ProverStatus.Reviewing;
+        g.ptype = _ptype;
         g.owner = msg.sender;
         g.work = ProverWork(0, _work, 0);
         g.version = ProverWork(_version, _version, 0);
         g.overtime = ProverWork(_overtime, _overtime, 0);
         g.verifier = ProverVerifier(_verifier, _verifier, 0);
-        g.checkUrl = _checkUrl;
         g.minable = false;
 
-        emit RegisterProver(prover, _work, _version, _overtime, _verifier, name, _checkUrl);
+        emit RegisterProver(prover, _ptype, _work, _version, _overtime, _verifier, name);
         emit TransferProver(prover, msg.sender);
     }
 
@@ -129,12 +129,12 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
 
     /// @notice Prover owner can upgrade the prover to new verison and new info
     /// @param prover the prover
+    /// @param _ptype the prover type
     /// @param _work the prover next pozk work, calculation based on zk scheme and circuit size
     /// @param _version the prover next prover version
     /// @param _overtime the limit time when doing zkp, if overflow the time, others miner can accept the task again
     /// @param _verifier the next verifier contract, uses the IVerifier interface
-    /// @param _checkUrl if prover need miner has URL or not
-    function upgrade(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier, bool _checkUrl) external {
+    function upgrade(address prover, ProverType _ptype, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
         require(provers[prover].owner == msg.sender, "G02");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
         string memory name = IVerifier(_verifier).name();
@@ -175,9 +175,9 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         }
         g.verifier.newValue = _verifier;
         g.verifier.newEpoch = type(uint256).max;
-        g.checkUrl = _checkUrl;
+        g.ptype = _ptype;
 
-        emit UpgradeProver(prover, _work, _version, _overtime, _verifier, name, _checkUrl);
+        emit UpgradeProver(prover, _ptype, _work, _version, _overtime, _verifier, name);
     }
 
     /// @notice Prover owner can transfer ownership to others
@@ -239,7 +239,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
             g.verifier.newValue = g.verifier.value;
         }
 
-        emit ApproveProver(prover, g.work.newValue, proversTotalWork.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, g.checkUrl, minable, approved);
+        emit ApproveProver(prover, g.ptype, g.work.newValue, proversTotalWork.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, minable, approved);
     }
 
     /// @notice DAO can stop a prover
@@ -339,7 +339,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @param url the url string
     /// @return the result
     function checkUrl(address prover, string memory url) external view returns (bool) {
-        if (!provers[prover].checkUrl) {
+        if (provers[prover].ptype != ProverType.Z4) {
             return true;
         }
 
