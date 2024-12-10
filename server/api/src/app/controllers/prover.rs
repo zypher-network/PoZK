@@ -85,3 +85,29 @@ pub async fn delete(
 
     Ok(success())
 }
+
+pub async fn repair(Extension(app): Extension<AppContext>) -> Result<Json<Value>> {
+    let count = app.db.count::<Prover>()?;
+    let (data, total) = app.db.list::<Prover>(0, count)?;
+    let images = app.docker.list().await?;
+
+    // check docker image exists
+    let mut list = vec![];
+    for mut p in data {
+        if images.contains_key(&p.image) {
+            list.push(p);
+            continue;
+        }
+        let repo = format!("{:?}", p.prover);
+        let image = app.docker.pull(&repo, &p.tag).await?;
+
+        p.image = image;
+        app.db.add(&p)?;
+        list.push(p);
+    }
+
+    Ok(Json(json!({
+        "data": list,
+        "total": total,
+    })))
+}

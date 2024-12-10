@@ -110,4 +110,10 @@ impl ReDB {
 
         Ok((items, total))
     }
+
+    pub fn count<T: KvTable>(&self) -> Result<usize> {
+        let txn = self.db.begin_read()?;
+        let table = txn.open_table(T::table())?;
+        Ok(table.len()? as usize)
+    }
 }

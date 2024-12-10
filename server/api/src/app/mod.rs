@@ -112,6 +112,7 @@ impl App {
                 .route("/orders", post(task::create))
                 .route("/orders/:id", post(task::track))
                 .route("/connect/:id", get(connect::player))
+                .route("/repair", post(prover::repair))
                 .nest(
                     "/inner",
                     Router::new()
