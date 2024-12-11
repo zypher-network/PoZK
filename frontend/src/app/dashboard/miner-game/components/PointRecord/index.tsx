@@ -1,7 +1,9 @@
-import React, { Fragment } from 'react'
+import React, { Fragment, useMemo } from 'react'
+import BigNumberJs, { BM18 } from '@/lib/BigNumberJs';
 import dayjs from "dayjs";
 
 import NoData from '@/components/icon/no-data.svg';
+import useSubgraphStore from '@/components/state/subgraphStore';
 
 import './index.css';
 
@@ -13,6 +15,24 @@ const tmpData = new Array(14).fill('').map(() => ({
 }));
 
 const PointRecord: React.FC<IPointRecord> = (props) => {
+  const subgraphData = useSubgraphStore();
+
+  const record = useMemo(() => {
+    if (!subgraphData.reward.data) return [];
+    const provers = subgraphData.provers.data
+      .filter(prover => prover.name.toLowerCase().includes('competition'))
+      .map(prover => prover.name.toLowerCase());
+    const epochDate = subgraphData.epoches.data.reduce((prev, curr) => {
+      prev[curr.id] = dayjs(+curr.startAt * 1000).format('MMM DD.YYYY');
+      return prev;
+    }, {} as Record<string, string>);
+    return subgraphData.reward.data.claimList
+      .filter(claim => provers.includes(claim.prover.toLowerCase()))
+      .map(claim => ({
+        points: new BigNumberJs(claim.estimate ?? claim.claim).div(BM18).toFormat(),
+        date: epochDate[claim.epoch],
+      }))
+  }, [subgraphData]);
   return (
     <div className="h-[560px] flex flex-col gap-0 flex-grow flex-shrink bg-[#11182B] border-[#2E3751] rounded-[20px] border">
       <div className="px-6 pt-6">
@@ -29,14 +49,14 @@ const PointRecord: React.FC<IPointRecord> = (props) => {
             <div className="opacity-50 text-xl leading-normal">No Data</div>
           </div>
         </div>
-        {/* <Fragment>
-        {tmpData.map((data, idx) => (
+        <Fragment>
+        {record.map((data, idx) => (
           <div key={idx} className="h-16 w-ful bg-[#0A1223] rounded-[10px] p-5 font-light flex justify-between items-center text-lg leading-5">
-            <div>{dayjs(data.date).format('MMM DD.YYYY HH:mm:ss')}</div>
+            <div>{data.date}</div>
             <div className="text-[#FACC16]">{data.points}</div>
           </div>
         ))}
-        </Fragment> */}
+        </Fragment>
        </div>
       </div>
     </div>
