@@ -6,7 +6,8 @@ use pozk_db::{MainController, Prover, Task};
 use pozk_docker::{DockerManager, RunOption};
 use pozk_monitor::PoolMessage;
 use pozk_utils::{
-    is_valid_url, remove_task_input, write_task_input, write_task_proof, ServiceMessage,
+    is_valid_url, is_valid_zkvm, remove_task_input, write_task_input, write_task_proof,
+    ServiceMessage,
 };
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::Arc;
@@ -35,6 +36,7 @@ pub struct MainService {
     docker: Arc<DockerManager>,
     url: String,
     check_url: bool,
+    zkvm: Option<String>,
     task_parallel: usize,
     /// task from API and not limit by parallel
     task_proxy: HashMap<String, i64>,
@@ -56,6 +58,7 @@ impl MainService {
         docker: Arc<DockerManager>,
         task_parallel: usize,
         url: String,
+        zkvm: Option<String>,
     ) -> Self {
         let check_url = is_valid_url(&url, true);
         if check_url {
@@ -72,6 +75,7 @@ impl MainService {
             docker,
             url,
             check_url,
+            zkvm,
             task_parallel,
             task_proxy: HashMap::new(),
             task_onchain: BTreeMap::new(),
@@ -111,6 +115,17 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                     return Ok(());
                 }
 
+                // check zkvm status
+                if p.ptype.is_zkvm() {
+                    if let Some(zkvm) = &app.zkvm {
+                        if !is_valid_zkvm(zkvm).await {
+                            return Ok(());
+                        }
+                    } else {
+                        return Ok(());
+                    }
+                }
+
                 // 2. insert to waiting list
                 app.task_onchain.insert(
                     tid,
@@ -146,6 +161,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
 
             // 1. save task to db
             let sid = tid.to_string();
+            let zkvm = app.zkvm.as_ref().map(|v| v.as_str()).unwrap_or("");
 
             // 2. write data to file
             write_task_input(&sid, task.inputs, task.publics).await?;
@@ -153,7 +169,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
             // 3. start docker container to run, TODO we can do more about cpu & memory
             let container = app
                 .docker
-                .run(&task.image, &sid, RunOption::default())
+                .run(&task.image, &sid, zkvm, overtime, RunOption::default())
                 .await?;
 
             // 4. save task to db
@@ -278,12 +294,16 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
             let key = Prover::to_key(&prover);
             if let Some(p) = app.db.get::<Prover>(key)? {
                 let sid = format!("m-{}-{}", id, overtime);
+                let zkvm = app.zkvm.as_ref().map(|v| v.as_str()).unwrap_or("");
 
                 // 2. write data to file
                 write_task_input(&sid, inputs, publics).await?;
 
                 // 3. start docker container to run, TODO we can do more about cpu & memory
-                let _container = app.docker.run(&p.image, &sid, RunOption::default()).await?;
+                let _container = app
+                    .docker
+                    .run(&p.image, &sid, zkvm, overtime, RunOption::default())
+                    .await?;
 
                 app.task_working
                     .insert(sid, (0, Utc::now().timestamp(), overtime));

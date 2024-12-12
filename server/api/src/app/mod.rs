@@ -46,6 +46,7 @@ pub struct App {
     secret: [u8; 32],
     task: Task<DefaultProvider>,
     url: String,
+    zkvm: Option<String>,
 }
 
 impl App {
@@ -58,6 +59,7 @@ impl App {
         network: &str,
         endpoints: String,
         url: String,
+        zkvm: Option<String>,
     ) -> anyhow::Result<Self> {
         let miner: Address = cfg.miner.parse()?;
         let port = cfg.http_port;
@@ -93,6 +95,7 @@ impl App {
             secret,
             task,
             url,
+            zkvm,
         })
     }
 
