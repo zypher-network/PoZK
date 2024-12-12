@@ -70,7 +70,7 @@ export const SubgraphUrls: Record<ChainId, string> = {
 }
 
 export const ZeroGasUrls: Record<ChainId, string> = {
-  [ChainId.TESTNET]: "https://gas-testnet.zypher.dev",
+  [ChainId.TESTNET]: "https://gas-testnet.zypher.network",
   [ChainId.MAINNET]: "https://gas.zypher.network",
   [ChainId.L2TESTNET]: "https://gas.zypher.dev",
 }
