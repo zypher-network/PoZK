@@ -73,6 +73,13 @@ impl ProverType {
             _ => false,
         }
     }
+
+    pub fn is_zkvm(&self) -> bool {
+        match self {
+            ProverType::ZKVM => true,
+            _ => false,
+        }
+    }
 }
 
 const NETWORKS_ADDRESS: &str = include_str!("../public/networks.json");

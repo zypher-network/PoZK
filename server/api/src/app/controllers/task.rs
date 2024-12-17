@@ -58,13 +58,18 @@ pub async fn create(Extension(app): Extension<AppContext>, body: Bytes) -> Resul
     // 2. write data to file
     let code = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let sid = format!("p-{}", code);
+    let zkvm = app.zkvm.as_ref().map(|v| v.as_str()).unwrap_or("");
+    let over_at = Utc::now().timestamp() + p.overtime as i64;
+
     write_task_input(&sid, task.inputs, task.publics).await?;
 
     // 3. start docker container to run, TODO we can do more about cpu & memory
-    let _container = app.docker.run(&p.image, &sid, RunOption::default()).await?;
+    let _container = app
+        .docker
+        .run(&p.image, &sid, zkvm, over_at, RunOption::default())
+        .await?;
 
     // 4. create one time channel to services
-    let over_at = Utc::now().timestamp() + p.overtime as i64;
     if app
         .sender
         .send(ServiceMessage::ApiTask(sid.clone(), over_at))

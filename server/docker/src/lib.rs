@@ -87,9 +87,18 @@ impl DockerManager {
     }
 
     /// start a container to run the zkp
-    pub async fn run(&self, image: &str, tid: &str, roption: RunOption) -> Result<String> {
+    pub async fn run(
+        &self,
+        image: &str,
+        tid: &str,
+        zkvm: &str,
+        overtime: i64,
+        roption: RunOption,
+    ) -> Result<String> {
         let name = format!("{}-{}", image, tid);
         let input_env = format!("INPUT={}", get_task_api(tid));
+        let zkvm_env = format!("ZKVM={}", zkvm);
+        let overtime_env = format!("OVERTIME={}", overtime);
 
         // create op
         let create_op = CreateContainerOptions {
@@ -99,7 +108,7 @@ impl DockerManager {
 
         let config = Config {
             image: Some(image),
-            env: Some(vec![&input_env]),
+            env: Some(vec![&input_env, &zkvm_env, &overtime_env]),
             host_config: Some(HostConfig {
                 auto_remove: Some(true),
                 memory: roption.memory,

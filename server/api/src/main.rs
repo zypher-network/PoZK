@@ -68,6 +68,10 @@ struct Command {
     /// Config file for advance features
     #[arg(short, long)]
     config: Option<String>,
+
+    /// ZKVM proxy service urL, e.g. http://127.0.0.1:9099
+    #[arg(short = 'k', long)]
+    zkvm: Option<String>,
 }
 
 #[derive(Args, Debug, Deserialize, Default)]
@@ -103,6 +107,7 @@ async fn setup() -> Result<()> {
     // check params
     let endpoints = args.endpoints.unwrap_or(pozk_rpc_url(&args.network)?);
     let zero_gas = args.zero_gas.unwrap_or(pozk_zero_gas_url(&args.network)?);
+    let zkvm = args.zkvm.map(|v| v.trim_end_matches("/").to_owned());
 
     // update contract address
     co.monitor_config.network = args.network.clone();
@@ -202,6 +207,7 @@ async fn setup() -> Result<()> {
         &args.network,
         endpoints,
         args.url.clone(),
+        zkvm.clone(),
     )?
     .run();
 
@@ -214,7 +220,8 @@ async fn setup() -> Result<()> {
         db,
         docker,
         parallel,
-        args.url.clone(),
+        args.url,
+        zkvm,
     )
     .run(service_sender);
 

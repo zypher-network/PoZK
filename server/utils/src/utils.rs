@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use once_cell::sync::OnceCell;
+use serde::Deserialize;
 use std::path::PathBuf;
 use tokio::fs;
 
@@ -125,6 +126,21 @@ pub fn is_valid_url(url: &str, https: bool) -> bool {
 
     let url_regex = regex::Regex::new(rule).unwrap(); // safe
     url_regex.is_match(url)
+}
+
+#[derive(Deserialize)]
+struct ZkvmHealth {
+    zkvms: Vec<String>,
+}
+
+pub async fn is_valid_zkvm(url: &str) -> bool {
+    match reqwest::get(format!("{url}/health")).await {
+        Ok(v) => match v.json::<ZkvmHealth>().await {
+            Ok(s) => !s.zkvms.is_empty(),
+            Err(_) => false,
+        },
+        Err(_) => false,
+    }
 }
 
 #[cfg(test)]
