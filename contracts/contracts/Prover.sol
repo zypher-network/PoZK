@@ -50,6 +50,8 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         ProverWork overtime;
         /// @notice Current & future verifier
         ProverVerifier verifier;
+        /// @notice Current supported types
+        string types;
         /// @notice The prover is minable, control by prover DAO
         bool minable;
     }
@@ -64,16 +66,16 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     mapping(address => GameProver) private provers;
 
     /// @notice Emit when new prover register and waiting reviewing
-    event RegisterProver(address prover, ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name);
+    event RegisterProver(address prover, ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name, string types);
 
     /// @notice Emit when prover owner transfer to others
     event TransferProver(address prover, address owner);
 
     /// @notice Emit when the prover start upgrading and waiting reviewing, before approve, it will still use old info
-    event UpgradeProver(address prover, ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name);
+    event UpgradeProver(address prover, ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name, string types);
 
     /// @notice Emit when the prover is approved or reject
-    event ApproveProver(address prover, ProverType ptype, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved);
+    event ApproveProver(address prover, ProverType ptype, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, string types, bool minable, bool approved);
 
     /// @notice Emit when the prover is stopped
     event StopProver(address prover);
@@ -101,7 +103,9 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     function register(address prover, ProverType _ptype, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
         require(provers[prover].version.value == 0 && _version > 0, "G01");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
-        string memory name = IVerifier(_verifier).name();
+        IVerifier pVerifier = IVerifier(_verifier);
+        string memory name = pVerifier.name();
+        string memory types = pVerifier.types();
 
         GameProver storage g = provers[prover];
         g.status = ProverStatus.Reviewing;
@@ -111,9 +115,10 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         g.version = ProverWork(_version, _version, 0);
         g.overtime = ProverWork(_overtime, _overtime, 0);
         g.verifier = ProverVerifier(_verifier, _verifier, 0);
+        g.types = types;
         g.minable = false;
 
-        emit RegisterProver(prover, _ptype, _work, _version, _overtime, _verifier, name);
+        emit RegisterProver(prover, _ptype, _work, _version, _overtime, _verifier, name, types);
         emit TransferProver(prover, msg.sender);
     }
 
@@ -137,7 +142,9 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     function upgrade(address prover, ProverType _ptype, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external {
         require(provers[prover].owner == msg.sender, "G02");
         require(_verifier.supportsInterface(type(IVerifier).interfaceId), "G04");
-        string memory name = IVerifier(_verifier).name();
+        IVerifier pVerifier = IVerifier(_verifier);
+        string memory name = pVerifier.name();
+        string memory types = pVerifier.types();
 
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
@@ -176,8 +183,9 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
         g.verifier.newValue = _verifier;
         g.verifier.newEpoch = type(uint256).max;
         g.ptype = _ptype;
+        g.types = types;
 
-        emit UpgradeProver(prover, _ptype, _work, _version, _overtime, _verifier, name);
+        emit UpgradeProver(prover, _ptype, _work, _version, _overtime, _verifier, name, types);
     }
 
     /// @notice Prover owner can transfer ownership to others
@@ -239,7 +247,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
             g.verifier.newValue = g.verifier.value;
         }
 
-        emit ApproveProver(prover, g.ptype, g.work.newValue, proversTotalWork.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, minable, approved);
+        emit ApproveProver(prover, g.ptype, g.work.newValue, proversTotalWork.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, g.types, minable, approved);
     }
 
     /// @notice DAO can stop a prover
@@ -339,7 +347,8 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @param url the url string
     /// @return the result
     function checkUrl(address prover, string memory url) external view returns (bool) {
-        if (provers[prover].ptype != ProverType.Z4) {
+        ProverType ptype = provers[prover].ptype;
+        if (ptype == ProverType.ZK || ptype == ProverType.ZK_VM) {
             return true;
         }
 

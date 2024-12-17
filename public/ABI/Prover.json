@@ -84,6 +84,12 @@
       },
       {
         "indexed": false,
+        "internalType": "string",
+        "name": "types",
+        "type": "string"
+      },
+      {
+        "indexed": false,
         "internalType": "bool",
         "name": "minable",
         "type": "bool"
@@ -174,6 +180,12 @@
         "internalType": "string",
         "name": "name",
         "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "types",
+        "type": "string"
       }
     ],
     "name": "RegisterProver",
@@ -254,6 +266,12 @@
         "indexed": false,
         "internalType": "string",
         "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "types",
         "type": "string"
       }
     ],

@@ -10,7 +10,7 @@ contract DemoProver is ERC165, IVerifier {
         return interfaceId == type(IVerifier).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function name() external view returns (string memory) {
+    function name() external pure returns (string memory) {
         return "Demo-Prover";
     }
 
@@ -28,5 +28,9 @@ contract DemoProver is ERC165, IVerifier {
 
     function publics() external pure returns (string memory) {
         return "uint256";
+    }
+
+    function types() external pure returns (string memory) {
+        return "zk";
     }
 }

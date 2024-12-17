@@ -118,7 +118,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 // check zkvm status
                 if p.ptype.is_zkvm() {
                     if let Some(zkvm) = &app.zkvm {
-                        if !is_valid_zkvm(zkvm).await {
+                        if !is_valid_zkvm(zkvm, &p.types).await {
                             return Ok(());
                         }
                     } else {
@@ -220,7 +220,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 app.pool_sender.clone(),
             ));
         }
-        ServiceMessage::ApproveProver(prover, version, overtime, ptype) => {
+        ServiceMessage::ApproveProver(prover, version, overtime, ptype, types) => {
             // 1. check prover in local
             let key = Prover::to_key(&prover);
             let new_tag = format!("v{}", version);
@@ -236,13 +236,14 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 p.tag = new_tag;
                 p.overtime = overtime;
                 p.ptype = ptype;
+                p.types = types;
                 app.db.add(&p)?;
 
                 // 4. delete old image
                 app.docker.remove(&old_image).await?;
             }
         }
-        ServiceMessage::PullProver(prover, tag, name, overtime, ptype) => {
+        ServiceMessage::PullProver(prover, tag, name, overtime, ptype, types) => {
             // 1. pull docker image
             let repo = format!("{:?}", prover);
             let image = app.docker.pull(&repo, &tag).await?;
@@ -256,6 +257,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
                 name,
                 overtime,
                 ptype,
+                types,
                 created,
             };
             app.db.add(&p)?;

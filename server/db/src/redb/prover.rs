@@ -15,6 +15,7 @@ pub struct Prover {
     pub name: String,
     pub overtime: u64,
     pub ptype: ProverType,
+    pub types: String,
     pub created: i64,
 }
 

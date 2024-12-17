@@ -28,6 +28,7 @@ pub struct CreateForm {
     name: String,
     overtime: u64,
     ptype: u8,
+    types: String,
 }
 
 /// create & pull & running a prover
@@ -47,6 +48,7 @@ pub async fn create(
             form.name,
             form.overtime,
             ProverType::from_byte(form.ptype),
+            form.types,
         ))
         .expect("Service sender invalid");
 

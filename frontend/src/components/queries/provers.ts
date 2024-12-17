@@ -11,6 +11,7 @@ export const GET_PROVERS = gql`
       minable
       overtime
       ptype
+      types
       id
       approved
     }

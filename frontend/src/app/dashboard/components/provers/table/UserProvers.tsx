@@ -70,6 +70,7 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
                         created={container.created}
                         overtime={prover.overtime}
                         ptype={prover.ptype}
+                        types={prover.types}
                         version={prover.version}
                         needUpgrade={container.needUpgrade}
                       />
@@ -82,6 +83,7 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
                       created={''}
                       overtime={prover.overtime}
                       ptype={prover.ptype}
+                      types={prover.types}
                       version={prover.version}
                     />
                 ))}

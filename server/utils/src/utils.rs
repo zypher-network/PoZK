@@ -133,10 +133,18 @@ struct ZkvmHealth {
     zkvms: Vec<String>,
 }
 
-pub async fn is_valid_zkvm(url: &str) -> bool {
+pub async fn is_valid_zkvm(url: &str, types: &str) -> bool {
     match reqwest::get(format!("{url}/health")).await {
         Ok(v) => match v.json::<ZkvmHealth>().await {
-            Ok(s) => !s.zkvms.is_empty(),
+            Ok(s) => {
+                for t in types.split(",").map(|v| v.to_lowercase()) {
+                    if s.zkvms.contains(&t) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
             Err(_) => false,
         },
         Err(_) => false,

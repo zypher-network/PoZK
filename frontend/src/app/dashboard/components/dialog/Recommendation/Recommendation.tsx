@@ -17,7 +17,7 @@ import { useAccount } from "wagmi";
 import sleep from "@/lib/sleep";
 import Loading from '@/components/icon/loading.svg';
 
-const Recommendation = ({ image, tag, name, overtime, ptype, needUpgrade }: { image: Address; tag: string, name: string, overtime: string, ptype: number, needUpgrade: boolean }) => {
+const Recommendation = ({ image, tag, name, overtime, ptype, types, needUpgrade }: { image: Address; tag: string, name: string, overtime: string, ptype: number, types: string, needUpgrade: boolean }) => {
   const [open, setOpen] = useState(false);
   const { address } = useAccount();
   const FailedRoute = useFailedRoute();
@@ -27,7 +27,7 @@ const Recommendation = ({ image, tag, name, overtime, ptype, needUpgrade }: { im
   const download = useCallback(async () => {
     setLoading(true);
     try {
-      await pozk.pullProve(image, tag, name, overtime, ptype);
+      await pozk.pullProve(image, tag, name, overtime, ptype, types);
       let isDownloadCompleted = false;
       while (!isDownloadCompleted) {
         const containers = await pozk.getProverContainers(1);

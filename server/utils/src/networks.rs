@@ -43,40 +43,47 @@ abigen!(Controller, "public/ABI/Controller.json");
 abigen!(AAWallet, "public/others/Wallet.json");
 
 /// Prover type
+#[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub enum ProverType {
     ZK,
+    ZK_VM,
     Z4,
-    ZKVM,
+    AI_MODEL,
+    AI_AGENT,
 }
 
 impl ProverType {
     pub fn to_byte(&self) -> u8 {
         match self {
             ProverType::ZK => 0u8,
-            ProverType::Z4 => 1u8,
-            ProverType::ZKVM => 2u8,
+            ProverType::ZK_VM => 1u8,
+            ProverType::Z4 => 2u8,
+            ProverType::AI_MODEL => 3u8,
+            ProverType::AI_AGENT => 4u8,
         }
     }
 
     pub fn from_byte(b: u8) -> Self {
         match b {
-            1u8 => ProverType::Z4,
-            2u8 => ProverType::ZKVM,
+            1u8 => ProverType::ZK_VM,
+            2u8 => ProverType::Z4,
+            3u8 => ProverType::AI_MODEL,
+            4u8 => ProverType::AI_AGENT,
             _ => ProverType::ZK,
         }
     }
 
     pub fn check_url(&self) -> bool {
         match self {
-            ProverType::Z4 => true,
-            _ => false,
+            ProverType::ZK | ProverType::ZK_VM => false,
+            _ => true,
         }
     }
 
     pub fn is_zkvm(&self) -> bool {
         match self {
-            ProverType::ZKVM => true,
+            ProverType::ZK_VM => true,
             _ => false,
         }
     }
