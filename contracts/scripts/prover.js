@@ -16,12 +16,12 @@ const WORK = 10000;
 
 // Shuffle20
 // const myProver = "0x0eaca2011742c5156f217f1b1d0784fe5fbf2428";
-// const myVerifier = "0x33682F75895E986546A09D60F7ef5Ee6a53383d8";
+// const myVerifier = "0xb87Aa728E0D9369135Fe1f742315D8B367f5B480";
 // const WORK = 5000;
 
 // Shuffle52
 // const myProver = "0xa6b720ee1f8975551a94f2d6bea74978aff60343";
-// const myVerifier = "0xCFB2AC0013d3bDD186A21BABf8c170b5b560e58d";
+// const myVerifier = "0xE68A935239DB25DB8c3f451A8254fb326Ce43BB4";
 // const WORK = 10000;
 
 // Competition 1 & 2
