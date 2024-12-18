@@ -9,7 +9,8 @@ enum Contracts {
     Reward,
     Prover,
     Task,
-    Controller
+    Controller,
+    Agent
 }
 
 interface IAddresses {

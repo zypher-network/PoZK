@@ -135,6 +135,8 @@ impl App {
                         )
                         .route("/provers", get(prover::index).post(prover::create))
                         .route("/provers/:prover", get(prover::show).delete(prover::delete))
+                        .route("/agents", get(agent::index))
+                        .route("/agents/:id", get(agent::log).post(agent::run))
                         .route_layer(from_extractor::<Auth>()),
                 )
                 .route("/", get(auth::webapp))

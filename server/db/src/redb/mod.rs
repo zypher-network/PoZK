@@ -2,10 +2,12 @@ mod controller;
 mod prover;
 mod scan;
 mod task;
+mod agent;
 pub use controller::{Controller, MainController};
 pub use prover::Prover;
 pub use scan::ScanBlock;
 pub use task::Task;
+pub use agent::Agent;
 
 use anyhow::{anyhow, Result};
 use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};

@@ -348,7 +348,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @return the result
     function checkUrl(address prover, string memory url) external view returns (bool) {
         ProverType ptype = provers[prover].ptype;
-        if (ptype == ProverType.ZK || ptype == ProverType.ZK_VM) {
+        if (ptype == ProverType.TASK_ZK || ptype == ProverType.TASK_ZKVM || ptype == ProverType.TASK_AI) {
             return true;
         }
 

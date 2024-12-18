@@ -11,3 +11,7 @@ enum TaskStatus {
 interface ITask {
     function create(address prover, address player, uint256 fee, bytes calldata data, bytes calldata publics) external returns(uint256);
 }
+
+interface IAgent {
+    function create(address prover, address player, uint256 fee, uint256 capacity, uint256 endtime) external returns(uint256);
+}

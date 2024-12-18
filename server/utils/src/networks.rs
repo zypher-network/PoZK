@@ -46,44 +46,44 @@ abigen!(AAWallet, "public/others/Wallet.json");
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub enum ProverType {
-    ZK,
-    ZK_VM,
-    Z4,
-    AI_MODEL,
-    AI_AGENT,
+    TASK_ZK,
+    TASK_ZKVM,
+    TASK_Z4,
+    TASK_AI,
+    AGENT_AI,
 }
 
 impl ProverType {
     pub fn to_byte(&self) -> u8 {
         match self {
-            ProverType::ZK => 0u8,
-            ProverType::ZK_VM => 1u8,
-            ProverType::Z4 => 2u8,
-            ProverType::AI_MODEL => 3u8,
-            ProverType::AI_AGENT => 4u8,
+            ProverType::TASK_ZK => 0u8,
+            ProverType::TASK_ZKVM => 1u8,
+            ProverType::TASK_Z4 => 2u8,
+            ProverType::TASK_AI => 3u8,
+            ProverType::AGENT_AI => 4u8,
         }
     }
 
     pub fn from_byte(b: u8) -> Self {
         match b {
-            1u8 => ProverType::ZK_VM,
-            2u8 => ProverType::Z4,
-            3u8 => ProverType::AI_MODEL,
-            4u8 => ProverType::AI_AGENT,
-            _ => ProverType::ZK,
+            1u8 => ProverType::TASK_ZKVM,
+            2u8 => ProverType::TASK_Z4,
+            3u8 => ProverType::TASK_AI,
+            4u8 => ProverType::AGENT_AI,
+            _ => ProverType::TASK_ZK,
         }
     }
 
     pub fn check_url(&self) -> bool {
         match self {
-            ProverType::ZK | ProverType::ZK_VM => false,
+            ProverType::TASK_ZK | ProverType::TASK_ZKVM | ProverType::TASK_AI => false,
             _ => true,
         }
     }
 
     pub fn is_zkvm(&self) -> bool {
         match self {
-            ProverType::ZK_VM => true,
+            ProverType::TASK_ZKVM => true,
             _ => false,
         }
     }

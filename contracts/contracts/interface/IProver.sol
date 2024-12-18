@@ -9,11 +9,11 @@ enum ProverStatus {
 }
 
 enum ProverType {
-    ZK,
-    ZK_VM,
-    Z4,
-    AI_MODEL,
-    AI_AGENT
+    TASK_ZK,
+    TASK_ZKVM,
+    TASK_Z4,
+    TASK_AI,
+    AGENT_AI
 }
 
 interface IProver {
