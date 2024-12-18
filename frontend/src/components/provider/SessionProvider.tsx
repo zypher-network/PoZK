@@ -45,14 +45,14 @@ const SessionProvider = ({ children }: { children: React.ReactNode }) => {
     SessionManager.deleteSession();
     setHasToken(false);
   }, []);
-  const loginOut = useCallback(async () => {
+  const loginOut = async () => {
     deleteToken();
     _setAccount('');
     setHasToken(false);
     await sleep(0.2);
     console.log('---- logout');
     pathname !== "/" && route.push("/");
-  }, [pathname]);
+  };
 
   return (
     <SessionContext.Provider

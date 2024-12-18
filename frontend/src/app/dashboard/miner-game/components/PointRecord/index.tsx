@@ -36,11 +36,11 @@ const PointRecord: React.FC<IPointRecord> = (props) => {
       }))
   }, [subgraphData]);
   return (
-    <div className="h-[560px] flex flex-col gap-0 bg-[#11182B] border-[#2E3751] rounded-[20px] border flex-grow-0 flex-shrink-0 basis-[500px]">
+    <div className="h-[560px] flex flex-col gap-0 bg-[#11182B] border-[#2E3751] rounded-[20px] border flex-grow-0 flex-shrink-0" style={{ minWidth: '500px' }}>
       <div className="px-6 pt-6">
         <div className="flex border-[#1F2D4E] border-b justify-between px-5 pb-3 opacity-70 font-light text-base">
-          <div className="flex-grow-0 flex-shrink-0 basis-[100px]">Date</div>
-          <div className="flex-1 text-left pl-2">Prover</div>
+          <div className="flex-grow-0 flex-shrink-0" style={{ minWidth: '100px' }}>Date</div>
+          <div className="flex-1 text-left px-2">Prover</div>
           <div>Points</div>
         </div>
       </div>
@@ -49,8 +49,8 @@ const PointRecord: React.FC<IPointRecord> = (props) => {
         {record.length ?
           record.map((data, idx) => (
             <div key={idx} className="h-16 w-ful bg-[#0A1223] rounded-[10px] p-5 font-light flex justify-between items-center text-lg leading-5">
-              <div className="flex-grow-0 flex-shrink-0 basis-[100px]">{data.date}</div>
-              <div className="text-[#FACC16] flex-1 text-left pl-2">{data.name}</div>
+              <div className="flex-grow-0 flex-shrink-0" style={{ minWidth: '100px' }}>{data.date}</div>
+              <div className="text-[#FACC16] flex-1 text-left px-2">{data.name}</div>
               <div className="text-[#FACC16]">{data.points}</div>
             </div>
           )) : (
