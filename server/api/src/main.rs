@@ -38,7 +38,7 @@ struct Command {
     miner: String,
 
     /// base path for pozk, e.g. /usr/pozk(default), /home/ubuntu/pozk
-    #[arg(short, long, default_value = "/usr/pozk")]
+    #[arg(short, long, default_value = "/Users/huangmingwei/pozk")]
     base_path: String,
 
     /// base server for pozk, e.g. http://pozk-miner:9098(default), http://localhost:9098
