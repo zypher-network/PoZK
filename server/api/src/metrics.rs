@@ -6,12 +6,12 @@ use pozk_docker::DockerManager;
 use pozk_utils::pozk_metrics_url;
 use reqwest::Client;
 use serde_json::{json, Value};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use sysinfo::System;
 use tokio::{
     select,
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    time::sleep,
+    time::interval,
 };
 
 pub const PROXY_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -85,17 +85,19 @@ impl MetricsService {
     }
 
     async fn listen(mut self, mut recv: UnboundedReceiver<MetricsMessage>) {
+        let mut report_interval = interval(Duration::from_secs(600)); // 10min
+        let mut miner_interval = interval(Duration::from_secs(3600)); // 1h
         loop {
             let work = select! {
                 w = async {
                     recv.recv().await.map(InnerFuture::Message)
                 } => w,
                 w = async {
-                    sleep(std::time::Duration::from_secs(600)).await; // 10min
+                    report_interval.tick().await;
                     Some(InnerFuture::Report)
                 } => w,
                 w = async {
-                    sleep(std::time::Duration::from_secs(3600)).await; // 1h
+                    miner_interval.tick().await;
                     Some(InnerFuture::Miner)
                 } => w,
             };

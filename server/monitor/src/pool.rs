@@ -5,11 +5,11 @@ use pozk_utils::{
     check_zero_gas, create_zero_gas, new_providers, new_signer, pozk_gas_price, zero_gas, AAWallet,
     Controller, DefaultProvider, DefaultSigner, Stake, Task,
 };
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use tokio::{
     select,
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    time::sleep,
+    time::interval,
 };
 
 use crate::MonitorConfig;
@@ -98,13 +98,14 @@ impl Pool {
     }
 
     async fn listen(mut self, mut recv: UnboundedReceiver<PoolMessage>) {
+        let mut gas_interval = interval(Duration::from_secs(600)); // 10min
         loop {
             let work = select! {
                 w = async {
                     recv.recv().await.map(InnerFuture::Message)
                 } => w,
                 w = async {
-                    sleep(std::time::Duration::from_secs(600)).await;
+                    gas_interval.tick().await;
                     Some(InnerFuture::ZeroGas)
                 } => w,
             };

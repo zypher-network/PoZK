@@ -9,7 +9,7 @@ use std::{collections::HashMap, net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::{
     select,
     sync::mpsc::{unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender},
-    time::sleep,
+    time::{interval, sleep},
 };
 
 type WsChannel = SplitSink<WebSocket, Message>;
@@ -133,12 +133,13 @@ impl P2pService {
             _ => return,
         };
 
+        let mut clear_interval = interval(Duration::from_secs(P2P_CLEAR_TIME));
         loop {
             let res = select! {
                 v = async { recv.recv().await.map(P2pFuture::Out) } => v,
                 v = async { p2p_recv.recv().await.map(P2pFuture::P2p) } => v,
                 v = async {
-                    sleep(Duration::from_secs(P2P_CLEAR_TIME)).await;
+                    clear_interval.tick().await;
                     Some(P2pFuture::Clear)
                 } => v,
             };

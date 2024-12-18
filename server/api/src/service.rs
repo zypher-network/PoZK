@@ -14,7 +14,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::{
     sync::mpsc::{UnboundedReceiver, UnboundedSender},
-    time::sleep,
+    time::interval,
 };
 
 use crate::metrics::MetricsMessage;
@@ -85,9 +85,10 @@ impl MainService {
     }
 
     pub fn run(mut self, sender: UnboundedSender<ServiceMessage>) {
+        let mut heartbeat_interval = interval(Duration::from_secs(13)); // 13s heartbeat
         tokio::spawn(async move {
             loop {
-                sleep(Duration::from_secs(13)).await; // 13s
+                heartbeat_interval.tick().await;
                 sender
                     .send(ServiceMessage::TaskHeartbeat)
                     .expect("Missing service");
