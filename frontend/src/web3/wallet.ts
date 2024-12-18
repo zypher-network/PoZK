@@ -21,8 +21,10 @@ class EvmWallet {
 
   private init(): void {
     if ("ethereum" in window) {
-      const provider = window.ethereum;
-      this.provider = provider;
+      if (!this.provider) {
+        const provider = window.ethereum;
+        this.provider = provider;
+      }
     } else {
       window.open("https://metamask.io/", `_blank`);
     }
@@ -78,7 +80,7 @@ class EvmWallet {
   //   return customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789")(12);
   // }
 
-  private async initAndConnect() {
+  async initAndConnect() {
     this.init();
     await this.connect();
   }

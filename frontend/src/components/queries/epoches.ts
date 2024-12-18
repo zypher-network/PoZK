@@ -15,7 +15,7 @@ export const GET_MINER_REWARDS = gql`
     reward(id: $id) {
       totalClaim
       id
-      claimList(orderDirection: desc, orderBy: epoch) {
+      claimList(where: {roleType: 1}, orderDirection: desc, orderBy: epoch) {
         claim
         epoch
         estimate

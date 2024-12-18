@@ -47,6 +47,7 @@ const SessionProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
   const loginOut = useCallback(async () => {
     deleteToken();
+    _setAccount('');
     setHasToken(false);
     await sleep(0.2);
     console.log('---- logout');

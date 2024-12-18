@@ -1,47 +1,48 @@
 "use client";
 import Link from "next/link";
+import { useAccount } from "wagmi";
+import { zeroAddress } from "viem";
+import { useRecoilState } from "recoil";
 import cx from 'classnames';
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { evmWallet } from "@/web3/wallet";
 import { useSession } from "@/components/hooks/useSession";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from 'next/navigation';
 import { appName } from "@/constants/constants";
-import { useRecoilState } from "recoil";
 import { FailedRoute } from "@/components/state/globalState";
 import pozk from "@/services/pozk";
-import useAuth from "@/components/hooks/useAuth";
-import { useAccount } from "wagmi";
 
 export default function Home() {
   const [failedRoute, setFailedRoute] = useRecoilState(FailedRoute);
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const { setToken, setAccount } = useSession();
+  const { setToken, setAccount, account, hasToken, loginOut } = useSession();
   const router = useRouter();
-  const [hasAuth, isCompleted] = useAuth();
-  const [isLogin, setIsLogin] = useState(false);
-  const { address, chainId } = useAccount();
+  const { address, chainId, isConnected } = useAccount();
   const redirectPath = useMemo(() => {
     return failedRoute ?? "/dashboard";
   }, [failedRoute]);
 
-  const connectWallet = async () => {
+  const signLogin = async () => {
     try {
-      setLoading(true);
       const { message, signature } = await evmWallet.signByEIP4361(
         "Welcome to PoZK!"
       );
-      if (message && signature) {
+      if (message && signature && address && chainId) {
         const params = {
           message: message,
           signature: signature,
         };
         const res: any = await pozk.login(params);
         const token = res.token;
+        setAccount(address, chainId);
         setToken(token);
-        setIsLogin(true);
+        setTimeout(() => {
+          setFailedRoute(undefined);
+          router.push(redirectPath);
+        }, 1000);
       } else {
         setLoading(false);
         // disconnect();
@@ -58,22 +59,34 @@ export default function Home() {
     }
   };
 
-  useLayoutEffect(() => {
-    if (hasAuth && isCompleted) {
+  const handleConnect = async () => {
+    setLoading(true);
+    loginOut();
+    try {
+      if (!isConnected) {
+        await evmWallet.initAndConnect();
+      }
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (loading && isConnected) {
+      signLogin();
+    }
+  }, [loading, isConnected]);
+
+  useEffect(() => {
+    if (isConnected && hasToken && account?.startsWith(address ?? zeroAddress) && !loading) {
       setFailedRoute(undefined);
       router.push(redirectPath);
     }
-  }, [hasAuth, redirectPath]);
-
-  useEffect(() => {
-    if (isLogin && address && chainId) {
-      setAccount(address, chainId);
-      setFailedRoute(undefined);
-    }
-  }, [isLogin, address, chainId]);
+  }, [isConnected, hasToken, account, address, loading]);
 
   return (
-    <div className={cx('w-full h-[800px] flex items-center justify-center', { 'opacity-30 pointer-events-none': !isCompleted })}>
+    <div className={cx('w-full h-[800px] flex items-center justify-center', { 'opacity-30 pointer-events-none': false })}>
       <div className="flex items-center justify-center flex-col max-w-lg w-full space-y-8 p-14 shadow-lg rounded-lg bg-slate-800">
         <Link href="/">
           <img
@@ -88,7 +101,7 @@ export default function Home() {
         </h1>
         <Button
           className="w-[150px]"
-          onClick={connectWallet}
+          onClick={handleConnect}
           isLoading={loading}
           disabled={loading}
         >

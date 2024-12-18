@@ -54,7 +54,7 @@ const GameApp: React.FC<IGameApp> = (props) => {
     }
   }, []);
   return (
-    <div className="h-[560px] bg-[#11182B] border-[#2E3751] flex-grow-0 flex-shrink basis-[950px] rounded-[20px] border p-[6px]">
+    <div className="h-[560px] bg-[#11182B] border-[#2E3751] rounded-[20px] border p-[6px] flex-grow flex-shrink basis-auto">
       <div
         className={cx(
           'size-full flex justify-center items-center border-4 border-[#051027] rounded-2xl',
@@ -63,6 +63,7 @@ const GameApp: React.FC<IGameApp> = (props) => {
         style={{
           backgroundImage: imgUrl ? `url(${imgUrl})` : 'url(/rewards/miner-game-preview.png)',
           backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
         {

@@ -16,7 +16,7 @@ const useAuth = () => {
 
   const isSameAccount = useMemo(() =>
     account?.toLowerCase().startsWith(address?.toLowerCase() ?? '') ?? false,
-    [address, isDisconnected],
+    [address, isDisconnected, account],
   );
   
   const handleInit = async () => {
@@ -40,7 +40,7 @@ const useAuth = () => {
         loginOut();
       }
     }
-  }, [isDisconnected, hasToken]);
+  }, [isDisconnected, hasToken, isSameAccount]);
 
   return [hasAuth, isCompleted];
 }
