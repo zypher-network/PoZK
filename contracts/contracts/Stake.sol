@@ -616,7 +616,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(player, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(msg.sender, address(this), amount);
 
         // add to staking
         Staking storage sp = playersStaking[player];

@@ -119,6 +119,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         require(IVerifier(iprover.verifier(prover)).permission(msg.sender), "T11");
 
         GameTask storage task = tasks[nextId];
+        task.status = TaskStatus.Waiting;
         task.prover = prover;
         task.player = player;
         task.fee = fee;
@@ -140,7 +141,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         GameTask storage task = tasks[tid];
         require(IStake(IAddresses(addresses).get(Contracts.Stake)).isMiner(task.prover, miner), "T03");
 
-        bool acceptable = task.status == TaskStatus.Waiting || task.overtime < block.timestamp;
+        bool acceptable = task.status == TaskStatus.Waiting || (task.overtime != 0 && task.overtime < block.timestamp);
         require(acceptable, "T04");
 
         IProver iprover = IProver(IAddresses(addresses).get(Contracts.Prover));

@@ -103,6 +103,7 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
         for (uint i = 0; i < _miners.length; i++) {
             miners[_miners[i]].amount += amounts[i];
             miners[_miners[i]].end = ends[i];
+            _minersTotal += amounts[i];
         }
     }
 

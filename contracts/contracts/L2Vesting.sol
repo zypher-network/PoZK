@@ -99,7 +99,7 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
 
         claimed[planId][user] += amount;
 
-        IERC20(token).transfer(user, amount);
+        IERC20(token).safeTransfer(user, amount);
 
         emit Claimed(planId, user, amount);
     }
@@ -131,6 +131,6 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
     function withdrawByAdmin() external onlyOwner {
         IERC20 tokenC = IERC20(token);
         uint256 amount = tokenC.balanceOf(address(this));
-        tokenC.transfer(msg.sender, amount);
+        tokenC.safeTransfer(msg.sender, amount);
     }
 }
