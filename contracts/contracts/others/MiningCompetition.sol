@@ -87,7 +87,7 @@ contract MiningCompetition is Initializable, OwnableUpgradeable {
         Stake stake = Stake(IAddresses(addresses).get(Contracts.Stake));
         uint256 minerReward = stake.minStakeAmount();
         stake.playerStakeFor(account, registerReward);
-        stake.minerStakeFor(initProver, account, minerReward);
+        stake.minerStakeFor(account, initProver, minerReward);
 
         users[account] = registerReward + minerReward;
 
@@ -105,7 +105,7 @@ contract MiningCompetition is Initializable, OwnableUpgradeable {
     function exchange(address account, uint256 amount) external {
         require(realToken != address(0) && decimal != 0, "MC03");
 
-        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(account, amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(account, address(this), amount);
 
         // calc real token amount
         uint256 realAmount = amount / decimal;

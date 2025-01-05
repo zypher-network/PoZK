@@ -391,7 +391,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         require(test.amount != 0 && test.miner == msg.sender, "S96");
 
         // transfer amount to payer
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(test.payer, test.amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(test.payer, test.amount);
         delete tests[id];
 
         emit MinerTestCancel(id);
@@ -719,7 +719,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         require(amount > 0, "S02");
 
         // transfer amount to account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(account, amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(account, amount);
 
         emit ClaimUnstaking(account, amount);
     }

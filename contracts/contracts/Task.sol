@@ -110,7 +110,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
     function create(address prover, address player, uint256 fee, bytes calldata inputs, bytes calldata publics) external returns(uint256) {
         // transfer fee from msg.sender
         if (fee > 0) {
-            IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), fee);
+            IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(msg.sender, address(this), fee);
         }
 
         // check prover is valid and permission
@@ -173,7 +173,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
 
         // send fee to miner
         if (task.fee > 0) {
-            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(task.miner, task.fee);
+            IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(task.miner, task.fee);
         }
         emit SubmitTask(tid, proof);
 
@@ -220,7 +220,7 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         "T07");
 
         // transfer
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transferFrom(msg.sender, address(this), disputeDeposit);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(msg.sender, address(this), disputeDeposit);
 
         task.status = TaskStatus.Disputing;
         task.dispute = disputeDeposit;
@@ -240,16 +240,16 @@ contract Task is Initializable, OwnableUpgradeable, ITask {
         require(IEpoch(IAddresses(addresses).get(Contracts.Epoch)).isDao(msg.sender), "T10");
 
         if (playerAmount > 0) {
-            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(task.player, playerAmount);
+            IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(task.player, playerAmount);
         }
 
         if (minerAmount > 0) {
-            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(task.miner, minerAmount);
+            IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(task.miner, minerAmount);
         }
 
         uint256 daoAmount = task.dispute - playerAmount - minerAmount;
         if (daoAmount > 0) {
-            IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(msg.sender, daoAmount);
+            IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(msg.sender, daoAmount);
         }
 
         if (playerAmount > minerAmount && slash) {
