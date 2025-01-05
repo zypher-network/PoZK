@@ -115,14 +115,14 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
         Plan memory plan = plans[planId];
 
         // check vesting start date and allocation
-        if (plan.start == 0 || plan.start > block.timestamp || allocations[planId][user] == 0) {
+        if (plan.start == 0 || plan.start >= block.timestamp || allocations[planId][user] == 0) {
             return 0;
         }
 
         uint256 vestedPeriod = block.timestamp - plan.start;
 
         // check period passed or no period or initial more than allocation
-        if (vestedPeriod == 0 || vestedPeriod > plan.period || plan.initial > allocations[planId][user]) {
+        if (vestedPeriod > plan.period || plan.initial > allocations[planId][user]) {
             return allocations[planId][user] - claimed[planId][user];
         }
 
