@@ -19,8 +19,6 @@ enum ProverType {
 interface IProver {
     function isProver(address prover) external view returns (bool);
 
-    function totalWork() external view returns (uint256);
-
     function work(address prover) external view returns (uint256);
 
     function version(address prover) external view returns (uint256);
