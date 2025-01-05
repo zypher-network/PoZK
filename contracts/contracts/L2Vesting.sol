@@ -80,6 +80,9 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
     /// @param _users the user list
     /// @param _allocations the allocation list
     function allocate(uint256[] calldata _planIds, address[] calldata _users, uint256[] calldata _allocations) external onlyOwner {
+        require(_planIds.length == _users.length, "V00");
+        require(_planIds.length == _allocations.length, "V00");
+
         for (uint256 i = 0; i < _users.length; i++) {
             allocations[_planIds[i]][_users[i]] += _allocations[i];
 
