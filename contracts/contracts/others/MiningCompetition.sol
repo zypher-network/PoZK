@@ -23,7 +23,7 @@ contract MiningCompetition is Initializable, OwnableUpgradeable {
     address addresses;
 
     /// @notice Competition status
-    Status status;
+    Status public status;
 
     address initProver;
     uint256 registerReward;
