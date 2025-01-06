@@ -362,7 +362,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
         // check overtime
         if (test.overAt < block.timestamp) {
-            if (autoNew) {
+            if (autoNew && test.miner == msg.sender) {
                 emit MinerTestRequire(id, test.miner, test.prover);
                 return;
             } else {
@@ -378,8 +378,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
         _minerStakeFor(test.miner, test.prover, test.amount);
 
-        delete tests[id];
         delete testing[test.prover][test.miner];
+        delete tests[id];
     }
 
     /// @notice Miner cancel the proof of the test
@@ -390,6 +390,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
         // transfer amount to payer
         IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(test.payer, test.amount);
+        delete testing[test.prover][test.miner];
         delete tests[id];
 
         emit MinerTestCancel(id);
