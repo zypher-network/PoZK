@@ -240,23 +240,21 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// --------------- Miner --------------- ///
 
-    /// @notice Get total miner staking
+    /// @notice Get total miner staking (no vesting)
     /// @param prover the prover address
     /// @return the total miner staking amount
     function minerTotalStaking(address prover) external view returns (uint256) {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = proversStaking[prover].minerTotal;
 
-        uint256 minersVesting = IVesting(IAddresses(addresses).get(Contracts.Vesting)).minersTotal();
-
         if (currentEpoch >= st.newEpoch) {
-            return st.newValue + minersVesting;
+            return st.newValue;
         } else {
-            return st.value + minersVesting;
+            return st.value;
         }
     }
 
-    /// @notice Get miner staking
+    /// @notice Get miner staking (with vesting)
     /// @param prover the prover address
     /// @param account miner account
     /// @return the miner staking amount

@@ -30,9 +30,6 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
     /// @notice Common Addresses contract
     address addresses;
 
-    /// @notice Miner total vesting amount
-    uint256 private _minersTotal;
-
     /// @notice Rewards of every epoch will be released for mine & play
     MineReward mineReward;
 
@@ -103,14 +100,7 @@ contract Vesting is Initializable, OwnableUpgradeable, IVesting {
         for (uint i = 0; i < _miners.length; i++) {
             miners[_miners[i]].amount += amounts[i];
             miners[_miners[i]].end = ends[i];
-            _minersTotal += amounts[i];
         }
-    }
-
-    /// @notice Get all miners vesting amount
-    /// @return total amount of all miners
-    function minersTotal() external view returns(uint256) {
-        return _minersTotal;
     }
 
     /// @notice Get miner vesting amount
