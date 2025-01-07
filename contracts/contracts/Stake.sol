@@ -102,7 +102,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     event SubAllowlist(address account, uint256 amount);
 
     /// @notice Emit when miner need do a test
-    event MinerTestRequire(uint256 id, address account, address prover);
+    event MinerTestRequire(uint256 id, address account, address prover, uint256 amount);
 
     /// @notice Emit when test have been created and start
     event MinerTestCreate(uint256 id, address account, address prover, uint256 overtime, bytes inputs, bytes publics);
@@ -323,7 +323,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
                 test.prover = prover;
                 test.amount += amount;
 
-                emit MinerTestRequire(testId, miner, prover);
+                emit MinerTestRequire(testId, miner, prover, test.amount);
                 return;
             }
         }
@@ -363,7 +363,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         // check overtime
         if (test.overAt < block.timestamp) {
             if (autoNew && test.miner == msg.sender) {
-                emit MinerTestRequire(id, test.miner, test.prover);
+                emit MinerTestRequire(id, test.miner, test.prover, test.amount);
                 return;
             } else {
                 revert("S98");
