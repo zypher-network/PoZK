@@ -353,10 +353,6 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param autoNew auto renew the task if over time
     /// @param proof the zk proof
     function minerTestSubmit(uint256 id, bool autoNew, bytes calldata proof) external {
-        bytes32 hash = keccak256(proof);
-        require(testsResults[hash] == 0, "S97");
-        testsResults[hash] = id;
-
         ZkTest storage test = tests[id];
         require(test.amount != 0, "S96");
 
@@ -369,6 +365,10 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
                 revert("S98");
             }
         }
+
+        bytes32 hash = keccak256(proof);
+        require(testsResults[hash] == 0, "S97");
+        testsResults[hash] = id;
 
         // check zk verifier
         address verifier = IProver(IAddresses(addresses).get(Contracts.Prover)).verifier(test.prover);
