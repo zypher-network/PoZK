@@ -60,7 +60,6 @@ export const usePostStake = () => {
             variant: "success",
           });
         }
-        console.log({ contractRes });
         return true;
       } catch (error: any) {
         await Failed(error);
@@ -78,14 +77,12 @@ export const usePostStake = () => {
           prover,
           BigInt(inputAmount.toString(10)),
         ]);
-        console.log({ contractRes });
         if (contractRes) {
           toast({
             title: "UnStaking Success",
             variant: "success",
           });
         }
-        console.log({ contractRes });
         return true;
       } catch (error: any) {
         console.log(error);
@@ -118,7 +115,6 @@ export const usePostStake = () => {
   const claim = useCallback(async () => {
     const contract = StakeContract();
     const contractRes = await contract.writeContractMethod("claim", [address]);
-    console.log({ contractRes });
   }, []);
   return {
     claim,

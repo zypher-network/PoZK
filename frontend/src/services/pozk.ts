@@ -46,7 +46,6 @@ class PoZK {
   async newController (): Promise<Address | ''> {
     try {
       const data = await api.post(this.endpoints.controller.new, {"singing_key": null}) as any;
-      console.log(data);
       return data?.controller ?? '';
     } catch (error) {
       return this.handleError(error as Error, '');

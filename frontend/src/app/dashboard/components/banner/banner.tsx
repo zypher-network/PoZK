@@ -1,5 +1,6 @@
 "use client";
 import { memo, useMemo, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import cx from 'classnames';
 import Wifi from "@/components/icon/wifi.svg";
 import WifiOff from "@/components/icon/wifi-off.svg";
@@ -8,15 +9,53 @@ import { useToast } from "@/components/ui/use-toast";
 import { FaCheck } from "react-icons/fa";
 import { Card, CardTitle } from "@/components/ui/card";
 import { shortenWalletAddress } from "@/lib/shorten";
-import { useAccount } from "wagmi";
+import { useAccount, useBalance, useReadContract, useReadContracts } from "wagmi";
 import BigNumberJs, { BM18 } from "@/lib/BigNumberJs";
 import useSubgraphStore from "@/components/state/subgraphStore";
-import { useShallow } from "zustand/react/shallow";
+import TokenABI from "@/constants/ABI/Token.json";
 import { isTodaysEpoch } from "@/lib/day";
-const Banner = () => {
-  const { isConnected } = useAccount();
-  const { staking, reward, epoches } = useSubgraphStore(useShallow(state => ({ staking: state.staking, epoches: state.epoches, reward: state.reward })));
+import { CHAINID, contractAddress } from "@/web3/constants";
+import useControllerStore from "@/components/state/controllerStore";
+import { wagmiConfig } from "@/web3/wagmi.config";
 
+const Banner = () => {
+  const { isConnected, address } = useAccount();
+  const active = useControllerStore(state => state.active);
+  const { staking, reward, epoches } = useSubgraphStore(useShallow(state => ({ staking: state.staking, epoches: state.epoches, reward: state.reward })));
+  const minerToken = useReadContracts({
+    contracts: [
+      {
+        abi: TokenABI,
+        address: contractAddress[CHAINID].Token,
+        functionName: 'balanceOf',
+        args: [address],
+      },
+      {
+        abi: TokenABI,
+        address: contractAddress[CHAINID].Token,
+        functionName: 'symbol',
+      },
+    ],
+    config: wagmiConfig,
+    query: {
+      refetchInterval: 5000,
+      enabled: Boolean(address),
+      select: (result) => {
+        return result ? `${new BigNumberJs(`${result[0]?.result ?? 0}`).div(BM18).toFormat()} ${result[1]?.result ?? ''}` : '';
+      }
+    },
+  });
+  const gasBalance = useBalance({
+    address: active as any,
+    config: wagmiConfig,
+    query: {
+      enabled: Boolean(active),
+      refetchInterval: 5000,
+      select: (result) => {
+        return result ? `${new BigNumberJs(result.value.toString(10)).div(10 ** result.decimals).toFormat()} ${result.symbol}` : '';
+      }
+    }
+  })
   const rewardInfo = useMemo(() => {
     let totalRewards = new BigNumberJs('0');
     const lastEpochEarning = epoches.data[1];
@@ -59,10 +98,15 @@ const Banner = () => {
         <h4 className="font-semibold text-[44px]">{rewardInfo.totalEarnings}</h4>
         <ul
           className="
-          max-w-max
-          mt-[32px] flex justify-between items-start
+          grid
+          items-start
           relative
+          gap-2
           z-10"
+          style={{
+            gridTemplateColumns: '160px 20px 160px 20px 160px',
+            filter: 'drop-shadow(1px 1px 1px black)'
+          }}
         >
           {[
             {
@@ -80,9 +124,21 @@ const Banner = () => {
           ].map((v, index) => (
             <Item key={v.label} isLast={index === 2} item={v} />
           ))}
+          {[
+            {
+              label: "Miner Token Balance",
+              value: minerToken.data ?? '-',
+            },
+            {
+              label: "Controller Gas Balance",
+              value: gasBalance.data ?? '-',
+            },
+          ].map((v, index) => (
+            <Item key={v.label} isLast={index === 1} item={v} />
+          ))}
         </ul>
         <img
-          className="absolute top-2/4 right-9 transform translate-y-[-50%]"
+          className="absolute top-4 right-4"
           src="/dashboard/banner_earning.webp"
           width={180}
           height={180}
@@ -133,53 +189,65 @@ const Item = ({ item, isLast }: { item: ITem; isLast: boolean }) => {
   return (
     <>
       <li>
-        <p className="font-light text-[16px] opacity-50 text-nowrap">{label}</p>
+        <p className="font-light text-[16px] text-nowrap">{label}</p>
         <h5 className="text-[20px] font-medium text-nowrap">{value}</h5>
       </li>
       {isLast ? null : (
-        <li
-          className="
-          min-w-[1px]
-          h-[44px]
-      mx-[40px]
-      bg-[#fff] opacity-10"
-        />
+        <li className="min-w-[1px] h-[44px] bg-[#fff] opacity-10" style={{ margin: 'auto' }} />
       )}
     </>
   );
 };
 const Address = () => {
   const { address } = useAccount();
-  const [showCopy, setShowCopy] = useState<boolean>(false);
+  const active = useControllerStore(state => state.active);
+  const [showAddressCopy, setShowAddressCopy] = useState<boolean>(false);
+  const [showControllerCopy, setShowControllerCopy] = useState<boolean>(false);
   const { toast } = useToast();
-  const handleCopyClick = () => {
+  const handleCopyClick = (isAddress: boolean) => {
     toast({
       title: "Copied to clipboard!",
       description: "address",
     });
-    setShowCopy(true);
+    if (isAddress) {
+      setShowAddressCopy(true);
+      setShowControllerCopy(false);
+    } else {
+      setShowAddressCopy(false);
+      setShowControllerCopy(true);
+    }
     setTimeout(() => {
-      setShowCopy(false);
+      if (isAddress) {
+        setShowAddressCopy(false);
+      } else {
+        setShowControllerCopy(false);
+      }
     }, 3000);
   };
   const shorten = useMemo(() => {
     return address ? shortenWalletAddress(address, "normal") : "";
   }, [address]);
+  const shortenController = useMemo(() => {
+    return active ? shortenWalletAddress(active, "normal") : "";
+  }, [active]);
   return (
     <div
-      className="flex justify-between 
-      items-center
-      rounded-[10px]
-      bg-[#0A1223]
-          px-[28px]
-          py-[20px]"
+      className="flex flex-col items-center rounded-[10px] bg-[#0A1223] px-6 py-[12px] gap-1"
     >
-      <div className="flex items-center">
-        <p className="text-[18px] text-nowrap">wallet address:</p>
-        <p className="font-light text-[18px] pl-[12px] pr-[12px]">{shorten}</p>
+      <div className="flex justify-between items-center w-full">
+        <div className="flex items-center">
+          <p className="text-[14px] text-nowrap">wallet address:</p>
+          <p className="font-light text-[18px] px-2">{shorten}</p>
+        </div>
+        {showAddressCopy ? <FaCheck /> : <Copy className="cursor-pointer" onClick={() => handleCopyClick(true)} />}
       </div>
-
-      {showCopy ? <FaCheck /> : <Copy onClick={handleCopyClick} />}
+      <div className="flex justify-between items-center w-full">
+        <div className="flex items-center">
+          <p className="text-[14px] text-nowrap">controller address:</p>
+          <p className="font-light text-[18px] px-2">{shortenController}</p>
+        </div>
+        {showControllerCopy ? <FaCheck /> : <Copy className="cursor-pointer" onClick={() => handleCopyClick(false)} />}
+      </div>
     </div>
   );
 };

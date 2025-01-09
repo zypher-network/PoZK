@@ -23,7 +23,6 @@ const useGetData = () => {
           "/api/controllers?page_size=100&page_count=1"
         );
         if (res && res.data.length) {
-          console.log(res);
           // 获取active
           const active = res.main;
           const data = res.data.map((v: Address) => ({
@@ -180,7 +179,6 @@ export const usePostController = () => {
           `/api/controllers/${address}`,
           undefined
         );
-        console.log({ res });
         if (res.singing_key) {
           // toast({
           //   title: "Set controller Success",

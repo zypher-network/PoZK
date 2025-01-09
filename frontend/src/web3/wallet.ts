@@ -113,7 +113,6 @@ class EvmWallet {
 
   async sign(message: string): Promise<SignResult> {
     const msgData = JSON.parse(message);
-    console.log({ msgData });
     const fullMessage =
       msgData.signType === "EIP-4361"
         ? this.to4361Message({

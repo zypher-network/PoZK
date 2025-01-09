@@ -35,9 +35,12 @@ interface IProverRow {
   ptype: number;
   types: string;
   needUpgrade?: boolean;
+  testResult?: { isTesting: boolean; isPending: boolean; };
+  retryMinerTest?: () => void;
+  cancelMinerTest?: () => void;
 }
 
-const ProverRow: React.FC<IProverRow> = ({ running = false, stop, name, created, prover, version, overtime, ptype, types, needUpgrade = false }) => {
+const ProverRow: React.FC<IProverRow> = ({ running = false, stop, name, created, prover, version, overtime, ptype, types, needUpgrade = false, testResult, retryMinerTest, cancelMinerTest }) => {
   const { setStakeItemHandler } = usePostStake();
   const minStake = useBalanceStore(state => state.minStake);
   const { address } = useAccount();
@@ -47,6 +50,31 @@ const ProverRow: React.FC<IProverRow> = ({ running = false, stop, name, created,
 
   const renderAction = () => {
     if (running) {
+      if (testResult) {
+        if (testResult.isTesting) {
+          return (
+            <div className="py-1 text-black px-3 rounded text-sm bg-[#e18802]">Testing...</div>
+          );
+        }
+        if (testResult.isPending) {
+          return (
+            <>
+              <div
+                className="py-1 cursor-pointer text-black px-3 rounded text-sm bg-[#82c01e]"
+                onClick={retryMinerTest}
+              >
+                Retry
+              </div>
+              <div
+                className="py-1 cursor-pointer text-white px-3 rounded text-sm bg-[#E44042]"
+                onClick={cancelMinerTest}
+              >
+                Cancel
+              </div>
+            </>
+          );
+        }
+      }
       if (isMiner) {
         return (
           <DropdownMenu>

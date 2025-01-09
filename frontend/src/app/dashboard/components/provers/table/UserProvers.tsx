@@ -1,19 +1,32 @@
 "use client";
 import { useAccount } from "wagmi";
 import { Card, CardTitle } from "@/components/ui/card";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ProverRow from "./ProverRow";
 import { UserProver } from "@/types/IProver";
 import ControllerBtn from "../../controllerBtn/controllerBtn";
 import NoData from '@/components/icon/no-data.svg';
+import { useQuery } from "@apollo/client";
+import { GET_MINER_TESTS, IMinerTests } from "@/components/queries/minerTests";
+import MinerTestTipDialog from "./MinerTestTipDialog";
+import useBalanceStore from "@/components/state/balanceStore";
 
 interface IUserProvers {
   provers: UserProver[];
 }
 
 const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
-  const { isConnected } = useAccount();
+  const [dialog, setDialog] = useState({ open: false, type: '', testId: '' });
+  const { isConnected, address } = useAccount();
+  const result = useQuery<IMinerTests>(GET_MINER_TESTS, {
+    variables: {
+      address: address?.toLowerCase(),
+    },
+    skip: !Boolean(address),
+    pollInterval: 10000,
+  })
+
   const Label = useMemo(() => {
     return [
       "Status",
@@ -26,8 +39,47 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
     ];
   }, []);
 
+  const minerTestsResult = useMemo(() => {
+    const provers: Record<string, { isTesting: boolean, isPending: boolean, id: string }> = {};
+    for (const test of (result.data?.minerTests ?? [])) {
+      const isTesting = 1000 * Number(test.overtimeAt) >= (Date.now() - 5000);
+      provers[test.prover.toLowerCase()] = {
+        isTesting: isTesting && !Boolean(test.result),
+        isPending: test.result === null && !isTesting,
+        id: test.id,
+      }
+    }
+    return provers;
+  }, [result]);
+
+  const handleMinerTestDialog = (prover: string, type: 'retry' | 'cancel') => {
+    const testId = minerTestsResult[prover].id;
+    if (testId) {
+      setDialog({
+        type,
+        testId,
+        open: true,
+      })
+    }
+  }
+
+  const handleDialogClose = () => {
+    setDialog({
+      type: '',
+      testId: '',
+      open: false,
+    })
+    result.refetch();
+  }
+
   return (
     <>
+      <MinerTestTipDialog
+        open={dialog.open}
+        type={dialog.type as any}
+        testId={dialog.testId}
+        onClose={handleDialogClose}
+      />
       <Card>
         <div className="flex items-center justify-between pb-2">
           <CardTitle>
@@ -73,6 +125,9 @@ const UserProvers: React.FC<IUserProvers> = ({ provers }) => {
                         types={prover.types}
                         version={prover.version}
                         needUpgrade={container.needUpgrade}
+                        testResult={minerTestsResult[prover.id]}
+                        retryMinerTest={() => handleMinerTestDialog(prover.id, 'retry')}
+                        cancelMinerTest={() => handleMinerTestDialog(prover.id, 'cancel')}
                       />
                     )) :
                     <ProverRow

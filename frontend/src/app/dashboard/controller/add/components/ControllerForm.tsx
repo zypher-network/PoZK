@@ -65,7 +65,6 @@ const ControllerForm = ({ action }: { action?: IAction }) => {
       //   await setController(data.Controller);
       // }
       form.reset();
-      console.log({ data, Action });
     },
     [Action, addController]
   );

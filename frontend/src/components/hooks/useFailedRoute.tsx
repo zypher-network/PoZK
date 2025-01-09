@@ -15,7 +15,6 @@ export const useFailedRoute = () => {
   const { deleteToken } = useSession();
   const Failed = useCallback(
     async (error: any) => {
-      console.log({ error });
       const { code, message } = error || {};
       if (message.indexOf("HTTP error 5") === -1) {
         toast({
@@ -29,7 +28,6 @@ export const useFailedRoute = () => {
         //   useUrl: true,
         // });
         // if (local) {
-        console.log("8888888888888888888888888888888888888888888888888888888");
         deleteToken();
         setFailedRoute(pathname);
         route.push("/");

@@ -61,7 +61,7 @@ const FormComp = () => {
   });
   useLayoutEffect(() => {
     if (gameConfig.length) {
-      console.log({ aaa: gameConfig[0].id });
+      // console.log({ aaa: gameConfig[0].id });
       form.reset({
         "URL / IP": "",
         Prover: gameConfig[0].id,

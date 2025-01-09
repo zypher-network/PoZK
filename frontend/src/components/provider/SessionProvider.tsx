@@ -50,7 +50,6 @@ const SessionProvider = ({ children }: { children: React.ReactNode }) => {
     _setAccount('');
     setHasToken(false);
     await sleep(0.2);
-    console.log('---- logout');
     pathname !== "/" && route.push("/");
   };
 
