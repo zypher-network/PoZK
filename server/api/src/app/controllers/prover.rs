@@ -100,8 +100,7 @@ pub async fn repair(Extension(app): Extension<AppContext>) -> Result<Json<Value>
             list.push(p);
             continue;
         }
-        let repo = format!("{:?}", p.prover);
-        let image = app.docker.pull(&repo, &p.tag).await?;
+        let image = app.docker.pull(&p.name, &p.tag).await?;
 
         p.image = image;
         app.db.add(&p)?;

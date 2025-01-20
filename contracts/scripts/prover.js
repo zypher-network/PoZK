@@ -5,23 +5,23 @@ const ONE_TOKEN = 10000000000000000000n;
 
 // Testnet
 // 2048
-const myProver = "0x8acf473885f975023e7a9b7c043da53d690cbc6e";
-const myVerifier = "0x8aCF473885f975023e7A9B7C043Da53D690cbc6E";
-const WORK = 10000;
+// const myProver = "0x01156bb7c9b003ce2e2d2b0ee934b2baf196b08c";
+// const myVerifier = "0x01156bb7c9b003ce2e2d2b0ee934b2baf196b08c";
+// const WORK = 10000;
 
 // cr
-// const myProver = "0x66e9ce70bb3431958e0ce352d1b5d85772e57e06";
-// const myVerifier = "0x66e9CE70bb3431958e0CE352d1B5D85772E57E06";
-// const WORK = 5000;
+const myProver = "0x6efdab245fb1905b3692c8e0c8702cec13a17121";
+const myVerifier = "0x6efdab245fb1905b3692c8e0c8702cec13a17121";
+const WORK = 5000;
 
 // Shuffle20
-// const myProver = "0x0eaca2011742c5156f217f1b1d0784fe5fbf2428";
-// const myVerifier = "0xb87Aa728E0D9369135Fe1f742315D8B367f5B480";
+// const myProver = "0xa6b720ee1f8975551a94f2d6bea74978aff60343";
+// const myVerifier = "0xcfb2ac0013d3bdd186a21babf8c170b5b560e58d";
 // const WORK = 5000;
 
 // Shuffle52
-// const myProver = "0xa6b720ee1f8975551a94f2d6bea74978aff60343";
-// const myVerifier = "0xE68A935239DB25DB8c3f451A8254fb326Ce43BB4";
+// const myProver = "0xbc9b4e9d43830f747e65873a5e122ddd9c9d769b";
+// const myVerifier = "0x17c3aef40495c2fcc9bc1880aeaaaf455fdfa5be";
 // const WORK = 10000;
 
 // Competition 1 & 2
@@ -37,7 +37,6 @@ async function registerProver() {
   const [e, _e] = await attachContract("Epoch");
   console.log("Starting register prover");
   await c.register(myProver, 0, WORK, 1, 20, myVerifier);
-  // await c.upgrade(myProver, 0, WORK, 1, 20, myVerifier);
   console.log("Waiting approve prover");
   await sleep();
   await c.approve(myProver, true, true);
@@ -45,6 +44,17 @@ async function registerProver() {
   //await sleep();
   // await e.getAndUpdate();
   // await sleep();
+  console.log("Prover setted");
+}
+
+async function upgradeProver() {
+  const [c, _c] = await attachContract("Prover");
+  const [e, _e] = await attachContract("Epoch");
+  console.log("Starting upgrade prover");
+  await c.upgrade(myProver, 0, WORK, 1, 20, myVerifier);
+  console.log("Waiting approve prover");
+  await sleep();
+  await c.approve(myProver, true, true);
   console.log("Prover setted");
 }
 
@@ -69,6 +79,7 @@ async function stopProver() {
 async function main() {
   await registerProver();
   await stakeProver();
+  //await upgradeProver();
   //await stopProver();
 }
 

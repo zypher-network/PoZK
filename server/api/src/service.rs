@@ -228,8 +228,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
 
             if let Some(mut p) = app.db.remove::<Prover>(key)? {
                 // 2. download new version
-                let repo = format!("{:?}", p.prover);
-                let image = app.docker.pull(&repo, &new_tag).await?;
+                let image = app.docker.pull(&p.name, &new_tag).await?;
                 let old_image = p.image.clone();
 
                 // 3. save new prover
@@ -246,8 +245,7 @@ async fn handle(app: &mut MainService, msg: ServiceMessage) -> Result<()> {
         }
         ServiceMessage::PullProver(prover, tag, name, overtime, ptype, types) => {
             // 1. pull docker image
-            let repo = format!("{:?}", prover);
-            let image = app.docker.pull(&repo, &tag).await?;
+            let image = app.docker.pull(&name, &tag).await?;
 
             // 2. save to db
             let created = Utc::now().timestamp();

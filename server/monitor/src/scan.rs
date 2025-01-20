@@ -61,7 +61,6 @@ struct ApproveProver {
     prover: Address,
     ptype: u8,
     work: U256,
-    total: U256,
     epoch: U256,
     version: U256,
     overtime: U256,
