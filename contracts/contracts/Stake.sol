@@ -102,7 +102,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     event SubAllowlist(address account, uint256 amount);
 
     /// @notice Emit when miner need do a test
-    event MinerTestRequire(uint256 id, address account, address prover);
+    event MinerTestRequire(uint256 id, address account, address prover, uint256 amount);
 
     /// @notice Emit when test have been created and start
     event MinerTestCreate(uint256 id, address account, address prover, uint256 overtime, bytes inputs, bytes publics);
@@ -240,23 +240,21 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
     /// --------------- Miner --------------- ///
 
-    /// @notice Get total miner staking
+    /// @notice Get total miner staking (no vesting)
     /// @param prover the prover address
     /// @return the total miner staking amount
     function minerTotalStaking(address prover) external view returns (uint256) {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
         Staking storage st = proversStaking[prover].minerTotal;
 
-        uint256 minersVesting = IVesting(IAddresses(addresses).get(Contracts.Vesting)).minersTotal();
-
         if (currentEpoch >= st.newEpoch) {
-            return st.newValue + minersVesting;
+            return st.newValue;
         } else {
-            return st.value + minersVesting;
+            return st.value;
         }
     }
 
-    /// @notice Get miner staking
+    /// @notice Get miner staking (with vesting)
     /// @param prover the prover address
     /// @param account miner account
     /// @return the miner staking amount
@@ -325,7 +323,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
                 test.prover = prover;
                 test.amount += amount;
 
-                emit MinerTestRequire(testId, miner, prover);
+                emit MinerTestRequire(testId, miner, prover, test.amount);
                 return;
             }
         }
@@ -355,22 +353,22 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
     /// @param autoNew auto renew the task if over time
     /// @param proof the zk proof
     function minerTestSubmit(uint256 id, bool autoNew, bytes calldata proof) external {
-        bytes32 hash = keccak256(proof);
-        require(testsResults[hash] == 0, "S97");
-        testsResults[hash] = id;
-
         ZkTest storage test = tests[id];
         require(test.amount != 0, "S96");
 
         // check overtime
         if (test.overAt < block.timestamp) {
-            if (autoNew) {
-                emit MinerTestRequire(id, test.miner, test.prover);
+            if (autoNew && test.miner == msg.sender) {
+                emit MinerTestRequire(id, test.miner, test.prover, test.amount);
                 return;
             } else {
                 revert("S98");
             }
         }
+
+        bytes32 hash = keccak256(proof);
+        require(testsResults[hash] == 0, "S97");
+        testsResults[hash] = id;
 
         // check zk verifier
         address verifier = IProver(IAddresses(addresses).get(Contracts.Prover)).verifier(test.prover);
@@ -380,8 +378,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
 
         _minerStakeFor(test.miner, test.prover, test.amount);
 
-        delete tests[id];
         delete testing[test.prover][test.miner];
+        delete tests[id];
     }
 
     /// @notice Miner cancel the proof of the test
@@ -391,7 +389,8 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         require(test.amount != 0 && test.miner == msg.sender, "S96");
 
         // transfer amount to payer
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(test.payer, test.amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(test.payer, test.amount);
+        delete testing[test.prover][test.miner];
         delete tests[id];
 
         emit MinerTestCancel(id);
@@ -616,7 +615,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).getAndUpdate();
 
         // transfer from account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(player, address(this), amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(msg.sender, address(this), amount);
 
         // add to staking
         Staking storage sp = playersStaking[player];
@@ -719,7 +718,7 @@ contract Stake is Initializable, OwnableUpgradeable, IStake {
         require(amount > 0, "S02");
 
         // transfer amount to account
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(account, amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(account, amount);
 
         emit ClaimUnstaking(account, amount);
     }

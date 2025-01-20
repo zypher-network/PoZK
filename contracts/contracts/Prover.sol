@@ -59,9 +59,6 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @notice Common Addresses contract
     address addresses;
 
-    /// @notice Current & future total prover work
-    ProverWork private proversTotalWork;
-
     /// @notice Store all prover list
     mapping(address => GameProver) private provers;
 
@@ -75,7 +72,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     event UpgradeProver(address prover, ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name, string types);
 
     /// @notice Emit when the prover is approved or reject
-    event ApproveProver(address prover, ProverType ptype, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, string types, bool minable, bool approved);
+    event ApproveProver(address prover, ProverType ptype, uint256 work, uint256 epoch, uint256 version, uint256 overtime, address verifier, string types, bool minable, bool approved);
 
     /// @notice Emit when the prover is stopped
     event StopProver(address prover);
@@ -225,18 +222,6 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
             g.version.value = g.version.newValue;
             g.overtime.value = g.overtime.newValue;
             g.verifier.value = g.verifier.newValue;
-
-            // update proversTotalWork
-            if (currentEpoch >= proversTotalWork.newEpoch) {
-                proversTotalWork.value = proversTotalWork.newValue;
-            }
-            bool isAdd = g.work.newValue > g.work.value;
-            if (isAdd) {
-                proversTotalWork.newValue += g.work.newValue - g.work.value;
-            } else {
-                proversTotalWork.newValue -= g.work.value - g.work.newValue;
-            }
-            proversTotalWork.newEpoch = currentEpoch + 1;
         } else {
             // revoke
             g.work.newEpoch = currentEpoch;
@@ -247,7 +232,7 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
             g.verifier.newValue = g.verifier.value;
         }
 
-        emit ApproveProver(prover, g.ptype, g.work.newValue, proversTotalWork.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, g.types, minable, approved);
+        emit ApproveProver(prover, g.ptype, g.work.newValue, g.work.newEpoch, g.version.newValue, g.overtime.newValue, g.verifier.newValue, g.types, minable, approved);
     }
 
     /// @notice DAO can stop a prover
@@ -265,18 +250,6 @@ contract Prover is Initializable, OwnableUpgradeable, IProver {
     /// @return working or not
     function isProver(address prover) external view returns (bool) {
         return provers[prover].status == ProverStatus.Working || provers[prover].status == ProverStatus.Upgrading;
-    }
-
-    /// @notice Get all provers work
-    /// @return the work of all provers
-    function totalWork() external view returns (uint256) {
-        uint256 currentEpoch = IEpoch(IAddresses(addresses).get(Contracts.Epoch)).get();
-
-        if (currentEpoch >= proversTotalWork.newEpoch) {
-            return proversTotalWork.newValue;
-        } else {
-            return proversTotalWork.value;
-        }
     }
 
     /// @notice Get a prover work

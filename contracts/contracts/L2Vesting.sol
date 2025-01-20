@@ -80,6 +80,9 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
     /// @param _users the user list
     /// @param _allocations the allocation list
     function allocate(uint256[] calldata _planIds, address[] calldata _users, uint256[] calldata _allocations) external onlyOwner {
+        require(_planIds.length == _users.length, "V00");
+        require(_planIds.length == _allocations.length, "V00");
+
         for (uint256 i = 0; i < _users.length; i++) {
             allocations[_planIds[i]][_users[i]] += _allocations[i];
 
@@ -99,7 +102,7 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
 
         claimed[planId][user] += amount;
 
-        IERC20(token).transfer(user, amount);
+        IERC20(token).safeTransfer(user, amount);
 
         emit Claimed(planId, user, amount);
     }
@@ -112,14 +115,14 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
         Plan memory plan = plans[planId];
 
         // check vesting start date and allocation
-        if (plan.start == 0 || plan.start > block.timestamp || allocations[planId][user] == 0) {
+        if (plan.start == 0 || plan.start >= block.timestamp || allocations[planId][user] == 0) {
             return 0;
         }
 
         uint256 vestedPeriod = block.timestamp - plan.start;
 
         // check period passed or no period or initial more than allocation
-        if (vestedPeriod == 0 || vestedPeriod > plan.period || plan.initial > allocations[planId][user]) {
+        if (vestedPeriod > plan.period || plan.initial > allocations[planId][user]) {
             return allocations[planId][user] - claimed[planId][user];
         }
 
@@ -131,6 +134,6 @@ contract L2Vesting is Initializable, OwnableUpgradeable {
     function withdrawByAdmin() external onlyOwner {
         IERC20 tokenC = IERC20(token);
         uint256 amount = tokenC.balanceOf(address(this));
-        tokenC.transfer(msg.sender, amount);
+        tokenC.safeTransfer(msg.sender, amount);
     }
 }

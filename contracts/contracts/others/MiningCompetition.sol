@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -16,11 +17,13 @@ enum Status {
 /// @notice Phases in the network, simulating "block height" in blockchain,
 /// stake and reward are effective and issued according to the epoch
 contract MiningCompetition is Initializable, OwnableUpgradeable {
+    using SafeERC20 for IERC20;
+
     /// @notice Common Addresses contract
     address addresses;
 
     /// @notice Competition status
-    Status status;
+    Status public status;
 
     address initProver;
     uint256 registerReward;
@@ -54,10 +57,12 @@ contract MiningCompetition is Initializable, OwnableUpgradeable {
         addresses = _addresses;
     }
 
-    function changeStatus(Status _status, address prover) external onlyOwner {
+    function changeStatus(Status _status, address _initProver, uint256 _registerReward, uint256 _inviteReward) external onlyOwner {
         status = _status;
         if (status == Status.Working) {
-            initProver = prover;
+            initProver = _initProver;
+            registerReward = _registerReward;
+            inviteReward = _inviteReward;
 
             IERC20 token = IERC20(IAddresses(addresses).get(Contracts.Token));
             address stake = IAddresses(addresses).get(Contracts.Stake);
@@ -82,7 +87,7 @@ contract MiningCompetition is Initializable, OwnableUpgradeable {
         Stake stake = Stake(IAddresses(addresses).get(Contracts.Stake));
         uint256 minerReward = stake.minStakeAmount();
         stake.playerStakeFor(account, registerReward);
-        stake.minerStakeFor(initProver, account, minerReward);
+        stake.minerStakeFor(account, initProver, minerReward);
 
         users[account] = registerReward + minerReward;
 
@@ -100,12 +105,12 @@ contract MiningCompetition is Initializable, OwnableUpgradeable {
     function exchange(address account, uint256 amount) external {
         require(realToken != address(0) && decimal != 0, "MC03");
 
-        IERC20(IAddresses(addresses).get(Contracts.Token)).transfer(account, amount);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransferFrom(account, address(this), amount);
 
         // calc real token amount
         uint256 realAmount = amount / decimal;
 
-        IERC20(realToken).transfer(account, realAmount);
+        IERC20(realToken).safeTransfer(account, realAmount);
 
         emit Exchange(account, amount, realAmount);
     }
