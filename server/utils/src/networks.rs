@@ -110,8 +110,8 @@ pub fn contract_address(network: &str, name: &str) -> Result<(Address, u64)> {
 
 pub fn pozk_metrics_url(network: &str) -> Result<String> {
     match network {
-        "localhost" | "testnet" | "l2testnet" => Ok("https://pozk-proxy.zypher.dev".to_owned()),
-        "mainnet" => Ok("https://pozk-proxy.zypher.network".to_owned()),
+        "localhost" | "zytrontestnet" | "basesepolia" => Ok("https://pozk-proxy.zypher.dev".to_owned()),
+        "zytron" | "base" => Ok("https://pozk-proxy.zypher.network".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }
 }
@@ -119,26 +119,28 @@ pub fn pozk_metrics_url(network: &str) -> Result<String> {
 pub fn pozk_rpc_url(network: &str) -> Result<String> {
     match network {
         "localhost" => Ok("http://localhost:8545".to_owned()),
-        "testnet" => Ok("https://rpc-testnet.zypher.network".to_owned()),
-        "mainnet" => Ok("https://rpc.zypher.network".to_owned()),
-        "l2testnet" => Ok("https://rpc.sepolia.linea.build".to_owned()),
+        "zytrontestnet" => Ok("https://rpc-testnet.zypher.network".to_owned()),
+        "zytron" => Ok("https://rpc.zypher.network".to_owned()),
+        "basesepolia" => Ok("https://sepolia.base.org".to_owned()),
+        "base" => Ok("https://mainnet.base.org".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }
 }
 
 pub fn pozk_zero_gas_url(network: &str) -> Result<String> {
     match network {
-        "testnet" => Ok("https://gas-testnet.zypher.network".to_owned()),
-        "mainnet" => Ok("https://gas.zypher.network".to_owned()),
-        "l2testnet" => Ok("https://gas.zypher.dev".to_owned()),
+        "zytrontestnet" => Ok("https://gas-testnet.zypher.network".to_owned()),
+        "zytron" => Ok("https://gas.zypher.network".to_owned()),
+        "basesepolia" => Ok("https://gas-basesepolia.zypher.dev".to_owned()),
+        "base" => Ok("https://gas-base.zypher.dev".to_owned()),
         _ => Err(anyhow!("Invalid network")),
     }
 }
 
 pub fn pozk_gas_price(network: &str) -> Option<U256> {
     match network {
-        "testnet" | "mainnet" => Some(U256::from(GAS_PRICE)),
-        "l2testnet" => None,
+        "zytrontestnet" | "zytron" => Some(U256::from(GAS_PRICE)),
+        "basesepolia" | "base" => None,
         _ => None,
     }
 }

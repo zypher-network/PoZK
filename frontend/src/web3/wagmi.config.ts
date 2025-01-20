@@ -4,7 +4,7 @@ import generateMetadata from "@/lib/generateMetadata";
 import { CHAINID, ChainId } from "@/web3/constants";
 
 import { defineChain } from "viem/utils";
-import { lineaSepolia } from 'viem/chains';
+import { baseSepolia, base } from 'viem/chains';
 
 const testnetSourceId = 59141; // Linea Sepolia
 const mainnetSourceId = 59144; // Linea Mainnet
@@ -57,9 +57,10 @@ const zytronMainnet = /*#__PURE__*/ defineChain({
 // Get your projectId on https://cloud.walletconnect.com
 export const projectId = "bc467c124a7a7a8ce06a41ef40b1b842";
 const ChainList = {
-  [ChainId.MAINNET]: zytronMainnet,
-  [ChainId.TESTNET]: zytronTestnet,
-  [ChainId.L2TESTNET]: lineaSepolia,
+  [ChainId.ZYTRONTESTNET]: zytronTestnet,
+  [ChainId.ZYTRON]: zytronMainnet,
+  [ChainId.BASESEPOLIA]: baseSepolia,
+  [ChainId.BASE]: base,
 };
 export const chain = ChainList[CHAINID];
 export const wagmiConfig = defaultWagmiConfig({

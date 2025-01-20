@@ -37,7 +37,7 @@
             "startBlock": 0
         }
     },
-    "testnet": {
+    "zytrontestnet": {
         "Addresses": {
             "address": "0x1535d1c3a7a2AA2D103b1Fd4C34E68E579646cD7",
             "startBlock": 552247
@@ -75,7 +75,7 @@
             "startBlock": 552269
         }
     },
-    "mainnet": {
+    "zytron": {
         "Addresses": {
             "address": "",
             "startBlock": 1
@@ -113,8 +113,50 @@
             "startBlock": 1
         }
     },
-    "l2testnet": {
+    "basesepolia": {
         "Addresses": {
+            "address": "0xA3585E3749f2FaF7aC2172F690b61Ca1Da73a0aB",
+            "startBlock": 20782576
+        },
+        "Token": {
+            "address": "0x91008A1C940D7BdC955a06AEE254a3e25F8e0dDc",
+            "startBlock": 20782574
+        },
+        "Vesting": {
+            "address": "0x6852BB020A9619972220Da54dC9e78b81cB2F1F3",
+            "startBlock": 20782583
+        },
+        "Epoch": {
+            "address": "0xaB34493e7bAEb8fB9169D8277313a9C2Fa559d70",
+            "startBlock": 20782587
+        },
+        "Stake": {
+            "address": "0x63F19b9b1d73bF6b3adA35940e1c480b5c6Df1A0",
+            "startBlock": 20782594
+        },
+        "Reward": {
+            "address": "0x85aB50D8D3119823aC17431D14aB40292831Db48",
+            "startBlock": 20782599
+        },
+        "Prover": {
+            "address": "0x47A7cf2548D7244f31fdA188846d8829EC9e2143",
+            "startBlock": 20782608
+        },
+        "Task": {
+            "address": "0x1F4cC3Ae4d55B61D1a2565E3A0139B47A44ffE77",
+            "startBlock": 20782612
+        },
+        "Controller": {
+            "address": "0x4ACa7BfF79B84F331828702dFe84ac6Bc7dD78fA",
+            "startBlock": 20782619
+        }
+    },
+    "base": {
+        "Addresses": {
+            "address": "",
+            "startBlock": 1
+        },
+        "Token": {
             "address": "",
             "startBlock": 1
         },
