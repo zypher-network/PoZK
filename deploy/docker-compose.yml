@@ -15,6 +15,6 @@ services:
       - ./:/usr/pozk
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-      - --network=testnet
+      - --network=zytrontestnet
       - --miner=0x0000000000000000000000000000000000000000 # set your miner address here
       - --url=https://example.com # set the public domain for this miner, you will receive more tasks
