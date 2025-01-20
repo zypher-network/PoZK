@@ -1,7 +1,6 @@
 import {
   createPublicClient,
   createWalletClient,
-  http,
   custom,
   parseEther,
   parseGwei,
@@ -10,19 +9,19 @@ import {
   TypedDataDomain,
   parseSignature,
   encodeFunctionData,
+  PublicClient,
+  http,
+  Transport,
 } from "viem";
 import { chain } from "@/web3/wagmi.config";
 
 class ContractService {
-  private publicClient: ReturnType<typeof createPublicClient>;
+  private publicClient: PublicClient<Transport, typeof chain>;
   private contractAddress?: `0x${string}`;
   private contractABI?: any[];
   private walletClient: ReturnType<typeof createWalletClient> | null = null;
   constructor(contractAddress?: `0x${string}`, contractABI?: any[]) {
-    this.publicClient = createPublicClient({
-      chain,
-      transport: http(),
-    });
+    this.publicClient = createPublicClient({ chain, transport: http() });
     this.contractAddress = contractAddress;
     this.contractABI = contractABI;
   }
@@ -57,14 +56,14 @@ class ContractService {
         args,
       });
 
-      const gas = await this.publicClient.estimateGas({
+      const gas = await this.publicClient?.estimateGas({
         account,
         to: this.contractAddress!,
         data,
         value: overrides?.value ? parseEther(overrides.value) : 0n,
       })
     
-      const { request } = await this.publicClient.simulateContract({
+      const { request } = await this.publicClient?.simulateContract({
         account: account,
         address: this.contractAddress!,
         abi: this.contractABI!,
@@ -81,7 +80,7 @@ class ContractService {
       });
 
       const hash = await walletClient.writeContract(request);
-      const transaction = await this.publicClient.waitForTransactionReceipt({
+      const transaction = await this.publicClient?.waitForTransactionReceipt({
         hash,
         confirmations: 2
       });
@@ -133,7 +132,7 @@ class ContractService {
     if (!this.contractAddress || !this.contractABI) {
       throw new Error("Contract address and ABI must be provided");
     }
-    const result = await this.publicClient.readContract({
+    const result = await this.publicClient?.readContract({
       address: this.contractAddress,
       abi: this.contractABI,
       functionName: methodName,
@@ -150,7 +149,7 @@ class ContractService {
     }[]
   ): Promise<any[]> {
     try {
-      return this.publicClient.multicall({
+      return this.publicClient?.multicall({
         contracts: params.map((param) => {
           return {
             address: param.address,

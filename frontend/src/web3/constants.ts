@@ -1,5 +1,5 @@
 import { Address } from "viem";
-import network from "@/constants/networks.json";
+import network from "@/../../../public/networks.json";
 
 export enum ChainId {
   ZYTRONTESTNET = "50098", // zytron testnet
