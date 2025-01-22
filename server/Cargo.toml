@@ -3,7 +3,7 @@ resolver = "2"
 members = ["api", "db", "docker", "monitor", "utils"]
 
 [workspace.package]
-version = "0.1.3"
+version = "0.2.0"
 edition = "2021"
 authors = ["Zypher <dev@zypher.network>"]
 readme = "README.md"

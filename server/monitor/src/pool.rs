@@ -249,11 +249,13 @@ impl Pool {
         let gas_price = if let Some(gs) = self.gas_price {
             gs
         } else {
-            self.task
+            let gas = self
+                .task
                 .client_ref()
                 .get_gas_price()
                 .await
-                .unwrap_or(GAS_PRICE.into())
+                .unwrap_or(GAS_PRICE.into());
+            gas / U256::from(10) + gas // 110%
         };
         match func.gas_price(gas_price).send().await {
             Ok(pending) => {

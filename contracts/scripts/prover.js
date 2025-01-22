@@ -3,16 +3,16 @@ const { attachContract, sleep } = require("./address_utils.js");
 
 const ONE_TOKEN = 10000000000000000000n;
 
-// Testnet
+// Base Sepolia
 // 2048
-// const myProver = "0x01156bb7c9b003ce2e2d2b0ee934b2baf196b08c";
-// const myVerifier = "0x01156bb7c9b003ce2e2d2b0ee934b2baf196b08c";
-// const WORK = 10000;
+const myProver = "0x01156bb7c9b003ce2e2d2b0ee934b2baf196b08c";
+const myVerifier = "0x01156bb7c9b003ce2e2d2b0ee934b2baf196b08c";
+const WORK = 10000;
 
 // cr
-const myProver = "0x6efdab245fb1905b3692c8e0c8702cec13a17121";
-const myVerifier = "0x6efdab245fb1905b3692c8e0c8702cec13a17121";
-const WORK = 5000;
+// const myProver = "0x6efdab245fb1905b3692c8e0c8702cec13a17121";
+// const myVerifier = "0x6efdab245fb1905b3692c8e0c8702cec13a17121";
+// const WORK = 5000;
 
 // Shuffle20
 // const myProver = "0xa6b720ee1f8975551a94f2d6bea74978aff60343";
@@ -25,11 +25,11 @@ const WORK = 5000;
 // const WORK = 10000;
 
 // Competition 1 & 2
-// const myProver = "0x432d35f3717f195070c450f471311a221ef275cd";
-// const myVerifier = "0x432D35F3717f195070C450F471311A221EF275Cd";
+// const myProver = "0xa7b1abf5b41d42c293917cf8d8bddf760b326d17";
+// const myVerifier = "0xa7b1abf5b41d42c293917cf8d8bddf760b326d17";
 // const WORK = 5000;
-// const myProver = "0xf227ab39cab4d4fbfb70390a46831d060c271dd5";
-// const myVerifier = "0xf227AB39cAB4D4fBfb70390a46831D060C271Dd5";
+// const myProver = "0xf1a2812fc68ab4a8a7d08dea48dd941db5174b6d";
+// const myVerifier = "0xf1a2812fc68ab4a8a7d08dea48dd941db5174b6d";
 // const WORK = 20000;
 
 async function registerProver() {
