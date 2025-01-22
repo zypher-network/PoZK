@@ -16,10 +16,10 @@ license = "GPL-3.0-only"
 include = ["public", "src", "Cargo.toml", "README.md"]
 
 [workspace.dependencies]
-pozk-db = { version = "0.1", path = "./db" }
-pozk-docker = { version = "0.1", path = "./docker" }
-pozk-monitor = { version = "0.1", path = "./monitor" }
-pozk-utils = { version = "0.1", path = "./utils" }
+pozk-db = { version = "0.2", path = "./db" }
+pozk-docker = { version = "0.2", path = "./docker" }
+pozk-monitor = { version = "0.2", path = "./monitor" }
+pozk-utils = { version = "0.2", path = "./utils" }
 
 anyhow = { version = "1.0", features = ["backtrace"] }
 async-recursion = "1.1"
