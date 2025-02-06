@@ -29,10 +29,10 @@ uint256 startTime
 
 Current epoch start time
 
-### now
+### height
 
 ```solidity
-uint256 now
+uint256 height
 ```
 
 Current epoch height
@@ -45,13 +45,29 @@ bool maintenance
 
 Enter/esc maintenance mode, when entry maintenance mode, stake and reward will be stopped
 
+### dao
+
+```solidity
+mapping(address => bool) dao
+```
+
+the DAO accounts for the network (use for miner & prover cert)
+
 ### NewEpoch
 
 ```solidity
-event NewEpoch(uint256 now, uint256 startTime)
+event NewEpoch(uint256 height, uint256 startTime)
 ```
 
 Emitted when entry new epoch
+
+### AddDao
+
+```solidity
+event AddDao(address account, bool ok)
+```
+
+Emitted when entry new DAO account
 
 ### initialize
 
@@ -82,6 +98,20 @@ Set the Addresses contract
 | ---- | ---- | ----------- |
 | _addresses | address | the Addresses contract address |
 
+### setPeriod
+
+```solidity
+function setPeriod(uint256 _period) external
+```
+
+Update period time
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _period | uint256 | the period time in seconds |
+
 ### setMaintenance
 
 ```solidity
@@ -96,19 +126,34 @@ Set maintenance mode status
 | ---- | ---- | ----------- |
 | open | bool | open or false the maintenance mode |
 
-### setPeriod
+### setNetworkMode
 
 ```solidity
-function setPeriod(uint256 _period) external
+function setNetworkMode(enum NetworkMode _mode) external
 ```
 
-Update period time
+Set network mode
 
 #### Parameters
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _period | uint256 | the period time in seconds |
+| _mode | enum NetworkMode | the network mode |
+
+### addDao
+
+```solidity
+function addDao(address account, bool ok) external
+```
+
+Set network mode
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| account | address | the new DAO account |
+| ok | bool | the new status |
 
 ### getAndUpdate
 
@@ -137,4 +182,32 @@ Get current epoch height
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 | Current epoch height |
+
+### networkMode
+
+```solidity
+function networkMode() external view returns (enum NetworkMode)
+```
+
+Get current network mode
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | enum NetworkMode | Current network mode |
+
+### isDao
+
+```solidity
+function isDao(address account) external view returns (bool)
+```
+
+Check DAO account
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool | Check result |
 

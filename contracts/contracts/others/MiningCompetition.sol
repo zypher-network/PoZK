@@ -25,9 +25,9 @@ contract MiningCompetition is Initializable, OwnableUpgradeable {
     /// @notice Competition status
     Status public status;
 
-    address initProver;
-    uint256 registerReward;
-    uint256 inviteReward;
+    address public initProver;
+    uint256 public registerReward;
+    uint256 public inviteReward;
 
     address realToken;
     uint256 decimal;

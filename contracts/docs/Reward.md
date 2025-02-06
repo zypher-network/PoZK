@@ -23,14 +23,20 @@ The struct of prover pool
 
 ```solidity
 struct ProverPool {
+  uint256 pozk;
   uint256 totalWorking;
   uint256 totalStaking;
   uint256 totalMinerStaking;
   uint256 totalPlayerStaking;
   uint256 totalMinerReward;
   uint256 totalPlayerReward;
+  uint256 totalMinerExtraReward;
+  uint256 totalPlayerExtraReward;
   uint256 unclaimReward;
-  uint256 unclaimLabor;
+  uint256 unclaimMinerLabor;
+  uint256 unclaimPlayerLabor;
+  uint256 unclaimExtra;
+  address extraRewardToken;
   mapping(address => struct Reward.StakerLabor) minerLabor;
   mapping(address => struct Reward.StakerLabor) playerLabor;
 }
@@ -55,10 +61,22 @@ The struct of the epoch status
 ```solidity
 struct EpochPool {
   uint256 unclaim;
+  uint256 totalPozk;
   uint256 totalProverStaking;
   mapping(address => struct Reward.ProverPool) proverPools;
   mapping(address => struct Reward.RunningProver) minerUnclaimedProvers;
   mapping(address => struct Reward.RunningProver) playerUnclaimedProvers;
+}
+```
+
+### ExtraProverReward
+
+The extra prover reward struct
+
+```solidity
+struct ExtraProverReward {
+  address token;
+  uint256 remain;
 }
 ```
 
@@ -142,6 +160,14 @@ uint256 playerMaxNum
 
 The player max games number when reach minerMaxPer
 
+### extraProverRewards
+
+```solidity
+mapping(address => mapping(uint256 => struct Reward.ExtraProverReward)) extraProverRewards
+```
+
+The extra prover rewards by game, it will distribute with main token
+
 ### Alpha
 
 ```solidity
@@ -205,6 +231,22 @@ event PlayerCollect(uint256 epoch, address prover, address player, uint256 amoun
 ```
 
 Emitted when collect reward (stake) from pool
+
+### DepositExtraProverRewards
+
+```solidity
+event DepositExtraProverRewards(address prover, uint256 epoch, address token, uint256 amount)
+```
+
+Emitted when deposit extra reward token for miner
+
+### ClaimExtraProverRewards
+
+```solidity
+event ClaimExtraProverRewards(address prover, uint256 epoch, uint256 remain)
+```
+
+Emitted when claimed unused extra reward token
 
 ### initialize
 
@@ -381,4 +423,36 @@ Player batch collect all provers in a epoch
 | ---- | ---- | ----------- |
 | epoch | uint256 | the epoch height |
 | player | address | the player account |
+
+### depositExtraProverRewards
+
+```solidity
+function depositExtraProverRewards(address prover, uint256 epoch, address token, uint256 amount) external
+```
+
+Prover/Game owner can deposit extra rewards for miner & player. Only support one token in epoch.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| prover | address | the prover |
+| epoch | uint256 | the reward epoch |
+| token | address | the token address |
+| amount | uint256 | the token amount |
+
+### claimExtraProverRewards
+
+```solidity
+function claimExtraProverRewards(address prover, uint256 epoch) external
+```
+
+Prover/Game owner can claim expired extra rewards
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| prover | address | the prover |
+| epoch | uint256 | the epoch |
 

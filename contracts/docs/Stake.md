@@ -30,6 +30,21 @@ struct ProverStaking {
 }
 ```
 
+### ZkTest
+
+Unit struct about ZK test
+
+```solidity
+struct ZkTest {
+  address payer;
+  address miner;
+  address prover;
+  uint256 amount;
+  uint256 overAt;
+  bytes publics;
+}
+```
+
 ### addresses
 
 ```solidity
@@ -45,6 +60,14 @@ uint256 minStakeAmount
 ```
 
 Miner minStakeAmount
+
+### allowlist
+
+```solidity
+mapping(address => uint256) allowlist
+```
+
+Store all miner allowlist
 
 ### ProverStakeChange
 
@@ -85,6 +108,54 @@ event ClaimUnstaking(address account, uint256 amount)
 ```
 
 Emit when account claimed the unstaking
+
+### AddAllowlist
+
+```solidity
+event AddAllowlist(address[] accounts, uint256[] amounts)
+```
+
+Emit when add new account to miner allowlist
+
+### SubAllowlist
+
+```solidity
+event SubAllowlist(address account, uint256 amount)
+```
+
+Emit when add account used the allowlist amounts
+
+### MinerTestRequire
+
+```solidity
+event MinerTestRequire(uint256 id, address account, address prover, uint256 amount)
+```
+
+Emit when miner need do a test
+
+### MinerTestCreate
+
+```solidity
+event MinerTestCreate(uint256 id, address account, address prover, uint256 overtime, bytes inputs, bytes publics)
+```
+
+Emit when test have been created and start
+
+### MinerTestSubmit
+
+```solidity
+event MinerTestSubmit(uint256 id, uint256 submitAt)
+```
+
+Emit when pass the miner test
+
+### MinerTestCancel
+
+```solidity
+event MinerTestCancel(uint256 id)
+```
+
+Emit when cancel the miner test
 
 ### initialize
 
@@ -128,6 +199,21 @@ Set minimum stake amount
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | _minStakeAmount | uint256 | the minimum value of miner staking |
+
+### addAllowlist
+
+```solidity
+function addAllowlist(address[] accounts, uint256[] amounts) external
+```
+
+Add allowlist accounts (multiple)
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| accounts | address[] | the accounts |
+| amounts | uint256[] | the true or false |
 
 ### proverTotalStaking
 
@@ -206,7 +292,7 @@ Unstake by prover self(others)
 function minerTotalStaking(address prover) external view returns (uint256)
 ```
 
-Get total miner staking
+Get total miner staking (no vesting)
 
 #### Parameters
 
@@ -226,7 +312,7 @@ Get total miner staking
 function minerStaking(address prover, address account) public view returns (uint256)
 ```
 
-Get miner staking
+Get miner staking (with vesting)
 
 #### Parameters
 
@@ -277,6 +363,68 @@ Stake by miner
 | prover | address | the prover address |
 | amount | uint256 | the new staking amount |
 
+### minerStakeFor
+
+```solidity
+function minerStakeFor(address miner, address prover, uint256 amount) public
+```
+
+Stake by someone for the miner
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| miner | address | the miner address |
+| prover | address | the prover address |
+| amount | uint256 | the new staking amount |
+
+### minerTest
+
+```solidity
+function minerTest(uint256 id, bytes inputs, bytes publics) external
+```
+
+DAO create the test
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| id | uint256 | the test id |
+| inputs | bytes | the zk input data |
+| publics | bytes | the zk public inputs |
+
+### minerTestSubmit
+
+```solidity
+function minerTestSubmit(uint256 id, bool autoNew, bytes proof) external
+```
+
+Miner submit the proof of the test
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| id | uint256 | the test id |
+| autoNew | bool | auto renew the task if over time |
+| proof | bytes | the zk proof |
+
+### minerTestCancel
+
+```solidity
+function minerTestCancel(uint256 id) external
+```
+
+Miner cancel the proof of the test
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| id | uint256 | the test id |
+
 ### minerUnstake
 
 ```solidity
@@ -291,6 +439,30 @@ Unstake by miner
 | ---- | ---- | ----------- |
 | prover | address | the prover address |
 | amount | uint256 | the unstaking amount |
+
+### minerTransferStaking
+
+```solidity
+function minerTransferStaking(address from, address to, uint256 amount) external
+```
+
+Miner can transfer staking from one prover to another without unclaim lock time
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| from | address | the from prover address |
+| to | address | the to prover address |
+| amount | uint256 | the staking amount |
+
+### minerSlashStaking
+
+```solidity
+function minerSlashStaking(address miner, address prover, address player, uint256 amount) external
+```
+
+get miner staking
 
 ### playerTotalStaking
 
@@ -338,6 +510,21 @@ Stake by player
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
+| amount | uint256 | the new staking amount of player |
+
+### playerStakeFor
+
+```solidity
+function playerStakeFor(address player, uint256 amount) public
+```
+
+Stake by player
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| player | address | the player address |
 | amount | uint256 | the new staking amount of player |
 
 ### playerUnstake

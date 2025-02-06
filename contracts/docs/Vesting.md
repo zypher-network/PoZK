@@ -147,20 +147,6 @@ Batch set miner vesting amounts
 | amounts | uint256[] | the amounts list |
 | ends | uint256[] | the ends list |
 
-### minersTotal
-
-```solidity
-function minersTotal() external view returns (uint256)
-```
-
-Get all miners vesting amount
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | total amount of all miners |
-
 ### miner
 
 ```solidity

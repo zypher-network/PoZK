@@ -1,6 +1,6 @@
 # Solidity API
 
-## Prover
+## ProverMarket
 
 Manage all registered provers
 
@@ -28,20 +28,18 @@ struct ProverVerifier {
 }
 ```
 
-### GameProver
+### Prover
 
-GameProver struct
+Prover struct
 
 ```solidity
-struct GameProver {
+struct Prover {
   enum ProverStatus status;
-  enum ProverType ptype;
   address owner;
-  struct Prover.ProverWork work;
-  struct Prover.ProverWork version;
-  struct Prover.ProverWork overtime;
-  struct Prover.ProverVerifier verifier;
-  string types;
+  struct ProverMarket.ProverWork work;
+  struct ProverMarket.ProverWork version;
+  struct ProverMarket.ProverWork overtime;
+  struct ProverMarket.ProverVerifier verifier;
   bool minable;
 }
 ```
@@ -57,7 +55,7 @@ Common Addresses contract
 ### RegisterProver
 
 ```solidity
-event RegisterProver(address prover, enum ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name, string types)
+event RegisterProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier)
 ```
 
 Emit when new prover register and waiting reviewing
@@ -73,7 +71,7 @@ Emit when prover owner transfer to others
 ### UpgradeProver
 
 ```solidity
-event UpgradeProver(address prover, enum ProverType ptype, uint256 work, uint256 version, uint256 overtime, address verifier, string name, string types)
+event UpgradeProver(address prover, uint256 work, uint256 version, uint256 overtime, address verifier)
 ```
 
 Emit when the prover start upgrading and waiting reviewing, before approve, it will still use old info
@@ -81,7 +79,7 @@ Emit when the prover start upgrading and waiting reviewing, before approve, it w
 ### ApproveProver
 
 ```solidity
-event ApproveProver(address prover, enum ProverType ptype, uint256 work, uint256 epoch, uint256 version, uint256 overtime, address verifier, string types, bool minable, bool approved)
+event ApproveProver(address prover, uint256 work, uint256 total, uint256 epoch, uint256 version, uint256 overtime, address verifier, bool minable, bool approved)
 ```
 
 Emit when the prover is approved or reject
@@ -125,7 +123,7 @@ Set the Addresses contract
 ### register
 
 ```solidity
-function register(address prover, enum ProverType _ptype, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external
+function register(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external
 ```
 
 Register new prover to market, the sender is prover owner, and waiting review
@@ -135,7 +133,6 @@ Register new prover to market, the sender is prover owner, and waiting review
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | prover | address | the prover contract(or not) address (unique identifier) |
-| _ptype | enum ProverType | the prover type |
 | _work | uint256 | the prover pozk work, calculation based on zk scheme and circuit size |
 | _version | uint256 | the prover prover version |
 | _overtime | uint256 | the limit time when doing zkp, if overflow the time, others miner can accept the task again |
@@ -158,7 +155,7 @@ Prover owner can unregister the prover and cannot register same prover address a
 ### upgrade
 
 ```solidity
-function upgrade(address prover, enum ProverType _ptype, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external
+function upgrade(address prover, uint256 _work, uint256 _version, uint256 _overtime, address _verifier) external
 ```
 
 Prover owner can upgrade the prover to new verison and new info
@@ -168,7 +165,6 @@ Prover owner can upgrade the prover to new verison and new info
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | prover | address | the prover |
-| _ptype | enum ProverType | the prover type |
 | _work | uint256 | the prover next pozk work, calculation based on zk scheme and circuit size |
 | _version | uint256 | the prover next prover version |
 | _overtime | uint256 | the limit time when doing zkp, if overflow the time, others miner can accept the task again |
@@ -177,7 +173,7 @@ Prover owner can upgrade the prover to new verison and new info
 ### transferProverOwner
 
 ```solidity
-function transferProverOwner(address prover, address _owner) external
+function transferProverOwner(address prover, address owner) external
 ```
 
 Prover owner can transfer ownership to others
@@ -187,7 +183,7 @@ Prover owner can transfer ownership to others
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | prover | address | the prover |
-| _owner | address | the new owner account |
+| owner | address | the new owner account |
 
 ### approve
 
@@ -238,6 +234,20 @@ Check a prover is working (working or upgrading)
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | bool | working or not |
+
+### totalWork
+
+```solidity
+function totalWork() external view returns (uint256)
+```
+
+Get all provers work
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 | the work of all provers |
 
 ### work
 
@@ -318,45 +328,4 @@ notice Get a prover verifier
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | address | the verifier of the prover |
-
-### owner
-
-```solidity
-function owner(address prover) external view returns (address)
-```
-
-notice Get a prover owner
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| prover | address | the prover |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address | the owner account of the prover |
-
-### checkUrl
-
-```solidity
-function checkUrl(address prover, string url) external view returns (bool)
-```
-
-notice Check the prover is need URL or not
-
-#### Parameters
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| prover | address | the prover |
-| url | string | the url string |
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool | the result |
 
