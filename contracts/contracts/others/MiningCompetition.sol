@@ -83,14 +83,14 @@ contract MiningCompetition is Initializable, OwnableUpgradeable {
         require(allowlist[msg.sender] && status == Status.Working, "MC01");
         require(users[account] == 0, "MC02");
 
-        // staking as miner & player
+        // send min staking amount to account
         Stake stake = Stake(IAddresses(addresses).get(Contracts.Stake));
+
         uint256 minerReward = stake.minStakeAmount();
-        stake.playerStakeFor(account, registerReward);
-        stake.minerStakeFor(account, initProver, minerReward);
+        IERC20(IAddresses(addresses).get(Contracts.Token)).safeTransfer(account, minerReward);
+        users[account] = minerReward;
 
-        users[account] = registerReward + minerReward;
-
+        // stake invite reward
         if (users[inviter] > 0) {
             users[inviter] += inviteReward;
             users[account] += inviteReward;
